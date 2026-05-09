@@ -1,0 +1,209 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* ─────────────────────────────────────────────────────────
+     STOCKIA BRAND PALETTE
+     ─────────────────────────────────────────────────────────
+     Primary   #B42318  Rojo Stockia — botones, links, badges
+     Surface   #FFFFFF  Cards, modales, sidebars overlay
+     Base      #F7F7F8  Fondo general de la app
+     Charcoal  #111827  Hero oscuro distribuidora / sidebar dist.
+     Dark      #1F2937  Sidebar comercio / texto principal
+     Border    #E5E7EB  Bordes de cards y separadores
+     Muted     #6B7280  Texto secundario, placeholders
+     ───────────────────────────────────────────────────────── */
+
+  /* — Colores de superficie — */
+  --background: #F7F7F8;       /* Fondo base */
+  --foreground: #1F2937;       /* Texto principal */
+  --card: #FFFFFF;             /* Cards */
+  --card-foreground: #1F2937;
+  --popover: #FFFFFF;
+  --popover-foreground: #1F2937;
+
+  /* — Color primario — */
+  --primary: #B42318;          /* Rojo Stockia */
+  --primary-foreground: #FFFFFF;
+
+  /* — Colores secundarios — */
+  --secondary: #F3F4F6;
+  --secondary-foreground: #1F2937;
+  --muted: #F3F4F6;
+  --muted-foreground: #6B7280;
+  --accent: #FEF2F2;           /* Tinte rojo suave (hover states) */
+  --accent-foreground: #B42318;
+
+  /* — Semánticos — */
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #B42318;
+
+  /* — Charts — */
+  --chart-1: #B42318;
+  --chart-2: #10B981;
+  --chart-3: #3B82F6;
+  --chart-4: #F59E0B;
+  --chart-5: #8B5CF6;
+
+  /* — Radio global — */
+  --radius: 0.75rem;
+
+  /* — Sidebar oscuro (ambos roles) — */
+  --sidebar: #111827;          /* Charcoal oscuro — igual en Comercio y Distribuidora */
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #B42318;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(255,255,255,0.08);
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(255,255,255,0.1);
+  --sidebar-ring: #B42318;
+
+  /* — Status colors — */
+  --success: #10B981;
+  --success-foreground: #FFFFFF;
+  --warning: #F59E0B;
+  --warning-foreground: #1F2937;
+  --info: #3B82F6;
+  --info-foreground: #FFFFFF;
+}
+
+@theme inline {
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Sora', sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@keyframes stockia-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes stockia-dot {
+  0%, 80%, 100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes onboarding-step {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes auth-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes auth-form-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-stockia-shimmer {
+  animation: stockia-shimmer 1.35s ease-in-out infinite;
+}
+
+@utility animate-stockia-dot {
+  animation: stockia-dot 0.9s ease-in-out infinite;
+}
+
+@utility animate-onboarding-step {
+  animation: onboarding-step 180ms ease-out;
+}
+
+@utility auth-panel-enter {
+  animation: auth-panel-enter 280ms ease-out both;
+}
+
+@utility auth-form-enter {
+  animation: auth-form-enter 260ms ease-out 80ms both;
+}
+
+/* PWA Safe Areas */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Stockia",
+  "short_name": "Stockia",
+  "description": "Marketplace B2B para conectar distribuidoras con comercios locales.",
+  "start_url": "/login",
+  "display": "standalone",
+  "background_color": "#F7F7F8",
+  "theme_color": "#B42318",
+  "icons": [
+    {
+      "src": "/logo-S.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-S.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
