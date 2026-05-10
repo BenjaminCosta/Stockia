@@ -181,6 +181,15 @@
   }
 }
 
+@keyframes cart-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.06);
+  }
+}
+
 @utility animate-stockia-shimmer {
   animation: stockia-shimmer 1.35s ease-in-out infinite;
 }
@@ -199,6 +208,10 @@
 
 @utility auth-form-enter {
   animation: auth-form-enter 260ms ease-out 80ms both;
+}
+
+@utility animate-cart-pulse {
+  animation: cart-pulse 520ms ease-out;
 }
 
 /* PWA Safe Areas */

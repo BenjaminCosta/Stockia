@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Trash2, ChevronRight, CreditCard, ShoppingBag } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency, mockDistributorCards } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import { LoadingButton } from '@/components/ui/LoadingButton'
 
@@ -39,6 +39,10 @@ export default function CarritoPage() {
 
   const total = getCartTotal()
   const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0)
+  const distributor = mockDistributorCards.find((item) => item.id === cart.distribuidoraId)
+  const minOrder = distributor?.minOrder || 20000
+  const minProgress = Math.min((total / minOrder) * 100, 100)
+  const remainingToMin = Math.max(minOrder - total, 0)
   const distInitials = cart.distribuidoraName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
 
   const handleConfirm = async () => {
@@ -48,7 +52,7 @@ export default function CarritoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 md:pb-12">
+    <div className="min-h-screen bg-background pb-44 md:pb-12">
       <div className="max-w-5xl mx-auto md:p-8">
 
         {/* Header */}
@@ -56,7 +60,12 @@ export default function CarritoPage() {
           <Link href="/comercio" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="font-heading font-bold text-xl md:text-3xl text-gray-900">Tu Pedido</h1>
+          <div>
+            <h1 className="font-heading font-bold text-xl md:text-3xl text-gray-900">Tu Pedido</h1>
+            <p className="text-sm font-medium text-muted-foreground">
+              Carrito · {itemCount} producto{itemCount !== 1 ? 's' : ''}
+            </p>
+          </div>
         </div>
 
         <div className="px-4 md:px-0 mt-4 md:mt-0 grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -140,6 +149,12 @@ export default function CarritoPage() {
             <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-border md:sticky md:top-8">
               <h2 className="hidden md:block font-bold text-gray-900 mb-6 text-sm uppercase tracking-wide">Resumen</h2>
               <div className="space-y-3 text-base">
+                <MinimumOrderProgress
+                  total={total}
+                  minOrder={minOrder}
+                  minProgress={minProgress}
+                  remainingToMin={remainingToMin}
+                />
                 <div className="flex justify-between">
                   <span className="text-gray-500 font-medium">Subtotal ({itemCount} ítems)</span>
                   <span className="font-bold text-gray-900">{formatCurrency(total)}</span>
@@ -168,7 +183,16 @@ export default function CarritoPage() {
       </div>
 
       {/* Mobile fixed bottom */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 z-50">
+      <div className="md:hidden fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-gray-200 z-40 pb-safe shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
+        <div className="mb-3">
+          <MinimumOrderProgress
+            total={total}
+            minOrder={minOrder}
+            minProgress={minProgress}
+            remainingToMin={remainingToMin}
+            compact
+          />
+        </div>
         <LoadingButton
           className="w-full h-14 text-lg font-bold shadow-lg rounded-xl"
           onClick={handleConfirm}
@@ -178,6 +202,44 @@ export default function CarritoPage() {
           Pagar pedido
         </LoadingButton>
       </div>
+    </div>
+  )
+}
+
+function MinimumOrderProgress({
+  total,
+  minOrder,
+  minProgress,
+  remainingToMin,
+  compact = false,
+}: {
+  total: number
+  minOrder: number
+  minProgress: number
+  remainingToMin: number
+  compact?: boolean
+}) {
+  const reachedMinimum = remainingToMin === 0
+
+  return (
+    <div className={compact ? 'space-y-1.5' : 'rounded-2xl bg-gray-50 p-4 space-y-2'}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Pedido mínimo</span>
+        <span className="text-xs font-bold text-gray-900">
+          {formatCurrency(total)} / {formatCurrency(minOrder)}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+        <div
+          className="h-full rounded-full bg-primary transition-all duration-300"
+          style={{ width: `${minProgress}%` }}
+        />
+      </div>
+      <p className={`text-xs font-medium ${reachedMinimum ? 'text-green-600' : 'text-muted-foreground'}`}>
+        {reachedMinimum
+          ? 'Mínimo alcanzado'
+          : `Faltan ${formatCurrency(remainingToMin)} para alcanzar el mínimo`}
+      </p>
     </div>
   )
 }

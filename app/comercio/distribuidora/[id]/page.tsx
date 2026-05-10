@@ -2,7 +2,7 @@
 
 import { useState, use } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Search, Plus, Minus, Info, Package, FileText } from 'lucide-react'
+import { ArrowLeft, Search, Plus, Minus, Info, Package, FileText, Check } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import {
   getDistribuidoraById,
@@ -22,6 +22,7 @@ export default function DistribuidoraCatalogPage({
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Todos')
   const [cartItems, setCartItems] = useState<Record<string, number>>({})
+  const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set())
   const isLoading = useMockLoading()
 
   const distribuidora = getDistribuidoraById(id)
@@ -46,7 +47,15 @@ export default function DistribuidoraCatalogPage({
     const product = products.find(p => p.id === productId)
     if (!product || !distribuidora) return
     addToCart(product, distribuidora.companyName, 1)
+    setAddedProducts(prev => new Set(prev).add(productId))
     setCartItems(prev => ({ ...prev, [productId]: 1 }))
+    window.setTimeout(() => {
+      setAddedProducts(prev => {
+        const next = new Set(prev)
+        next.delete(productId)
+        return next
+      })
+    }, 900)
   }
 
   const handleIncrement = (productId: string) => {
@@ -82,7 +91,7 @@ export default function DistribuidoraCatalogPage({
   const initials = distribuidora.companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-12">
+    <div className="min-h-screen bg-background pb-44 md:pb-12">
       <div className="md:flex max-w-7xl mx-auto items-start md:p-6 gap-8">
         <div className="flex-1">
           {/* Dark hero header */}
@@ -210,22 +219,30 @@ export default function DistribuidoraCatalogPage({
                             Ver detalle
                           </Link>
                           {qty > 0 ? (
-                            <div className="flex items-center bg-gray-100 rounded-xl h-10 md:h-12 overflow-hidden shadow-inner">
-                              <button
-                                onClick={() => handleDecrement(product.id)}
-                                className="w-10 md:w-12 h-full flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-colors"
-                              >
-                                <Minus className="h-4 w-4 md:h-5 md:w-5" />
-                              </button>
-                              <span className="w-10 md:w-12 text-center font-bold text-base bg-white h-full flex items-center justify-center">
-                                {qty}
-                              </span>
-                              <button
-                                onClick={() => handleIncrement(product.id)}
-                                className="w-10 md:w-12 h-full flex items-center justify-center text-primary hover:text-red-700 hover:bg-gray-200 transition-colors"
-                              >
-                                <Plus className="h-4 w-4 md:h-5 md:w-5" />
-                              </button>
+                            <div className="flex items-center gap-2">
+                              {addedProducts.has(product.id) && (
+                                <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700 animate-onboarding-step">
+                                  <Check className="h-3 w-3" />
+                                  Agregado
+                                </span>
+                              )}
+                              <div className="flex items-center bg-gray-100 rounded-xl h-10 md:h-12 overflow-hidden shadow-inner">
+                                <button
+                                  onClick={() => handleDecrement(product.id)}
+                                  className="w-10 md:w-12 h-full flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-colors"
+                                >
+                                  <Minus className="h-4 w-4 md:h-5 md:w-5" />
+                                </button>
+                                <span className="w-10 md:w-12 text-center font-bold text-base bg-white h-full flex items-center justify-center">
+                                  {qty}
+                                </span>
+                                <button
+                                  onClick={() => handleIncrement(product.id)}
+                                  className="w-10 md:w-12 h-full flex items-center justify-center text-primary hover:text-red-700 hover:bg-gray-200 transition-colors"
+                                >
+                                  <Plus className="h-4 w-4 md:h-5 md:w-5" />
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <button
@@ -301,9 +318,9 @@ export default function DistribuidoraCatalogPage({
 
       {/* Mobile sticky bottom bar */}
       {totalItems > 0 && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 z-50">
+        <div className="md:hidden fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-gray-200 z-40 pb-safe shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
           <Link href="/comercio/carrito">
-            <div className="bg-primary text-white rounded-2xl p-4 flex justify-between items-center shadow-xl shadow-primary/20 active:scale-[0.98] cursor-pointer transition-all">
+            <div className="bg-primary text-white rounded-2xl p-4 flex justify-between items-center shadow-xl shadow-primary/20 active:scale-[0.98] cursor-pointer transition-all animate-cart-pulse">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 rounded-xl h-10 w-10 flex items-center justify-center font-bold text-lg">
                   {totalItems}

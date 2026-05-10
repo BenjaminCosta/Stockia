@@ -272,16 +272,12 @@ function WelcomeStep() {
         <h2 className="font-heading text-2xl font-semibold text-foreground md:text-3xl">
           Empezá a operar con proveedores y comercios en minutos
         </h2>
-        <p className="mt-3 max-w-xl text-base leading-7 text-muted-foreground">
-          Este prototipo te permite probar ambos flujos: compra de productos para comercios y gestión de pedidos para distribuidoras.
-        </p>
       </div>
 
       <div className="rounded-2xl border border-border bg-muted/50 p-5">
         <div className="space-y-4">
           <FeatureRow icon={Store} title="Comercios" text="Buscan proveedores, arman pedidos y siguen el estado." />
           <FeatureRow icon={Truck} title="Distribuidoras" text="Cargan productos, reciben pedidos y gestionan entregas." />
-          <FeatureRow icon={MapPin} title="Ubicación" text="La zona define qué proveedores y clientes se muestran." />
         </div>
         <Link href="/login" className="mt-5 block text-center text-sm font-semibold text-primary hover:underline">
           Ya tengo cuenta

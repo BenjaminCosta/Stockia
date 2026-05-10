@@ -48,7 +48,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-36 md:pb-12">
+    <div className="min-h-screen bg-background pb-44 md:pb-12">
       <div className="max-w-5xl mx-auto md:p-8">
 
         {/* Header */}
@@ -191,7 +191,7 @@ export default function CheckoutPage() {
       </div>
 
       {/* Mobile fixed bottom bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 pb-safe shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
         <p className="text-center text-xs text-muted-foreground mb-3 flex items-center justify-center gap-1.5 font-medium">
           <Lock className="h-3 w-3 text-gray-400" /> Tu información está cifrada y protegida
         </p>
