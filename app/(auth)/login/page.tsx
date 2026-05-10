@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Boxes, Building2, Check, Route, Store } from 'lucide-react'
+import { ArrowRight, Boxes, Building2, Route, Store } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -37,17 +37,22 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-background md:flex">
       {/* Left Panel — desktop only */}
-      <div className="auth-panel-enter hidden md:flex w-1/2 bg-[#111827] flex-col justify-between p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.08]">
+      <div
+        className="auth-panel-enter hidden md:flex w-1/2 flex-col justify-between p-12 relative overflow-hidden"
+        style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1672552226380-486fe900b322?q=95&w=3840&auto=format&fit=crop')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-[#111827]/85" />
+        <div className="absolute inset-0 opacity-[0.06]">
           <div className="absolute -left-20 top-24 h-64 w-64 rounded-full border border-white" />
           <div className="absolute right-10 top-20 h-28 w-28 rotate-12 rounded-3xl border border-white" />
-          <div className="absolute bottom-36 right-24 h-px w-72 rotate-[-18deg] bg-white" />
           <div className="absolute left-16 bottom-24 h-px w-56 rotate-12 bg-primary" />
           <Boxes className="absolute bottom-16 left-20 h-24 w-24 text-white" />
           <Route className="absolute right-28 bottom-36 h-20 w-20 text-white" />
-          <span className="absolute -right-10 top-1/2 -translate-y-1/2 font-heading text-[320px] font-bold leading-none text-white">
-            S
-          </span>
         </div>
         <div className="absolute left-16 top-16 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
 
@@ -63,11 +68,6 @@ export default function LoginPage() {
           <p className="text-white/70 text-lg mb-8 leading-8">
             Conectamos comercios con distribuidoras de forma simple, rápida y transparente.
           </p>
-          <div className="space-y-5 text-white/82">
-            <PremiumBullet text="Accedé a proveedores de tu zona" />
-            <PremiumBullet text="Compará precios y condiciones de entrega" />
-            <PremiumBullet text="Centralizá pedidos y seguimiento" />
-          </div>
         </div>
 
         <div className="relative z-10 border-t border-white/10 pt-8">
@@ -78,17 +78,27 @@ export default function LoginPage() {
       {/* Right Panel — form */}
       <div className="w-full md:w-1/2 flex min-h-screen flex-col md:items-center md:justify-center md:p-8 relative">
         {/* Mobile header */}
-        <div className="relative flex h-56 w-full flex-col overflow-hidden bg-[#111827] px-5 pb-16 pt-6 text-white md:hidden">
-          <div className="absolute inset-0 opacity-[0.08]">
+        <div
+          className="relative flex h-64 w-full flex-col items-center justify-center overflow-hidden px-5 pb-16 pt-6 text-white md:hidden"
+          style={{
+            backgroundImage: "url('https://images.unsplash.com/photo-1672552226380-486fe900b322?q=95&w=3840&auto=format&fit=crop')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          {/* Dark overlay */}
+          <div className="absolute inset-0 bg-[#111827]/82" />
+          <div className="absolute inset-0 opacity-[0.07]">
             <div className="absolute -left-8 top-10 h-28 w-28 rounded-full border border-white" />
             <div className="absolute right-8 top-16 h-20 w-20 rotate-12 rounded-2xl border border-white" />
             <div className="absolute bottom-12 left-1/2 h-px w-56 -translate-x-1/2 rotate-[-16deg] bg-primary" />
           </div>
-         <div className="relative z-10 flex items-center justify-center">
-  <div className="flex items-center justify-center">
-    <StockiaLogo size={80} className="rounded-xl" />
-  </div>
-</div>
+          <div className="relative z-10 flex flex-col items-center gap-3">
+            <div className="rounded-2xl p-1">
+              <StockiaLogo size={96} className="rounded-xl" />
+            </div>
+            <span className="font-heading text-xl font-bold text-white tracking-wide">Stockia</span>
+          </div>
         </div>
 
         <div className="auth-form-enter w-full max-w-md -mt-10 px-4 pb-8 md:mt-0 md:px-0 md:pb-0">
@@ -206,11 +216,11 @@ export default function LoginPage() {
 
 function PremiumBullet({ text }: { text: string }) {
   return (
-    <div className="flex items-center gap-4">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary shadow-[0_0_24px_-12px_rgba(180,35,24,0.9)]">
-        <Check className="h-4 w-4" />
+    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/8 px-4 py-3 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]" style={{ background: 'rgba(255,255,255,0.07)' }}>
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-primary/40 bg-primary/20 text-primary backdrop-blur-sm shadow-[0_0_16px_-6px_rgba(180,35,24,0.8)]">
+        <ArrowRight className="h-3.5 w-3.5" />
       </span>
-      <span className="leading-6">{text}</span>
+      <span className="leading-5 text-white/90 text-sm font-medium">{text}</span>
     </div>
   )
 }

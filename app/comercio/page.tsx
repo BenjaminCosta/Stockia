@@ -29,8 +29,8 @@ export default function ComercioHomePage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Sticky header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-100">
         <div className="px-4 md:px-8 pt-4 pb-4 max-w-5xl mx-auto">
           <div className="flex justify-between items-center mb-4">
             <div>
@@ -46,7 +46,7 @@ export default function ComercioHomePage() {
             </div>
             <Link
               href="/comercio/carrito"
-              className="h-10 w-10 bg-gray-50 rounded-full flex items-center justify-center relative hover:bg-gray-100 transition-colors"
+              className="hidden md:flex h-10 w-10 bg-gray-50 rounded-full items-center justify-center relative hover:bg-gray-100 transition-colors"
             >
               <ShoppingCart className="h-5 w-5 text-foreground" />
               {cartItemCount > 0 && (

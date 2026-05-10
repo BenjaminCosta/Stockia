@@ -113,8 +113,17 @@ export default function RegistroPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="relative overflow-hidden bg-[#111827] px-4 pb-28 pt-6 text-white md:px-8 md:pb-32 md:pt-8">
-        <div className="absolute inset-0 opacity-[0.08]">
+      <header
+        className="relative overflow-hidden px-4 pb-28 pt-6 text-white md:px-8 md:pb-32 md:pt-8"
+        style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1672552226380-486fe900b322?q=95&w=3840&auto=format&fit=crop')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-[#111827]/90" />
+        <div className="absolute inset-0 opacity-[0.07]">
           <div className="absolute -left-10 top-16 h-28 w-28 rounded-3xl border border-white rotate-12" />
           <div className="absolute right-8 top-20 h-20 w-20 rounded-full border border-white" />
           <div className="absolute bottom-12 left-1/2 h-px w-56 -translate-x-1/2 rotate-[-18deg] bg-white" />
