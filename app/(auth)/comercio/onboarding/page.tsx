@@ -120,7 +120,7 @@ export default function OnboardingComercioPage() {
               </div>
             </div>
             <div>
-              <h2 className="font-heading font-bold text-2xl md:text-3xl text-gray-900 mb-4 leading-tight">
+              <h2 className="font-heading font-bold text-2xl md:text-3xl text-foreground mb-4 leading-tight">
                 {steps[step].title}
               </h2>
               <p className="text-muted-foreground text-base md:text-lg leading-relaxed px-4">

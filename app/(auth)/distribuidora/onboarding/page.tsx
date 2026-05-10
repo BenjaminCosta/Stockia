@@ -46,7 +46,7 @@ export default function OnboardingDistribuidoraPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
       {/* Left panel — dark (distribuidora) */}
-      <div className="bg-[#111827] md:w-1/2 pt-12 md:pt-20 pb-32 px-6 md:px-16 relative overflow-hidden shrink-0 flex flex-col justify-between">
+      <div className="bg-sidebar md:w-1/2 pt-12 md:pt-20 pb-32 px-6 md:px-16 relative overflow-hidden shrink-0 flex flex-col justify-between">
         <svg className="absolute inset-0 w-full h-full opacity-[0.06]" xmlns="http://www.w3.org/2000/svg">
           <circle cx="85%" cy="15%" r="100" fill="none" stroke="white" strokeWidth="6" />
           <rect x="2%" y="55%" width="90" height="90" fill="none" stroke="white" strokeWidth="4" transform="rotate(15)" />
@@ -120,7 +120,7 @@ export default function OnboardingDistribuidoraPage() {
               </div>
             </div>
             <div>
-              <h2 className="font-heading font-bold text-2xl md:text-3xl text-gray-900 mb-4 leading-tight">
+              <h2 className="font-heading font-bold text-2xl md:text-3xl text-foreground mb-4 leading-tight">
                 {steps[step].title}
               </h2>
               <p className="text-muted-foreground text-base md:text-lg leading-relaxed px-4">

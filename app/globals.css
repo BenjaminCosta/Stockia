@@ -10,19 +10,18 @@
      Primary   #B42318  Rojo Stockia — botones, links, badges
      Surface   #FFFFFF  Cards, modales, sidebars overlay
      Base      #F7F7F8  Fondo general de la app
-     Charcoal  #111827  Hero oscuro distribuidora / sidebar dist.
-     Dark      #1F2937  Sidebar comercio / texto principal
+     Sidebar   #181D25  Sidebar y hero headers (comercio y distribuidora)
      Border    #E5E7EB  Bordes de cards y separadores
      Muted     #6B7280  Texto secundario, placeholders
      ───────────────────────────────────────────────────────── */
 
   /* — Colores de superficie — */
   --background: #F7F7F8;       /* Fondo base */
-  --foreground: #1F2937;       /* Texto principal */
+  --foreground: #181D25;       /* Texto principal */
   --card: #FFFFFF;             /* Cards */
-  --card-foreground: #1F2937;
+  --card-foreground: #181D25;
   --popover: #FFFFFF;
-  --popover-foreground: #1F2937;
+  --popover-foreground: #181D25;
 
   /* — Color primario — */
   --primary: #B42318;          /* Rojo Stockia */
@@ -30,7 +29,7 @@
 
   /* — Colores secundarios — */
   --secondary: #F3F4F6;
-  --secondary-foreground: #1F2937;
+  --secondary-foreground: #181D25;
   --muted: #F3F4F6;
   --muted-foreground: #6B7280;
   --accent: #FEF2F2;           /* Tinte rojo suave (hover states) */
@@ -54,7 +53,7 @@
   --radius: 0.75rem;
 
   /* — Sidebar oscuro (ambos roles) — */
-  --sidebar: #111827;          /* Charcoal oscuro — igual en Comercio y Distribuidora */
+  --sidebar: #181D25;          /* Color unificado sidebar + hero headers */
   --sidebar-foreground: #FFFFFF;
   --sidebar-primary: #B42318;
   --sidebar-primary-foreground: #FFFFFF;
@@ -67,7 +66,7 @@
   --success: #10B981;
   --success-foreground: #FFFFFF;
   --warning: #F59E0B;
-  --warning-foreground: #1F2937;
+  --warning-foreground: #181D25;
   --info: #3B82F6;
   --info-foreground: #FFFFFF;
 }

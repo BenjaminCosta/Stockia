@@ -43,7 +43,7 @@ export default function CuentaPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Dark hero header */}
-      <div className="bg-[#111827] pt-8 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-b-3xl md:mt-4 md:mx-4 overflow-hidden shadow-lg">
+      <div className="bg-sidebar pt-8 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-b-3xl md:mt-4 md:mx-4 overflow-hidden shadow-lg">
         <svg className="absolute inset-0 w-full h-full opacity-[0.06]" xmlns="http://www.w3.org/2000/svg">
           <circle cx="90%" cy="20%" r="80" fill="none" stroke="white" strokeWidth="5" />
           <rect x="5%" y="65%" width="70" height="70" fill="none" stroke="white" strokeWidth="4" transform="rotate(15)" />
@@ -77,11 +77,11 @@ export default function CuentaPage() {
               <div className="grid grid-cols-3 md:grid-cols-1 md:divide-y divide-x md:divide-x-0 divide-gray-100">
                 <div className="pr-4 md:pr-0 md:pb-4 flex flex-col md:flex-row md:justify-between md:items-center">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 md:mb-0 text-center md:text-left">Pedidos</p>
-                  <p className="font-heading font-bold text-3xl md:text-2xl text-gray-900 text-center md:text-left">{myOrders.length}</p>
+                  <p className="font-heading font-bold text-3xl md:text-2xl text-foreground text-center md:text-left">{myOrders.length}</p>
                 </div>
                 <div className="px-4 md:px-0 md:py-4 flex flex-col md:flex-row md:justify-between md:items-center">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 md:mb-0 text-center md:text-left">Proveedores</p>
-                  <p className="font-heading font-bold text-3xl md:text-2xl text-gray-900 text-center md:text-left">{uniqueDistributors}</p>
+                  <p className="font-heading font-bold text-3xl md:text-2xl text-foreground text-center md:text-left">{uniqueDistributors}</p>
                 </div>
                 <div className="pl-4 md:pl-0 md:pt-4 flex flex-col md:flex-row md:justify-between md:items-center">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 md:mb-0 text-center md:text-left">Calificación</p>
@@ -97,10 +97,10 @@ export default function CuentaPage() {
                   <Shield className="h-5 w-5 text-gray-500" />
                 </div>
                 <div className="flex-1">
-                  <span className="block font-bold text-sm text-gray-900">Seguridad</span>
+                  <span className="block font-bold text-sm text-foreground">Seguridad</span>
                   <span className="block text-xs text-muted-foreground mt-0.5">Contraseña y acceso</span>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
               <button
                 onClick={handleLogout}
@@ -118,7 +118,7 @@ export default function CuentaPage() {
           <div className="md:col-span-8 space-y-6">
             {/* Business info */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-6">Datos del negocio</h2>
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Datos del negocio</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {infoFields.map((item, i) => (
                   <div key={i} className="flex items-start gap-4 p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
@@ -127,7 +127,7 @@ export default function CuentaPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">{item.label}</p>
-                      <p className="font-bold text-sm text-gray-900 truncate" title={item.value}>{item.value}</p>
+                      <p className="font-bold text-sm text-foreground truncate" title={item.value}>{item.value}</p>
                     </div>
                   </div>
                 ))}
@@ -136,7 +136,7 @@ export default function CuentaPage() {
 
             {/* Notifications */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-6">Notificaciones</h2>
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Notificaciones</h2>
               <div className="space-y-6">
                 {notifications.map((item, i) => (
                   <div
@@ -148,7 +148,7 @@ export default function CuentaPage() {
                         <Bell className="h-5 w-5 text-gray-500" />
                       </div>
                       <div>
-                        <p className="font-bold text-base text-gray-900">{item.label}</p>
+                        <p className="font-bold text-base text-foreground">{item.label}</p>
                         <p className="text-sm text-muted-foreground mt-1 max-w-md">{item.sub}</p>
                       </div>
                     </div>

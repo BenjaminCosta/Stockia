@@ -47,11 +47,11 @@ export default function PedidosDistribuidoraPage() {
       {/* Page header */}
       <header className="sticky top-0 md:top-0 z-20 bg-white border-b border-border px-4 md:px-8 pt-5 md:pt-6 pb-0">
         <div className="max-w-5xl mx-auto">
-          <h1 className="font-heading font-bold text-2xl text-gray-900 mb-4 md:mb-6">Pedidos Recibidos</h1>
+          <h1 className="font-heading font-bold text-2xl text-foreground mb-4 md:mb-6">Pedidos Recibidos</h1>
 
           <div className="flex gap-2 pb-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+              <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Buscar por comercio o número..."
@@ -121,7 +121,7 @@ export default function PedidosDistribuidoraPage() {
                               </span>
                             </div>
                             <div>
-                              <div className="font-bold text-gray-900 text-base md:text-sm leading-tight">{order.comercioName}</div>
+                              <div className="font-bold text-foreground text-base md:text-sm leading-tight">{order.comercioName}</div>
                               <div className="text-xs text-gray-500 mt-0.5 md:hidden">{order.items.length} productos · {order.zone}</div>
                             </div>
                           </div>
@@ -133,7 +133,7 @@ export default function PedidosDistribuidoraPage() {
                         {/* Total */}
                         <div className="col-span-2 mb-4 md:mb-0 flex md:block justify-between items-center bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none">
                           <span className="md:hidden text-xs font-bold text-gray-500 uppercase tracking-wider">Total</span>
-                          <div className="font-heading font-bold text-xl md:text-base text-gray-900">{formatCurrency(order.total)}</div>
+                          <div className="font-heading font-bold text-xl md:text-base text-foreground">{formatCurrency(order.total)}</div>
                         </div>
 
                         {/* Desktop Status */}

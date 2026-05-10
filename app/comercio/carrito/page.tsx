@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Trash2, ChevronRight, CreditCard, ShoppingBag } from 'lucide-react'
+import { ArrowLeft, Trash2, ChevronRight, ShoppingBag } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency, mockDistributorCards } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
@@ -21,7 +21,7 @@ export default function CarritoPage() {
           <Link href="/comercio" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="font-heading font-bold text-xl md:text-3xl text-gray-900">Tu Pedido</h1>
+          <h1 className="font-heading font-bold text-xl md:text-3xl text-foreground">Tu Pedido</h1>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
           <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -61,7 +61,7 @@ export default function CarritoPage() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="font-heading font-bold text-xl md:text-3xl text-gray-900">Tu Pedido</h1>
+            <h1 className="font-heading font-bold text-xl md:text-3xl text-foreground">Tu Pedido</h1>
             <p className="text-sm font-medium text-muted-foreground">
               Carrito · {itemCount} producto{itemCount !== 1 ? 's' : ''}
             </p>
@@ -74,7 +74,7 @@ export default function CarritoPage() {
           <div className="md:col-span-7 space-y-6">
             <div className="bg-white rounded-3xl p-5 md:p-8 shadow-sm border border-border">
               <div className="flex justify-between items-end mb-6">
-                <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wide">Productos</h2>
+                <h2 className="font-bold text-foreground text-sm uppercase tracking-wide">Productos</h2>
                 <span className="text-sm font-medium bg-primary/10 text-primary px-3 py-1 rounded-lg">
                   {itemCount} ítems
                 </span>
@@ -86,13 +86,13 @@ export default function CarritoPage() {
                     {i !== 0 && <div className="border-t border-gray-100 mb-4 md:mb-6" />}
                     <div className="flex justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-base text-gray-900 leading-tight">{item.product.name}</p>
+                        <p className="font-bold text-base text-foreground leading-tight">{item.product.name}</p>
                         <p className="text-sm text-muted-foreground mt-1">
                           {formatCurrency(item.product.price)} x {item.quantity} un.
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="font-heading font-bold text-lg text-gray-900">
+                        <p className="font-heading font-bold text-lg text-foreground">
                           {formatCurrency(item.product.price * item.quantity)}
                         </p>
                         <button
@@ -114,40 +114,26 @@ export default function CarritoPage() {
 
             {/* Distributor */}
             <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-border">
-              <h2 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wide">Distribuidor</h2>
+              <h2 className="font-bold text-foreground mb-4 text-sm uppercase tracking-wide">Distribuidor</h2>
               <div className="flex items-center justify-between cursor-pointer group">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 bg-gray-100 rounded-xl flex items-center justify-center font-bold text-gray-500 text-sm group-hover:bg-red-50 group-hover:text-primary transition-colors">
                     {distInitials}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 group-hover:text-primary transition-colors">
+                    <p className="font-bold text-foreground group-hover:text-primary transition-colors">
                       {cart.distribuidoraName}
                     </p>
                     <p className="text-sm text-muted-foreground mt-0.5">Llega el Jueves 24 Oct</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-primary transition-colors" />
-              </div>
-            </div>
-
-            {/* Payment */}
-            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-border">
-              <h2 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wide">Pago</h2>
-              <div className="flex items-center justify-between bg-blue-50 border border-blue-100 p-4 rounded-xl cursor-pointer hover:bg-blue-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-blue-500 rounded-lg flex items-center justify-center text-white">
-                    <CreditCard className="h-5 w-5" />
-                  </div>
-                  <p className="font-bold text-blue-900 text-base">Mercado Pago</p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-blue-400" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
             </div>
 
             {/* Summary */}
             <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-border md:sticky md:top-8">
-              <h2 className="hidden md:block font-bold text-gray-900 mb-6 text-sm uppercase tracking-wide">Resumen</h2>
+              <h2 className="hidden md:block font-bold text-foreground mb-6 text-sm uppercase tracking-wide">Resumen</h2>
               <div className="space-y-3 text-base">
                 <MinimumOrderProgress
                   total={total}
@@ -157,7 +143,7 @@ export default function CarritoPage() {
                 />
                 <div className="flex justify-between">
                   <span className="text-gray-500 font-medium">Subtotal ({itemCount} ítems)</span>
-                  <span className="font-bold text-gray-900">{formatCurrency(total)}</span>
+                  <span className="font-bold text-foreground">{formatCurrency(total)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500 font-medium">Envío</span>
@@ -165,7 +151,7 @@ export default function CarritoPage() {
                 </div>
                 <div className="border-t border-gray-100 my-4 pt-4" />
                 <div className="flex justify-between items-center mb-6">
-                  <span className="font-bold text-gray-900 text-lg">Total a pagar</span>
+                  <span className="font-bold text-foreground text-lg">Total a pagar</span>
                   <span className="font-heading font-bold text-2xl text-primary">{formatCurrency(total)}</span>
                 </div>
                 <LoadingButton
@@ -225,7 +211,7 @@ function MinimumOrderProgress({
     <div className={compact ? 'space-y-1.5' : 'rounded-2xl bg-gray-50 p-4 space-y-2'}>
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Pedido mínimo</span>
-        <span className="text-xs font-bold text-gray-900">
+        <span className="text-xs font-bold text-foreground">
           {formatCurrency(total)} / {formatCurrency(minOrder)}
         </span>
       </div>

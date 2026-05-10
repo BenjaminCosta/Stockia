@@ -34,7 +34,7 @@ export default function ComercioHomePage() {
         <div className="px-4 md:px-8 pt-4 pb-4 max-w-5xl mx-auto">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h1 className="font-heading font-bold text-xl md:text-3xl text-gray-900">
+              <h1 className="font-heading font-bold text-xl md:text-3xl text-foreground">
                 Buen día, {storeName}
               </h1>
               {currentLocation && (
@@ -59,7 +59,7 @@ export default function ComercioHomePage() {
 
           {/* Search */}
           <div className="relative max-w-2xl">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Buscar productos o distribuidoras..."
@@ -93,7 +93,7 @@ export default function ComercioHomePage() {
 
         {/* Categories */}
         <section className="mb-8 md:mb-12">
-          <h2 className="font-heading font-bold text-lg md:text-2xl text-gray-900 mb-4 md:mb-6">Categorías</h2>
+          <h2 className="font-heading font-bold text-lg md:text-2xl text-foreground mb-4 md:mb-6">Categorías</h2>
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
             {categories.map((category) => (
               <Link
@@ -113,7 +113,7 @@ export default function ComercioHomePage() {
         {/* Distributors */}
         <section>
           <div className="flex justify-between items-end mb-6">
-            <h2 className="font-heading font-bold text-lg md:text-2xl text-gray-900">Distribuidoras cercanas</h2>
+            <h2 className="font-heading font-bold text-lg md:text-2xl text-foreground">Distribuidoras cercanas</h2>
             <Link href="/comercio/buscar" className="text-sm md:text-base font-medium text-primary hover:underline flex items-center gap-1">
               Ver todas <ChevronRight className="h-4 w-4" />
             </Link>
@@ -131,7 +131,7 @@ export default function ComercioHomePage() {
                         {distributor.initials}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-heading font-bold text-gray-900 md:text-lg leading-tight group-hover:text-primary transition-colors">
+                        <h3 className="font-heading font-bold text-foreground md:text-lg leading-tight group-hover:text-primary transition-colors">
                           {distributor.companyName}
                         </h3>
                         <div className="flex items-center text-xs md:text-sm text-muted-foreground mt-1.5 gap-2">
@@ -149,11 +149,11 @@ export default function ComercioHomePage() {
                     <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-gray-100 grid grid-cols-2 gap-2 md:gap-4 text-xs md:text-sm">
                       <div>
                         <span className="text-muted-foreground block mb-1 uppercase tracking-wider text-[10px] md:text-xs font-bold">Mínimo</span>
-                        <span className="font-medium text-gray-900">{formatCurrency(distributor.minOrder)}</span>
+                        <span className="font-medium text-foreground">{formatCurrency(distributor.minOrder)}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground block mb-1 uppercase tracking-wider text-[10px] md:text-xs font-bold">Entrega</span>
-                        <span className="font-medium text-gray-900 flex items-center gap-1">
+                        <span className="font-medium text-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3 md:h-4 md:w-4" /> {distributor.deliveryInfo}
                         </span>
                       </div>

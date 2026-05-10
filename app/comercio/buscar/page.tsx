@@ -2,16 +2,19 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Search, MapPin, Star, Clock, ChevronRight } from 'lucide-react'
+import { Search, MapPin, Star, Clock, ChevronRight, ShoppingCart } from 'lucide-react'
 import { mockDistributorCards, categories, formatCurrency, mockProducts } from '@/lib/mock-data'
 import { CategoryIcon } from '@/components/category-icon'
 import { DistributorCardSkeleton } from '@/components/ui/SkeletonCard'
 import { useMockLoading } from '@/hooks/use-mock-loading'
+import { useApp } from '@/lib/app-context'
 
 export default function BuscarPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const isLoading = useMockLoading()
+  const { getCartItemCount } = useApp()
+  const cartItemCount = getCartItemCount()
 
   const filteredDistributors = mockDistributorCards.filter(d => {
     const distributorProducts = mockProducts.filter((product) => product.distribuidoraId === d.id)
@@ -27,11 +30,24 @@ export default function BuscarPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
         <div className="px-4 md:px-8 py-4 max-w-5xl mx-auto">
-          <h1 className="font-heading font-bold text-xl md:text-2xl text-gray-900 mb-4">Buscar</h1>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="font-heading font-bold text-xl md:text-2xl text-foreground">Buscar</h1>
+            <Link
+              href="/comercio/carrito"
+              className="hidden md:flex h-10 w-10 bg-gray-50 rounded-full items-center justify-center relative hover:bg-gray-100 transition-colors"
+            >
+              <ShoppingCart className="h-5 w-5 text-foreground" />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
+          </div>
 
           {/* Search */}
           <div className="relative max-w-2xl">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Buscar distribuidoras o productos..."
@@ -90,7 +106,7 @@ export default function BuscarPage() {
                         {distributor.initials}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-heading font-bold text-gray-900 md:text-lg leading-tight group-hover:text-primary transition-colors">
+                        <h3 className="font-heading font-bold text-foreground md:text-lg leading-tight group-hover:text-primary transition-colors">
                           {distributor.companyName}
                         </h3>
                         <div className="flex items-center text-xs md:text-sm text-muted-foreground mt-1.5 gap-2">
@@ -116,11 +132,11 @@ export default function BuscarPage() {
                     <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-2 text-xs md:text-sm">
                       <div>
                         <span className="text-muted-foreground block mb-1 uppercase tracking-wider text-[10px] font-bold">Mínimo</span>
-                        <span className="font-medium text-gray-900">{formatCurrency(distributor.minOrder)}</span>
+                        <span className="font-medium text-foreground">{formatCurrency(distributor.minOrder)}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground block mb-1 uppercase tracking-wider text-[10px] font-bold">Entrega</span>
-                        <span className="font-medium text-gray-900 flex items-center gap-1">
+                        <span className="font-medium text-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3" /> {distributor.deliveryInfo}
                         </span>
                       </div>

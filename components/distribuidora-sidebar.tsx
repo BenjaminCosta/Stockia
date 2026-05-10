@@ -29,14 +29,14 @@ export function DistribuidoraSidebar() {
   }
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 h-screen fixed left-0 top-0 bg-[#111827]">
+    <aside className="hidden lg:flex flex-col w-64 h-screen fixed left-0 top-0 bg-sidebar">
       {/* Logo */}
       <div className="p-6 border-b border-white/10">
         <Link href="/distribuidora" className="flex items-center gap-2.5">
           <StockiaLogo size={40} />
           <div>
             <span className="font-heading text-xl font-bold text-white">Stockia</span>
-            <p className="text-gray-400 text-xs mt-0.5">Portal Distribuidora</p>
+            <p className="text-sidebar-foreground/50 text-xs mt-0.5">Portal Distribuidora</p>
           </div>
         </Link>
       </div>
@@ -53,7 +53,7 @@ export function DistribuidoraSidebar() {
                 'flex items-center gap-3 px-4 py-3 rounded-md transition-colors',
                 isActive
                   ? 'bg-primary text-white font-medium'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  : 'text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground'
               )}
             >
               <Icon className="h-5 w-5" />
@@ -65,18 +65,18 @@ export function DistribuidoraSidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-white/10">
-        <div className="flex items-center gap-3 px-4 py-2 hover:bg-gray-800 rounded-md transition-colors mb-1">
+        <div className="flex items-center gap-3 px-4 py-2 hover:bg-sidebar-accent rounded-md transition-colors mb-1">
           <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center font-bold text-white text-xs shrink-0">
             {initials}
           </div>
           <div className="text-sm min-w-0">
             <p className="font-medium text-white truncate">{companyName}</p>
-            <p className="text-gray-400 text-xs">Admin</p>
+            <p className="text-sidebar-foreground/50 text-xs">Admin</p>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-2 w-full rounded-md text-gray-400 hover:bg-gray-800 hover:text-white transition-colors text-sm"
+          className="flex items-center gap-3 px-4 py-2 w-full rounded-md text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors text-sm"
         >
           <LogOut className="h-4 w-4" />
           <span>Cerrar sesión</span>

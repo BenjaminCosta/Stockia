@@ -4,7 +4,7 @@ import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Package, Clock, CheckCircle2, ChevronRight, CheckCircle } from 'lucide-react'
+import { Package, Clock, CheckCircle2, ChevronRight, CheckCircle, ShoppingCart } from 'lucide-react'
 import { StatusBadge } from '@/components/status-badge'
 import { mockOrders, formatCurrency } from '@/lib/mock-data'
 import { useApp } from '@/lib/app-context'
@@ -34,12 +34,13 @@ const getStatusIcon = (status: OrderStatus) => {
 function PedidosContent() {
   const searchParams = useSearchParams()
   const showSuccess = searchParams.get('success') === 'true'
-  const { currentUser } = useApp()
+  const { currentUser, getCartItemCount } = useApp()
   const isLoading = useMockLoading()
   const [activeTab, setActiveTab] = useState<'Activos' | 'Historial'>('Activos')
 
   const comercio = currentUser as Comercio | null
   const orders = mockOrders.filter(o => o.comercioId === (comercio?.id || 'com-1'))
+  const cartItemCount = getCartItemCount()
 
   const filtered = orders.filter(o =>
     activeTab === 'Activos' ? o.status !== 'entregado' : o.status === 'entregado'
@@ -52,17 +53,30 @@ function PedidosContent() {
       {/* Header with tabs */}
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
         <div className="px-4 md:px-8 pt-6 pb-0 max-w-5xl mx-auto">
-          <h1 className="font-heading font-bold text-2xl md:text-3xl text-gray-900 mb-4 md:mb-6">Mis pedidos</h1>
+          <div className="flex justify-between items-center">
+            <h1 className="font-heading font-bold text-2xl md:text-3xl text-foreground mb-4 md:mb-6">Mis pedidos</h1>
+            <Link
+              href="/comercio/carrito"
+              className="hidden md:flex h-10 w-10 bg-gray-50 rounded-full items-center justify-center relative hover:bg-gray-100 transition-colors mb-4"
+            >
+              <ShoppingCart className="h-5 w-5 text-foreground" />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
+          </div>
           <div className="flex space-x-6 border-b border-gray-200">
             <button
-              className={`pb-3 text-sm md:text-base font-bold transition-colors relative ${activeTab === 'Activos' ? 'text-primary' : 'text-gray-500 hover:text-gray-900'}`}
+              className={`pb-3 text-sm md:text-base font-bold transition-colors relative ${activeTab === 'Activos' ? 'text-primary' : 'text-gray-500 hover:text-foreground'}`}
               onClick={() => setActiveTab('Activos')}
             >
               Activos ({activeCount})
               {activeTab === 'Activos' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full" />}
             </button>
             <button
-              className={`pb-3 text-sm md:text-base font-bold transition-colors relative ${activeTab === 'Historial' ? 'text-primary' : 'text-gray-500 hover:text-gray-900'}`}
+              className={`pb-3 text-sm md:text-base font-bold transition-colors relative ${activeTab === 'Historial' ? 'text-primary' : 'text-gray-500 hover:text-foreground'}`}
               onClick={() => setActiveTab('Historial')}
             >
               Historial
@@ -89,7 +103,7 @@ function PedidosContent() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-3xl border border-gray-100">
             <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="font-heading font-bold text-gray-900 text-lg">No hay pedidos</h3>
+            <h3 className="font-heading font-bold text-foreground text-lg">No hay pedidos</h3>
             <p className="text-muted-foreground mt-1">No tenés pedidos en esta sección.</p>
             {activeTab === 'Activos' && (
               <Link href="/comercio" className="mt-6 inline-block">
@@ -116,7 +130,7 @@ function PedidosContent() {
                     <div className="h-10 w-10 md:h-12 md:w-12 bg-gray-100 rounded-xl flex items-center justify-center font-bold text-gray-500 text-sm md:text-base group-hover:bg-red-50 group-hover:text-primary transition-colors">
                       {order.distribuidoraName.split(' ').map(w => w[0]).join('').slice(0, 2)}
                     </div>
-                    <h3 className="font-bold text-gray-900 text-base md:text-lg group-hover:text-primary transition-colors leading-tight">
+                    <h3 className="font-bold text-foreground text-base md:text-lg group-hover:text-primary transition-colors leading-tight">
                       {order.distribuidoraName}
                     </h3>
                   </div>
@@ -124,12 +138,12 @@ function PedidosContent() {
                   <div className="flex justify-between items-end mt-auto pt-4 border-t border-gray-100">
                     <div className="text-sm text-gray-500">
                       <span className="block font-medium">{order.items.length} ítems</span>
-                      <span className="block text-xs mt-1 text-gray-400">
+                      <span className="block text-xs mt-1 text-muted-foreground">
                         {new Date(order.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     </div>
                     <div className="text-right flex items-center gap-2">
-                      <span className="font-heading font-bold text-xl md:text-2xl text-gray-900">{formatCurrency(order.total)}</span>
+                      <span className="font-heading font-bold text-xl md:text-2xl text-foreground">{formatCurrency(order.total)}</span>
                       <ChevronRight className="h-5 w-5 text-gray-300 group-hover:text-primary transition-colors" />
                     </div>
                   </div>

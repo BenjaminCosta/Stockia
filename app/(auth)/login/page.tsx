@@ -46,7 +46,7 @@ export default function LoginPage() {
         }}
       >
         {/* Dark overlay */}
-        <div className="absolute inset-0 bg-[#111827]/85" />
+        <div className="absolute inset-0 bg-sidebar/85" />
         <div className="absolute inset-0 opacity-[0.06]">
           <div className="absolute -left-20 top-24 h-64 w-64 rounded-full border border-white" />
           <div className="absolute right-10 top-20 h-28 w-28 rotate-12 rounded-3xl border border-white" />
@@ -87,7 +87,7 @@ export default function LoginPage() {
           }}
         >
           {/* Dark overlay */}
-          <div className="absolute inset-0 bg-[#111827]/82" />
+          <div className="absolute inset-0 bg-sidebar/82" />
           <div className="absolute inset-0 opacity-[0.07]">
             <div className="absolute -left-8 top-10 h-28 w-28 rounded-full border border-white" />
             <div className="absolute right-8 top-16 h-20 w-20 rotate-12 rounded-2xl border border-white" />
@@ -103,7 +103,7 @@ export default function LoginPage() {
 
         <div className="auth-form-enter w-full max-w-md -mt-10 px-4 pb-8 md:mt-0 md:px-0 md:pb-0">
           <div className="rounded-[24px] border border-border bg-white p-6 shadow-[0_18px_50px_rgba(17,24,39,0.06)] md:p-8">
-            <h2 className="hidden md:block font-heading text-3xl font-bold text-gray-900 mb-8">
+            <h2 className="hidden md:block font-heading text-3xl font-bold text-foreground mb-8">
               Iniciar sesión
             </h2>
 

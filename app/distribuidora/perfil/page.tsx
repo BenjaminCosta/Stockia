@@ -51,7 +51,7 @@ export default function PerfilDistribuidoraPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Dark hero header */}
-      <div className="bg-[#111827] pt-8 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-b-3xl md:mt-4 md:mx-4 overflow-hidden shadow-lg">
+      <div className="bg-sidebar pt-8 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-b-3xl md:mt-4 md:mx-4 overflow-hidden shadow-lg">
         <svg className="absolute inset-0 w-full h-full opacity-[0.06]" xmlns="http://www.w3.org/2000/svg">
           <circle cx="88%" cy="25%" r="90" fill="none" stroke="white" strokeWidth="5" />
           <rect x="3%" y="60%" width="80" height="80" fill="none" stroke="white" strokeWidth="4" transform="rotate(20)" />
@@ -88,7 +88,7 @@ export default function PerfilDistribuidoraPage() {
                     <TrendingUp className="h-4 w-4 text-green-500" />
                   </div>
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 md:mb-0 text-center md:text-left">Ventas</p>
-                  <p className="font-heading font-bold text-xl md:text-2xl text-gray-900 text-center md:text-left">
+                  <p className="font-heading font-bold text-xl md:text-2xl text-foreground text-center md:text-left">
                     ${todaySales.toLocaleString('es-AR')}
                   </p>
                 </div>
@@ -97,14 +97,14 @@ export default function PerfilDistribuidoraPage() {
                     <Package className="h-4 w-4 text-primary" />
                   </div>
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 md:mb-0 text-center md:text-left">Productos</p>
-                  <p className="font-heading font-bold text-xl md:text-2xl text-gray-900 text-center md:text-left">{products.length}</p>
+                  <p className="font-heading font-bold text-xl md:text-2xl text-foreground text-center md:text-left">{products.length}</p>
                 </div>
                 <div className="pl-4 md:pl-0 md:pt-4 flex flex-col md:flex-row md:justify-between md:items-center">
                   <div className="flex items-center justify-center gap-1 mb-1 md:hidden">
                     <Users className="h-4 w-4 text-blue-500" />
                   </div>
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 md:mb-0 text-center md:text-left">Clientes</p>
-                  <p className="font-heading font-bold text-xl md:text-2xl text-gray-900 text-center md:text-left">{orders.length}</p>
+                  <p className="font-heading font-bold text-xl md:text-2xl text-foreground text-center md:text-left">{orders.length}</p>
                 </div>
               </div>
             </div>
@@ -116,10 +116,10 @@ export default function PerfilDistribuidoraPage() {
                   <Shield className="h-5 w-5 text-gray-500" />
                 </div>
                 <div className="flex-1">
-                  <span className="block font-bold text-sm text-gray-900">Seguridad</span>
+                  <span className="block font-bold text-sm text-foreground">Seguridad</span>
                   <span className="block text-xs text-muted-foreground mt-0.5">Contraseña y acceso</span>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
               <button
                 onClick={handleLogout}
@@ -137,7 +137,7 @@ export default function PerfilDistribuidoraPage() {
           <div className="md:col-span-8 space-y-6">
             {/* Company info */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-6">Datos de la empresa</h2>
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Datos de la empresa</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {infoFields.map((item, i) => (
                   <div key={i} className="flex items-start gap-4 p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
@@ -146,7 +146,7 @@ export default function PerfilDistribuidoraPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">{item.label}</p>
-                      <p className="font-bold text-sm text-gray-900 truncate" title={item.value}>{item.value}</p>
+                      <p className="font-bold text-sm text-foreground truncate" title={item.value}>{item.value}</p>
                     </div>
                   </div>
                 ))}
@@ -155,7 +155,7 @@ export default function PerfilDistribuidoraPage() {
 
             {/* Operational config */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-6">Configuración operativa</h2>
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Configuración operativa</h2>
               <div className="space-y-4">
                 {configFields.map((item, i) => (
                   <div
@@ -164,8 +164,8 @@ export default function PerfilDistribuidoraPage() {
                   >
                     <p className="text-sm font-bold text-gray-500">{item.label}</p>
                     <div className="flex items-center gap-2 md:justify-end">
-                      <p className="font-bold text-sm text-gray-900">{item.value}</p>
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                      <p className="font-bold text-sm text-foreground">{item.value}</p>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
                 ))}
@@ -174,7 +174,7 @@ export default function PerfilDistribuidoraPage() {
 
             {/* Notifications */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-6">Notificaciones</h2>
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Notificaciones</h2>
               <div className="space-y-6">
                 {notifications.map((item, i) => (
                   <div
@@ -186,7 +186,7 @@ export default function PerfilDistribuidoraPage() {
                         <Bell className="h-5 w-5 text-gray-500" />
                       </div>
                       <div>
-                        <p className="font-bold text-base text-gray-900">{item.label}</p>
+                        <p className="font-bold text-base text-foreground">{item.label}</p>
                         <p className="text-sm text-muted-foreground mt-1 max-w-md">{item.sub}</p>
                       </div>
                     </div>

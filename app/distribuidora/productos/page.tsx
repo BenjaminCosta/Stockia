@@ -30,11 +30,11 @@ export default function ProductosPage() {
       {/* Page header */}
       <header className="sticky top-0 md:top-0 z-20 bg-white border-b border-border px-4 md:px-8 pt-5 md:pt-6 pb-0">
         <div className="max-w-5xl mx-auto">
-          <h1 className="font-heading font-bold text-2xl text-gray-900 mb-4 md:mb-6">Catálogo de Productos</h1>
+          <h1 className="font-heading font-bold text-2xl text-foreground mb-4 md:mb-6">Catálogo de Productos</h1>
 
           <div className="flex gap-2 pb-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+              <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Buscar productos..."
@@ -101,7 +101,7 @@ export default function ProductosPage() {
                         </div>
                         <div>
                           <div className="text-xs font-bold text-gray-500 md:hidden uppercase tracking-wider mb-0.5">{product.category}</div>
-                          <div className="font-bold text-gray-900 text-base md:text-sm leading-tight">{product.name}</div>
+                          <div className="font-bold text-foreground text-base md:text-sm leading-tight">{product.name}</div>
                         </div>
                       </div>
                       <div className="md:hidden">
@@ -122,14 +122,14 @@ export default function ProductosPage() {
                   {/* Price */}
                   <div className="col-span-2 mb-3 md:mb-0 flex md:block justify-between items-center bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none">
                     <span className="md:hidden text-xs font-bold text-gray-500 uppercase tracking-wider">Precio</span>
-                    <div className="font-heading font-bold text-lg md:text-base text-gray-900">{formatCurrency(product.price)}</div>
+                    <div className="font-heading font-bold text-lg md:text-base text-foreground">{formatCurrency(product.price)}</div>
                   </div>
 
                   {/* Stock */}
                   <div className="col-span-2 mb-4 md:mb-0 flex md:block justify-between items-center bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none">
                     <span className="md:hidden text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</span>
                     <div className="text-right md:text-left">
-                      <div className="text-base md:text-sm font-bold text-gray-900">{product.stock} un.</div>
+                      <div className="text-base md:text-sm font-bold text-foreground">{product.stock} un.</div>
                       <div className={`text-[10px] font-bold mt-0.5 uppercase tracking-wide ${
                         product.stock > 10 ? 'text-green-600' : product.stock > 0 ? 'text-amber-600' : 'text-red-600'
                       }`}>

@@ -122,7 +122,7 @@ export default function RegistroPage() {
         }}
       >
         {/* Dark overlay */}
-        <div className="absolute inset-0 bg-[#111827]/90" />
+        <div className="absolute inset-0 bg-sidebar/90" />
         <div className="absolute inset-0 opacity-[0.07]">
           <div className="absolute -left-10 top-16 h-28 w-28 rounded-3xl border border-white rotate-12" />
           <div className="absolute right-8 top-20 h-20 w-20 rounded-full border border-white" />
@@ -258,7 +258,7 @@ function DesktopStepper({ currentStep }: { currentStep: OnboardingStep }) {
                 isDone
                   ? 'bg-primary text-primary-foreground'
                   : isActive
-                    ? 'bg-white text-[#111827] ring-2 ring-white ring-offset-2 ring-offset-[#111827]'
+                    ? 'bg-white text-sidebar ring-2 ring-white ring-offset-2 ring-offset-sidebar'
                     : 'bg-white/10 text-white/55'
               }`}
             >

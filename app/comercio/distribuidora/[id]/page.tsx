@@ -95,7 +95,7 @@ export default function DistribuidoraCatalogPage({
       <div className="md:flex max-w-7xl mx-auto items-start md:p-6 gap-8">
         <div className="flex-1">
           {/* Dark hero header */}
-          <div className="bg-[#111827] text-white pt-6 pb-8 md:pb-12 px-4 md:px-8 md:rounded-3xl rounded-b-3xl relative overflow-hidden">
+          <div className="bg-sidebar text-white pt-6 pb-8 md:pb-12 px-4 md:px-8 md:rounded-3xl rounded-b-3xl relative overflow-hidden">
             <svg className="absolute right-0 top-0 h-full opacity-[0.05]" xmlns="http://www.w3.org/2000/svg">
               <circle cx="100%" cy="0" r="40%" fill="none" stroke="white" strokeWidth="40" />
             </svg>
@@ -130,7 +130,7 @@ export default function DistribuidoraCatalogPage({
                 <Info className="h-5 w-5" />
               </div>
               <p className="text-gray-600">
-                Haciendo pedido hoy, recibís el <span className="font-bold text-gray-900 text-base">Jueves</span>
+                Haciendo pedido hoy, recibís el <span className="font-bold text-foreground text-base">Jueves</span>
               </p>
             </div>
           </div>
@@ -158,7 +158,7 @@ export default function DistribuidoraCatalogPage({
             {/* Search */}
             <div className="px-4 md:px-0 mt-4 md:mt-6">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Buscar productos por nombre, marca o código..."
@@ -204,7 +204,7 @@ export default function DistribuidoraCatalogPage({
                               </span>
                             </div>
                             <Link href={`/comercio/producto/${product.id}`} className="hover:text-primary transition-colors">
-                              <h3 className="font-bold text-gray-900 text-base md:text-lg leading-tight">{product.name}</h3>
+                              <h3 className="font-bold text-foreground text-base md:text-lg leading-tight">{product.name}</h3>
                             </Link>
                           </div>
                           <div className="text-right shrink-0">
@@ -215,7 +215,7 @@ export default function DistribuidoraCatalogPage({
                         </div>
 
                         <div className="flex justify-between items-center mt-auto pt-4 border-t border-gray-50">
-                          <Link href={`/comercio/producto/${product.id}`} className="text-xs font-bold text-gray-500 hover:text-gray-900 underline">
+                          <Link href={`/comercio/producto/${product.id}`} className="text-xs font-bold text-gray-500 hover:text-foreground underline">
                             Ver detalle
                           </Link>
                           {qty > 0 ? (
@@ -229,7 +229,7 @@ export default function DistribuidoraCatalogPage({
                               <div className="flex items-center bg-gray-100 rounded-xl h-10 md:h-12 overflow-hidden shadow-inner">
                                 <button
                                   onClick={() => handleDecrement(product.id)}
-                                  className="w-10 md:w-12 h-full flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-colors"
+                                  className="w-10 md:w-12 h-full flex items-center justify-center text-gray-600 hover:text-foreground hover:bg-gray-200 transition-colors"
                                 >
                                   <Minus className="h-4 w-4 md:h-5 md:w-5" />
                                 </button>
@@ -250,7 +250,7 @@ export default function DistribuidoraCatalogPage({
                               disabled={product.stock === 0}
                               className={`px-6 md:px-8 h-10 md:h-12 rounded-xl text-sm md:text-base font-bold transition-all shadow-sm ${
                                 product.stock === 0
-                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  ? 'bg-gray-100 text-muted-foreground cursor-not-allowed'
                                   : 'bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white'
                               }`}
                             >
@@ -272,7 +272,7 @@ export default function DistribuidoraCatalogPage({
           <div className="hidden md:block w-[360px] shrink-0 sticky top-8">
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
               <div className="bg-gray-50 p-6 border-b border-gray-100 flex justify-between items-center">
-                <h2 className="font-heading font-bold text-xl text-gray-900">Tu Pedido</h2>
+                <h2 className="font-heading font-bold text-xl text-foreground">Tu Pedido</h2>
                 <span className="bg-primary/10 text-primary font-bold px-3 py-1 rounded-lg text-sm">
                   {totalItems} ítems
                 </span>
@@ -285,10 +285,10 @@ export default function DistribuidoraCatalogPage({
                     return (
                       <div key={pId} className="flex justify-between items-start gap-4 text-sm">
                         <div className="flex-1">
-                          <p className="font-bold text-gray-900 leading-tight">{p.name}</p>
+                          <p className="font-bold text-foreground leading-tight">{p.name}</p>
                           <p className="text-muted-foreground mt-1">{formatCurrency(p.price)} x {qty}</p>
                         </div>
-                        <div className="font-heading font-bold text-gray-900 shrink-0">
+                        <div className="font-heading font-bold text-foreground shrink-0">
                           {formatCurrency(p.price * qty)}
                         </div>
                       </div>
@@ -300,7 +300,7 @@ export default function DistribuidoraCatalogPage({
                     <span>Subtotal</span>
                     <span className="font-medium">{formatCurrency(totalAmount)}</span>
                   </div>
-                  <div className="flex justify-between font-bold text-xl text-gray-900 pt-2 border-t border-gray-100 mt-2">
+                  <div className="flex justify-between font-bold text-xl text-foreground pt-2 border-t border-gray-100 mt-2">
                     <span>Total</span>
                     <span className="font-heading text-primary">{formatCurrency(totalAmount)}</span>
                   </div>

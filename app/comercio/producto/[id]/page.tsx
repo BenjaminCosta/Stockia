@@ -56,7 +56,7 @@ export default function ProductoDetailPage({
       <div className="max-w-6xl mx-auto md:p-8">
 
         {/* Dark hero header */}
-        <div className="bg-[#111827] pt-6 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-3xl md:mt-4 overflow-hidden">
+        <div className="bg-sidebar pt-6 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-3xl md:mt-4 overflow-hidden">
           <svg className="absolute inset-0 w-full h-full opacity-[0.05]" xmlns="http://www.w3.org/2000/svg">
             <circle cx="90%" cy="10%" r="50%" fill="none" stroke="white" strokeWidth="20" />
           </svg>
@@ -107,7 +107,7 @@ export default function ProductoDetailPage({
                     <div className="h-6 w-6 rounded bg-gray-200 flex items-center justify-center text-[10px] font-bold shrink-0">
                       {distInitials}
                     </div>
-                    <p className="font-bold text-gray-900 leading-tight text-sm">{distribuidora.companyName}</p>
+                    <p className="font-bold text-foreground leading-tight text-sm">{distribuidora.companyName}</p>
                   </div>
                 </div>
                 <div className="bg-gray-50 rounded-2xl p-4 md:p-5">
@@ -116,7 +116,7 @@ export default function ProductoDetailPage({
                     <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${stockColor}`}>
                       {stockLabel}
                     </span>
-                    <p className="font-bold text-gray-900">{product.stock} un.</p>
+                    <p className="font-bold text-foreground">{product.stock} un.</p>
                   </div>
                 </div>
               </div>
@@ -124,15 +124,15 @@ export default function ProductoDetailPage({
 
             {/* Product info list */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-heading font-bold text-xl text-gray-900 mb-6">Información del producto</h2>
+              <h2 className="font-heading font-bold text-xl text-foreground mb-6">Información del producto</h2>
               <div className="space-y-4 md:space-y-5 text-sm md:text-base">
                 <div className="flex justify-between items-center py-3 border-b border-gray-50">
                   <span className="text-muted-foreground font-medium">Categoría</span>
-                  <span className="font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg">{product.category}</span>
+                  <span className="font-bold text-foreground bg-gray-100 px-3 py-1 rounded-lg">{product.category}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-50">
                   <span className="text-muted-foreground font-medium">Unidad de venta</span>
-                  <span className="font-bold text-gray-900">Por unidad</span>
+                  <span className="font-bold text-foreground">Por unidad</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-50">
                   <span className="text-muted-foreground font-medium">Entrega estimada</span>
@@ -142,7 +142,7 @@ export default function ProductoDetailPage({
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-muted-foreground font-medium">Pedido mínimo del distribuidor</span>
-                  <span className="font-bold text-gray-900">{formatCurrency(distribuidora.minOrder || 15000)}</span>
+                  <span className="font-bold text-foreground">{formatCurrency(distribuidora.minOrder || 15000)}</span>
                 </div>
               </div>
             </div>
@@ -172,14 +172,14 @@ export default function ProductoDetailPage({
 
             {/* Agregar al pedido (desktop only) */}
             <div className="hidden md:block bg-white rounded-3xl shadow-xl border border-gray-200 p-6 sticky top-8">
-              <h2 className="font-heading font-bold text-xl text-gray-900 mb-6">Agregar al pedido</h2>
+              <h2 className="font-heading font-bold text-xl text-foreground mb-6">Agregar al pedido</h2>
 
               <div className="mb-6">
                 <p className="text-sm font-bold text-gray-500 mb-3">Cantidad</p>
                 <div className="flex items-center bg-gray-50 border border-gray-200 rounded-2xl h-14 overflow-hidden">
                   <button
                     onClick={() => setQty(q => Math.max(1, q - 1))}
-                    className="w-14 h-full flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                    className="w-14 h-full flex items-center justify-center text-gray-600 hover:text-foreground hover:bg-gray-100 transition-colors"
                   >
                     <Minus className="h-5 w-5" />
                   </button>
@@ -198,7 +198,7 @@ export default function ProductoDetailPage({
 
               <div className="flex justify-between items-center mb-6 pt-6 border-t border-gray-100">
                 <span className="font-medium text-gray-500">Total</span>
-                <span className="font-heading font-bold text-3xl text-gray-900">
+                <span className="font-heading font-bold text-3xl text-foreground">
                   {formatCurrency(product.price * qty)}
                 </span>
               </div>
@@ -220,10 +220,10 @@ export default function ProductoDetailPage({
 
             {/* Reviews */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6">
-              <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-4">Calificaciones</h2>
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-4">Calificaciones</h2>
               <div className="flex items-center gap-4">
                 <div className="text-center bg-gray-50 rounded-2xl p-4 min-w-[100px]">
-                  <p className="font-heading font-bold text-4xl text-gray-900">4.8</p>
+                  <p className="font-heading font-bold text-4xl text-foreground">4.8</p>
                   <div className="flex gap-1 justify-center mt-2">
                     {[1, 2, 3, 4, 5].map(s => (
                       <Star key={s} className={`h-3 w-3 ${s <= 4 ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`} />
@@ -257,7 +257,7 @@ export default function ProductoDetailPage({
           <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl h-14 overflow-hidden shrink-0">
             <button
               onClick={() => setQty(q => Math.max(1, q - 1))}
-              className="w-12 h-full flex items-center justify-center text-gray-600 hover:text-gray-900"
+              className="w-12 h-full flex items-center justify-center text-gray-600 hover:text-foreground"
             >
               <Minus className="h-5 w-5" />
             </button>

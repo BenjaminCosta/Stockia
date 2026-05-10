@@ -40,7 +40,7 @@ export default function CheckoutPage() {
         <div className="h-20 w-20 md:h-24 md:w-24 rounded-full bg-green-100 flex items-center justify-center mb-6">
           <CheckCircle className="h-10 w-10 md:h-12 md:w-12 text-green-600" />
         </div>
-        <h1 className="font-heading font-bold text-2xl md:text-3xl text-gray-900 mb-2 md:mb-4">¡Pedido confirmado!</h1>
+        <h1 className="font-heading font-bold text-2xl md:text-3xl text-foreground mb-2 md:mb-4">¡Pedido confirmado!</h1>
         <p className="text-muted-foreground mb-4 md:text-lg">Tu pago fue procesado correctamente.</p>
         <p className="text-sm md:text-base text-gray-500">Redirigiendo a tus pedidos...</p>
       </div>
@@ -56,7 +56,7 @@ export default function CheckoutPage() {
           <Link href="/comercio/carrito" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="font-heading font-bold text-xl md:text-3xl text-gray-900">Confirmar pago</h1>
+          <h1 className="font-heading font-bold text-xl md:text-3xl text-foreground">Confirmar pago</h1>
           <div className="ml-auto flex items-center gap-1.5 text-xs md:text-sm font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-full">
             <Lock className="h-3.5 w-3.5" /> Pago seguro
           </div>
@@ -70,13 +70,13 @@ export default function CheckoutPage() {
 
             {/* Delivery address */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-6">Dirección de entrega</h2>
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Dirección de entrega</h2>
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 bg-red-50 text-primary rounded-2xl flex items-center justify-center shrink-0">
                   <MapPin className="h-6 w-6" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold text-gray-900 text-base md:text-lg">{comercio?.storeName || 'Mi comercio'}</p>
+                  <p className="font-bold text-foreground text-base md:text-lg">{comercio?.storeName || 'Mi comercio'}</p>
                   <p className="text-sm md:text-base text-muted-foreground mt-1">
                     {comercio?.address || 'Av. Mitre 1234, Avellaneda'}
                   </p>
@@ -88,13 +88,13 @@ export default function CheckoutPage() {
 
             {/* Estimated delivery */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-6">Entrega estimada</h2>
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Entrega estimada</h2>
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
                   <Clock className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 text-base md:text-lg">Jueves 24 de octubre</p>
+                  <p className="font-bold text-foreground text-base md:text-lg">Jueves 24 de octubre</p>
                   <p className="text-sm md:text-base text-muted-foreground mt-1">
                     {cart.distribuidoraName} • 48hs hábiles
                   </p>
@@ -104,7 +104,7 @@ export default function CheckoutPage() {
 
             {/* Payment method */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-6">Método de pago</h2>
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Método de pago</h2>
               <div className="space-y-4">
                 <button
                   onClick={() => setPaymentMethod('mp')}
@@ -116,7 +116,7 @@ export default function CheckoutPage() {
                     <CreditCard className="h-6 w-6" />
                   </div>
                   <div className="text-left flex-1">
-                    <p className="font-bold text-gray-900 text-base">Mercado Pago</p>
+                    <p className="font-bold text-foreground text-base">Mercado Pago</p>
                     <p className="text-sm text-muted-foreground mt-0.5">Pagá con saldo, tarjeta o QR</p>
                   </div>
                   <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === 'mp' ? 'border-primary' : 'border-gray-300'}`}>
@@ -134,7 +134,7 @@ export default function CheckoutPage() {
                     <ChevronRight className="h-6 w-6" />
                   </div>
                   <div className="text-left flex-1">
-                    <p className="font-bold text-gray-900 text-base">Transferencia bancaria</p>
+                    <p className="font-bold text-foreground text-base">Transferencia bancaria</p>
                     <p className="text-sm text-muted-foreground mt-0.5">CBU / CVU del distribuidor</p>
                   </div>
                   <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === 'transferencia' ? 'border-primary' : 'border-gray-300'}`}>
@@ -148,7 +148,7 @@ export default function CheckoutPage() {
           {/* Right column — order summary */}
           <div className="md:col-span-5">
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8 md:sticky md:top-8">
-              <h2 className="font-bold text-gray-900 text-sm uppercase tracking-wider mb-6">Resumen del pedido</h2>
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Resumen del pedido</h2>
               <div className="space-y-3 text-sm md:text-base">
                 {cart.items.map(item => (
                   <div key={item.product.id} className="flex justify-between items-start gap-4">
@@ -167,7 +167,7 @@ export default function CheckoutPage() {
                     <span className="text-green-600 font-bold">Gratis</span>
                   </div>
                   <div className="flex justify-between items-center pt-4 border-t border-gray-100 mt-2">
-                    <span className="font-bold text-gray-900 text-lg">Total</span>
+                    <span className="font-bold text-foreground text-lg">Total</span>
                     <span className="font-heading font-bold text-2xl text-primary">{formatCurrency(total)}</span>
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export default function CheckoutPage() {
                   Confirmar y pagar {formatCurrency(total)}
                 </button>
                 <p className="text-center text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1.5 font-medium">
-                  <Lock className="h-3.5 w-3.5 text-gray-400" /> Tu información está cifrada y protegida
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" /> Tu información está cifrada y protegida
                 </p>
               </div>
             </div>
@@ -193,7 +193,7 @@ export default function CheckoutPage() {
       {/* Mobile fixed bottom bar */}
       <div className="md:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 pb-safe shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
         <p className="text-center text-xs text-muted-foreground mb-3 flex items-center justify-center gap-1.5 font-medium">
-          <Lock className="h-3 w-3 text-gray-400" /> Tu información está cifrada y protegida
+          <Lock className="h-3 w-3 text-muted-foreground" /> Tu información está cifrada y protegida
         </p>
         <button
           onClick={handlePagar}
