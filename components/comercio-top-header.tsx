@@ -95,9 +95,6 @@ export function ComercioTopHeader() {
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-white md:h-10 md:w-10">
               {initials}
             </div>
-            <span className="hidden max-w-28 truncate text-sm font-semibold text-foreground xl:block">
-              {storeName}
-            </span>
           </Link>
         </div>
       </div>

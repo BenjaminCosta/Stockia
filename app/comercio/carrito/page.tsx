@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { ArrowLeft, Trash2, ChevronRight, ShoppingBag } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency, mockDistributorCards } from '@/lib/mock-data'
-import { Button } from '@/components/ui/button'
 import { LoadingButton } from '@/components/ui/LoadingButton'
 
 export default function CarritoPage() {
@@ -16,21 +15,26 @@ export default function CarritoPage() {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="bg-white px-4 md:px-8 py-4 md:py-0 md:mb-8 sticky top-0 md:static z-30 shadow-sm md:shadow-none flex items-center gap-4">
-          <Link href="/comercio" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors">
+      <div className="bg-background">
+        <div className="bg-white px-4 md:px-8 py-4 sticky top-16 md:top-20 z-30 border-b border-gray-100 flex items-center gap-4">
+          <Link href="/comercio" className="h-9 w-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="font-heading font-bold text-xl md:text-3xl text-foreground">Tu Pedido</h1>
+          <h1 className="font-heading font-bold text-xl text-foreground">Tu Pedido</h1>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
-          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
-            <ShoppingBag className="h-10 w-10 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center gap-6 px-6 py-24 text-center">
+          <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
+            <ShoppingBag className="h-9 w-9 text-gray-400" />
           </div>
-          <h2 className="font-heading font-bold text-xl text-foreground">Tu carrito está vacío</h2>
-          <p className="text-muted-foreground mt-2">Explorá las distribuidoras y agregá productos</p>
-          <Link href="/comercio" className="mt-6">
-            <Button>Explorar distribuidoras</Button>
+          <div>
+            <h2 className="font-heading font-bold text-xl text-foreground">Tu carrito está vacío</h2>
+            <p className="text-muted-foreground mt-2 text-sm max-w-[260px]">Explorá las distribuidoras y sumá productos para armar tu pedido</p>
+          </div>
+          <Link
+            href="/comercio"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-red-700 transition-colors"
+          >
+            Explorar distribuidoras
           </Link>
         </div>
       </div>

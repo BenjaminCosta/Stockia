@@ -36,77 +36,67 @@ function DistribuidoraCard({
 
   return (
     <Link href={`/comercio/distribuidora/${distributor.id}`} className="group block">
-      <article className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-[0_12px_38px_rgba(24,29,37,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-[0_20px_48px_rgba(24,29,37,0.12)]">
-        <div className={cn('relative h-24 overflow-hidden bg-gradient-to-br', cover)}>
+      <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md md:rounded-3xl md:shadow-[0_12px_38px_rgba(24,29,37,0.07)] md:hover:shadow-[0_20px_48px_rgba(24,29,37,0.12)]">
+        <div className={cn('relative h-16 md:h-24 overflow-hidden bg-gradient-to-br', cover)}>
           <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(135deg,rgba(255,255,255,.18)_1px,transparent_1px),linear-gradient(45deg,rgba(255,255,255,.12)_1px,transparent_1px)] [background-size:22px_22px,34px_34px]" />
-          <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10 blur-sm" />
-          <div className="absolute bottom-4 right-5 flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur-md">
-            <Truck className="h-3.5 w-3.5" />
+          <div className="absolute -right-6 -top-8 h-20 w-20 rounded-full bg-white/10 blur-sm md:-right-8 md:-top-10 md:h-28 md:w-28" />
+          <div className="absolute bottom-2 right-4 flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-md md:bottom-4 md:right-5 md:px-3 md:py-1 md:text-[11px]">
+            <Truck className="h-3 w-3 md:h-3.5 md:w-3.5" />
             {badge}
           </div>
         </div>
 
-        <div className="relative px-5 pb-5">
-          <div className="absolute -top-10 left-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-gray-200 bg-white p-1 shadow-lg">
-            <div className="flex h-full w-full items-center justify-center rounded-xl bg-red-50 font-heading text-xl font-bold text-primary">
+        <div className="relative px-3 pb-3 md:px-5 md:pb-5">
+          <div className="absolute -top-6 left-3 flex h-12 w-12 items-center justify-center rounded-xl border border-gray-200 bg-white p-0.5 shadow-md md:-top-10 md:left-5 md:h-20 md:w-20 md:rounded-2xl md:p-1 md:shadow-lg">
+            <div className="flex h-full w-full items-center justify-center rounded-lg bg-red-50 font-heading text-sm font-bold text-primary md:rounded-xl md:text-xl">
               {distributor.initials}
             </div>
           </div>
 
-          <div className="flex items-start justify-between gap-3 pt-12">
+          <div className="flex items-center justify-between gap-2 pt-8 md:pt-12">
             <div className="min-w-0">
-              <h3 className="truncate font-heading text-lg font-bold text-foreground transition-colors group-hover:text-primary">
+              <h3 className="truncate font-heading text-sm font-bold text-foreground transition-colors group-hover:text-primary md:text-lg">
                 {distributor.companyName}
               </h3>
-              <p className="mt-1 truncate text-sm text-muted-foreground">
+              <p className="truncate text-[11px] text-muted-foreground md:mt-0.5 md:text-sm">
                 {distributor.categories.join(' · ')}
               </p>
             </div>
-            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700">
+            <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
               Abierto
             </span>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] md:mt-4 md:gap-3 md:text-sm">
             <span className="flex items-center gap-1 text-muted-foreground">
-              <MapPin className="h-4 w-4" />
+              <MapPin className="h-3 w-3 md:h-4 md:w-4" />
               {distributor.distance}{city ? ` · ${city}` : ''}
             </span>
             <span className="flex items-center gap-1 font-semibold text-amber-600">
-              <Star className="h-4 w-4 fill-current" />
+              <Star className="h-3 w-3 fill-current md:h-4 md:w-4" />
               4.{8 + (index % 2)}
             </span>
           </div>
 
-          <div className="mt-5 grid grid-cols-3 gap-2 rounded-2xl bg-gray-50 p-3 text-sm">
+          <div className="mt-2 grid grid-cols-3 gap-1 rounded-lg bg-gray-50 p-2 text-[11px] md:mt-5 md:gap-2 md:rounded-2xl md:p-3 md:text-sm">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Mínimo</p>
-              <p className="mt-1 font-semibold text-foreground">{formatCurrency(distributor.minOrder)}</p>
+              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground md:text-[10px]">Mínimo</p>
+              <p className="mt-0.5 font-semibold text-foreground">{formatCurrency(distributor.minOrder)}</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Productos</p>
-              <p className="mt-1 flex items-center gap-1 font-semibold text-foreground">
-                <Package className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground md:text-[10px]">Productos</p>
+              <p className="mt-0.5 flex items-center gap-0.5 font-semibold text-foreground">
+                <Package className="h-3 w-3 text-muted-foreground" />
                 {distributor.productCount}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Entrega</p>
-              <p className="mt-1 flex items-center gap-1 font-semibold text-foreground">
-                <Clock className="h-3.5 w-3.5 text-primary" />
+              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground md:text-[10px]">Entrega</p>
+              <p className="mt-0.5 flex items-center gap-0.5 font-semibold text-foreground">
+                <Clock className="h-3 w-3 text-primary" />
                 {distributor.deliveryInfo.replace('Entrega ', '')}
               </p>
             </div>
-          </div>
-
-          <div className="mt-5 flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">
-              {distributor.categories.slice(0, 2).join(' · ')}
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-foreground transition-all group-hover:border-primary group-hover:bg-primary group-hover:text-white">
-              Ver catálogo
-              <ArrowRight className="h-4 w-4" />
-            </span>
           </div>
         </div>
       </article>
@@ -129,23 +119,23 @@ export default function DistribuidorasPage() {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
-      <section className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">
-        <div className="mb-6 rounded-[2rem] border border-gray-200 bg-white/80 p-4 shadow-[0_16px_44px_rgba(24,29,37,0.05)] md:p-5">
-          <div className="mb-3">
+      <section className="mx-auto w-full max-w-7xl px-4 py-3 md:px-8 md:py-8">
+        <div className="mb-4 rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-sm md:mb-6 md:rounded-[2rem] md:p-5 md:shadow-[0_16px_44px_rgba(24,29,37,0.05)]">
+          <div className="mb-2 md:mb-3">
             <div>
-              <h1 className="font-heading font-bold text-xl md:text-2xl text-foreground">Distribuidoras</h1>
+              <h1 className="font-heading font-bold text-lg md:text-2xl text-foreground">Distribuidoras</h1>
               <p className="text-xs text-muted-foreground mt-0.5">Encontrá proveedores disponibles cerca de tu comercio.</p>
             </div>
           </div>
 
-          <div className="relative max-w-2xl mt-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <div className="relative max-w-2xl mt-2 md:mt-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground md:h-5 md:w-5" />
             <input
               type="text"
               placeholder="Buscar distribuidoras..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-gray-100 border-none rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+              className="w-full bg-gray-100 border-none rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all md:pl-10 md:py-3"
             />
           </div>
 
@@ -163,11 +153,10 @@ export default function DistribuidorasPage() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.name)}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
                   selectedCategory === cat.name ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                <img src={cat.image} alt="" className="h-4 w-4 shrink-0 object-contain" />
                 {cat.name}
               </button>
             ))}
@@ -185,10 +174,10 @@ export default function DistribuidorasPage() {
           </div>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground mb-4 font-medium">
+            <p className="text-sm text-muted-foreground mb-3 font-medium">
               {filtered.length} distribuidora{filtered.length !== 1 ? 's' : ''} disponible{filtered.length !== 1 ? 's' : ''}
             </p>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
               {filtered.map((distributor, index) => (
                 <DistribuidoraCard key={distributor.id} distributor={distributor} index={index} />
               ))}

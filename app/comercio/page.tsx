@@ -58,71 +58,61 @@ function ComercioDistributorCard({
 
   return (
     <Link href={`/comercio/distribuidora/${distributor.id}`} className="group block">
-      <article className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-[0_12px_40px_rgba(24,29,37,0.07)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-[0_20px_50px_rgba(24,29,37,0.12)]">
-        <div className={cn('relative h-24 overflow-hidden bg-gradient-to-br', cover)}>
+      <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md md:rounded-3xl md:shadow-[0_12px_40px_rgba(24,29,37,0.07)] md:hover:shadow-[0_20px_50px_rgba(24,29,37,0.12)]">
+        <div className={cn('relative h-16 md:h-24 overflow-hidden bg-gradient-to-br', cover)}>
           <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(135deg,rgba(255,255,255,.18)_1px,transparent_1px),linear-gradient(45deg,rgba(255,255,255,.12)_1px,transparent_1px)] [background-size:22px_22px,34px_34px]" />
-          <div className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10 blur-sm" />
-          <div className="absolute bottom-4 right-5 flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur-md">
-            <Truck className="h-3.5 w-3.5" />
+          <div className="absolute -right-6 -top-8 h-20 w-20 rounded-full bg-white/10 blur-sm md:-right-8 md:-top-10 md:h-28 md:w-28" />
+          <div className="absolute bottom-2 right-4 flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-md md:bottom-4 md:right-5 md:px-3 md:py-1 md:text-[11px]">
+            <Truck className="h-3 w-3 md:h-3.5 md:w-3.5" />
             {badge}
           </div>
         </div>
 
-        <div className="relative px-5 pb-5">
-          <div className="absolute -top-10 left-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-gray-200 bg-white p-1 shadow-lg">
-            <div className="flex h-full w-full items-center justify-center rounded-xl bg-red-50 font-heading text-xl font-bold text-primary">
+        <div className="relative px-3 pb-3 md:px-5 md:pb-5">
+          <div className="absolute -top-6 left-3 flex h-12 w-12 items-center justify-center rounded-xl border border-gray-200 bg-white p-0.5 shadow-md md:-top-10 md:left-5 md:h-20 md:w-20 md:rounded-2xl md:p-1 md:shadow-lg">
+            <div className="flex h-full w-full items-center justify-center rounded-lg bg-red-50 font-heading text-sm font-bold text-primary md:rounded-xl md:text-xl">
               {distributor.initials}
             </div>
           </div>
 
-          <div className="flex items-start justify-between gap-3 pt-12">
+          <div className="flex items-center justify-between gap-2 pt-8 md:pt-12">
             <div className="min-w-0">
-              <h3 className="truncate font-heading text-lg font-bold text-foreground transition-colors group-hover:text-primary">
+              <h3 className="truncate font-heading text-sm font-bold text-foreground transition-colors group-hover:text-primary md:text-lg">
                 {distributor.companyName}
               </h3>
-              <p className="mt-1 truncate text-sm text-muted-foreground">
+              <p className="truncate text-[11px] text-muted-foreground md:mt-0.5 md:text-sm">
                 {distributor.categories.join(' · ')}
               </p>
             </div>
-            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700">
+            <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
               Abierto
             </span>
           </div>
 
-          <div className="mt-4 flex items-center gap-3 text-sm">
+          <div className="mt-1.5 flex items-center gap-2.5 text-[11px] md:mt-3 md:text-sm">
             <span className="flex items-center gap-1 text-muted-foreground">
-              <MapPin className="h-4 w-4" />
+              <MapPin className="h-3 w-3 md:h-4 md:w-4" />
               {distributor.distance}
             </span>
             <span className="h-1 w-1 rounded-full bg-gray-300" />
             <span className="flex items-center gap-1 font-semibold text-amber-600">
-              <Star className="h-4 w-4 fill-current" />
+              <Star className="h-3 w-3 fill-current md:h-4 md:w-4" />
               4.{8 + (index % 2)}
             </span>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-3 rounded-2xl bg-gray-50 p-3 text-sm">
+          <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-lg bg-gray-50 p-2 text-[11px] md:mt-4 md:gap-3 md:rounded-2xl md:p-3 md:text-sm">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Mínimo</p>
-              <p className="mt-1 font-semibold text-foreground">{formatCurrency(distributor.minOrder)}</p>
+              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground md:text-[10px]">Mínimo</p>
+              <p className="mt-0.5 font-semibold text-foreground">{formatCurrency(distributor.minOrder)}</p>
             </div>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Entrega</p>
-              <p className="mt-1 flex items-center gap-1 font-semibold text-foreground">
-                <Clock className="h-3.5 w-3.5 text-primary" />
+              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground md:text-[10px]">Entrega</p>
+              <p className="mt-0.5 flex items-center gap-1 font-semibold text-foreground">
+                <Clock className="h-3 w-3 text-primary" />
                 {distributor.deliveryInfo.replace('Entrega ', '')}
               </p>
             </div>
-          </div>
-
-          <div className="mt-5 flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">
-              {distributor.productCount} productos
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-foreground transition-all group-hover:border-primary group-hover:bg-primary group-hover:text-white">
-              Ver catálogo
-              <ArrowRight className="h-4 w-4" />
-            </span>
           </div>
         </div>
       </article>
@@ -130,25 +120,25 @@ function ComercioDistributorCard({
   )
 }
 
-function CategoryCard({ category, index }: { category: Category; index: number }) {
-  const color = categoryStyles[index % categoryStyles.length]
-
+function CategoryCard({ category }: { category: Category; index: number }) {
   return (
     <Link
       href={`/comercio/buscar?categoria=${encodeURIComponent(category.name)}`}
-      className={cn(
-        'group flex min-w-[132px] flex-col items-center justify-center gap-3 rounded-3xl border p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(24,29,37,0.08)] md:min-w-0',
-        color
-      )}
+      className="group flex min-w-16 flex-col items-center gap-1 text-center transition-all duration-150 md:min-w-0"
     >
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm transition-shadow group-hover:shadow-md">
-        <img
-          src={category.image}
-          alt={category.name}
-          className="h-11 w-11 object-contain drop-shadow-sm"
-        />
+      {/* mobile: círculo estilo ML — fondo blanco */}
+      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm transition-colors group-hover:border-primary/30 group-hover:bg-primary/5 md:hidden">
+        <img src={category.image} alt={category.name} className="h-8 w-8 object-contain" />
       </div>
-      <span className="font-heading text-sm font-bold leading-tight text-foreground">
+      {/* desktop: card cuadrada con etiqueta adentro */}
+      <div className="hidden w-full aspect-square flex-col items-center justify-center gap-0.5 rounded-xl border border-gray-100 bg-white p-1 shadow-sm transition-all group-hover:border-primary/30 group-hover:shadow-md md:flex">
+        <img src={category.image} alt={category.name} className="h-12 w-12 object-contain" />
+        <span className="line-clamp-2 px-0.5 text-center text-[8px] font-semibold leading-tight text-gray-600 transition-colors group-hover:text-primary">
+          {category.name}
+        </span>
+      </div>
+      {/* mobile: etiqueta debajo del círculo */}
+      <span className="text-[14px] font-semibold leading-tight text-gray-600 transition-colors group-hover:text-primary md:hidden">
         {category.name}
       </span>
     </Link>
@@ -159,28 +149,28 @@ function ReorderProductCard({ product, index }: { product: Product; index: numbe
   return (
     <article
       className={cn(
-        'rounded-3xl bg-white p-4 shadow-2xl shadow-black/20',
-        index === 1 ? 'lg:translate-y-3' : 'lg:-translate-y-3'
+        'rounded-2xl bg-white p-3 shadow-xl shadow-black/15',
+        index === 1 ? 'lg:translate-y-2' : 'lg:-translate-y-2'
       )}
     >
-      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-gray-50 p-5">
+      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-50 p-3">
         <img
           src={getCategoryImage(product)}
           alt={product.category}
-          className="h-full w-full object-contain drop-shadow-sm"
+          className="h-full w-full object-contain"
         />
       </div>
-      <div className="mt-4">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+      <div className="mt-2.5">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
           {product.category}
         </p>
-        <h3 className="mt-1 min-h-10 font-heading text-sm font-bold leading-snug text-foreground">
+        <h3 className="mt-0.5 min-h-8 font-heading text-xs font-bold leading-snug text-foreground">
           {product.name}
         </h3>
-        <p className="mt-2 text-lg font-bold text-primary">{formatCurrency(product.price)}</p>
+        <p className="mt-1 text-base font-bold text-primary">{formatCurrency(product.price)}</p>
       </div>
-      <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-3 text-sm font-bold text-foreground transition-colors hover:bg-primary hover:text-white">
-        <ShoppingCart className="h-4 w-4" />
+      <button className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-foreground transition-colors hover:bg-primary hover:text-white">
+        <ShoppingCart className="h-3.5 w-3.5" />
         Repetir
       </button>
     </article>
@@ -211,57 +201,57 @@ export default function ComercioHomePage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
-      <section className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">
-        <div className="mb-6 md:mb-8">
+      <section className="mx-auto w-full max-w-7xl px-4 py-3 md:px-8 md:py-8">
+        <div className="mb-3 md:mb-6">
           <div>
-            <p className="text-sm font-semibold text-muted-foreground">Buen día,</p>
-            <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground md:text-4xl">
+            <p className="text-xs font-semibold text-muted-foreground">Buen día,</p>
+            <h1 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-4xl">
               {storeName}
             </h1>
             {currentLocation && (
-              <div className="mt-2 flex items-center text-sm font-medium text-muted-foreground">
-                <MapPin className="mr-1.5 h-4 w-4 text-primary" />
+              <div className="mt-1 flex items-center text-xs font-medium text-muted-foreground">
+                <MapPin className="mr-1 h-3.5 w-3.5 text-primary" />
                 <span>{currentLocation.city}, {currentLocation.zone}</span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="relative mb-6 md:hidden">
-          <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative mb-3 md:hidden">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             placeholder="Buscar productos o distribuidoras..."
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="h-12 w-full rounded-2xl border border-gray-200 bg-white pl-11 pr-4 text-sm font-medium shadow-sm outline-none transition-all focus:border-primary/40 focus:ring-4 focus:ring-primary/10"
+            className="h-9 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 text-sm font-medium shadow-sm outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
           />
         </div>
 
         <section
-          className="relative mb-10 flex min-h-[256px] overflow-hidden rounded-[2rem] bg-cover bg-center shadow-[0_20px_60px_rgba(24,29,37,0.14)] md:mb-14 md:min-h-[260px]"
+          className="relative mb-5 flex min-h-[152px] overflow-hidden rounded-2xl bg-cover bg-center shadow-[0_20px_60px_rgba(24,29,37,0.14)] md:mb-12 md:min-h-[210px] md:rounded-[2rem]"
           style={{
             backgroundImage: `linear-gradient(90deg, rgba(180,35,24,0.88) 0%, rgba(180,35,24,0.50) 46%, rgba(24,29,37,0.12) 100%), url(${bannerImage})`,
           }}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(255,255,255,0.24),transparent_30%)]" />
-          <div className="relative z-10 flex max-w-xl flex-col justify-center p-6 text-white md:p-12">
-            <span className="mb-4 w-fit rounded-full bg-white/20 px-4 py-1.5 text-xs font-bold uppercase tracking-wide backdrop-blur-md">
+          <div className="relative z-10 flex max-w-xl flex-col justify-center p-4 text-white md:p-10">
+            <span className="mb-2 w-fit rounded-full bg-white/20 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wide backdrop-blur-md md:px-4 md:py-1.5 md:text-xs">
               Nueva temporada 2026
             </span>
-            <h2 className="font-heading text-3xl font-bold leading-tight md:text-5xl">
+            <h2 className="font-heading text-xl font-bold leading-tight md:text-4xl">
               Optimizá tu inventario con Stockia
             </h2>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-3 flex flex-wrap gap-2">
               <Link
                 href="/comercio/buscar"
-                className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary shadow-lg transition-transform hover:scale-[0.98]"
+                className="inline-flex items-center justify-center rounded-lg bg-white px-4 py-1.5 text-xs font-bold text-primary shadow-lg transition-transform hover:scale-[0.98] md:rounded-xl md:px-6 md:py-3 md:text-sm"
               >
                 Explorar ofertas
               </Link>
               <Link
                 href="/comercio/distribuidoras"
-                className="inline-flex items-center justify-center rounded-xl border border-white/70 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                className="inline-flex items-center justify-center rounded-lg border border-white/70 px-4 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/10 md:rounded-xl md:px-6 md:py-3 md:text-sm"
               >
                 Ver catálogo
               </Link>
@@ -269,13 +259,13 @@ export default function ComercioHomePage() {
           </div>
         </section>
 
-        <section className="mb-10 md:mb-14">
-          <div className="mb-5 flex items-end justify-between gap-4">
+        <section className="mb-6 md:mb-12">
+          <div className="mb-3 flex items-end justify-between gap-4">
             <div>
-              <h2 className="font-heading text-xl font-bold text-foreground md:text-2xl">
+              <h2 className="font-heading text-base font-bold text-foreground md:text-2xl">
                 Explorar por categoría
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground md:mt-1 md:text-sm">
                 Accesos rápidos para reponer lo que más rota.
               </p>
             </div>
@@ -287,20 +277,20 @@ export default function ComercioHomePage() {
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-6 md:px-0">
-            {categories.slice(0, 6).map((category, index) => (
-              <CategoryCard key={category.id} category={category} index={index} />
+          <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-12 md:gap-1.5 md:px-0">
+            {categories.map((category, index) => (
+              <CategoryCard key={category.id} category={category} index={0} />
             ))}
           </div>
         </section>
 
-        <section className="mb-10 rounded-[2rem] bg-white/70 p-4 shadow-[0_16px_50px_rgba(24,29,37,0.05)] ring-1 ring-gray-200/70 md:mb-14 md:p-6">
-          <div className="mb-6 flex items-end justify-between gap-4">
+        <section className="mb-5 rounded-2xl bg-white/70 p-3 shadow-sm ring-1 ring-gray-200/70 md:mb-12 md:rounded-[2rem] md:p-6 md:shadow-[0_16px_50px_rgba(24,29,37,0.05)]">
+          <div className="mb-3 flex items-end justify-between gap-4 md:mb-6">
             <div>
-              <h2 className="font-heading text-xl font-bold text-foreground md:text-2xl">
+              <h2 className="font-heading text-base font-bold text-foreground md:text-2xl">
                 Distribuidoras destacadas
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground md:mt-1 md:text-sm">
                 Socios logísticos confiables cerca de tu comercio.
               </p>
             </div>
@@ -327,7 +317,7 @@ export default function ComercioHomePage() {
           {isLoading ? (
             <DistributorCardSkeleton />
           ) : (
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 md:gap-5">
               {filteredDistributors.slice(0, 3).map((distributor, index) => (
                 <ComercioDistributorCard key={distributor.id} distributor={distributor} index={index} />
               ))}
@@ -335,31 +325,35 @@ export default function ComercioHomePage() {
           )}
         </section>
 
-        <section className="relative overflow-hidden rounded-[2rem] bg-[#181D25] p-6 text-white shadow-[0_24px_70px_rgba(24,29,37,0.22)] md:p-10 lg:p-12">
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/25 blur-3xl" />
+        <section className="relative overflow-hidden rounded-2xl bg-[#181D25] p-4 text-white md:rounded-[2rem] md:p-8 lg:p-10">
+          {/* geometric pattern overlay — estilo header de cuenta */}
+          <svg className="absolute inset-0 h-full w-full opacity-[0.045]" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <circle cx="85%" cy="15%" r="90" fill="none" stroke="white" strokeWidth="6" />
+            <circle cx="15%" cy="80%" r="60" fill="none" stroke="white" strokeWidth="4" />
+            <rect x="70%" y="55%" width="80" height="80" fill="none" stroke="white" strokeWidth="5" transform="rotate(20 80 60)" />
+            <line x1="0" y1="100%" x2="100%" y2="0" stroke="white" strokeWidth="1" />
+            <line x1="0" y1="70%" x2="60%" y2="0" stroke="white" strokeWidth="0.8" />
+          </svg>
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
           <div className="absolute bottom-0 left-1/4 h-40 w-40 rounded-full bg-white/5 blur-2xl" />
-          <div className="relative z-10 grid gap-8 lg:grid-cols-[0.9fr_1.6fr] lg:items-center">
+          <div className="relative z-10 grid gap-5 lg:grid-cols-[0.9fr_1.6fr] lg:items-center md:gap-6">
             <div>
-              <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white/80">
-                <Zap className="h-4 w-4 text-red-200" />
-                Reposición rápida
-              </span>
-              <h2 className="font-heading text-3xl font-bold leading-tight md:text-4xl">
+              <h2 className="font-heading text-lg font-bold leading-tight md:text-3xl">
                 ¿Se te está terminando el stock?
               </h2>
-              <p className="mt-4 max-w-md text-base leading-relaxed text-white/75 md:text-lg">
+              <p className="mt-1.5 hidden max-w-md text-sm leading-relaxed text-white/70 md:mt-3 md:block md:text-base">
                 Repetí tus productos más pedidos en segundos y asegurá el flujo de ventas de la semana.
               </p>
               <Link
                 href="/comercio/pedidos"
-                className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-red-700"
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-red-700 md:mt-5 md:px-5 md:py-2.5 md:text-sm"
               >
                 Ver historial completo
-                <PackageCheck className="h-4 w-4" />
+                <PackageCheck className="h-3.5 w-3.5 md:h-4 md:w-4" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="hidden gap-3 md:grid md:grid-cols-3">
               {lowStockProducts.map((product, index) => (
                 <ReorderProductCard key={product.id} product={product} index={index} />
               ))}

@@ -101,11 +101,10 @@ export default function BuscarPage() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.name)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
                   selectedCategory === cat.name ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                <img src={cat.image} alt="" className="h-4 w-4 object-contain rounded-full shrink-0" />
                 {cat.name}
               </button>
             ))}
