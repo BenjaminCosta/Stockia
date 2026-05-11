@@ -28,7 +28,7 @@ const getStatusClass = (status: OrderStatus) => {
 
 export default function PedidosDistribuidoraPage() {
   const { currentUser } = useApp()
-  const distribuidora = currentUser as Distribuidora | null
+  const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
   const isLoading = useMockLoading()

@@ -1,11 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Store, MapPin, Phone, Mail, FileText, Bell, Shield, ChevronRight, LogOut, Edit } from 'lucide-react'
+import { Store, MapPin, Phone, Mail, FileText, Bell, Shield, ChevronRight, LogOut, Edit, Settings } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { Comercio } from '@/lib/types'
 import { Switch } from '@/components/ui/switch'
 import { mockOrders } from '@/lib/mock-data'
+
+// Notifications config is static UI — no mock data needed
 
 const notifications = [
   { label: 'Actualizaciones de pedidos', sub: 'Recibí notificaciones cuando cambia el estado de un pedido', defaultOn: true },
@@ -16,7 +18,7 @@ const notifications = [
 export default function CuentaPage() {
   const router = useRouter()
   const { currentUser, logout } = useApp()
-  const comercio = currentUser as Comercio | null
+  const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
 
   const storeName = comercio?.storeName || 'Mi comercio'
   const initials = storeName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -33,8 +35,8 @@ export default function CuentaPage() {
 
   const infoFields = [
     { icon: <Store className="h-5 w-5" />, label: 'Nombre de fantasía', value: storeName },
-    { icon: <FileText className="h-5 w-5" />, label: 'Razón Social', value: comercio?.storeName || 'García, Roberto Marcelo' },
-    { icon: <FileText className="h-5 w-5" />, label: 'CUIT', value: '20-28741632-9' },
+    { icon: <FileText className="h-5 w-5" />, label: 'Razón Social', value: comercio?.razonSocial || 'García, Roberto Marcelo' },
+    { icon: <FileText className="h-5 w-5" />, label: 'CUIT', value: comercio?.cuit || '—' },
     { icon: <MapPin className="h-5 w-5" />, label: 'Zona', value: `${city}, ${zone}` },
     { icon: <Phone className="h-5 w-5" />, label: 'Teléfono', value: comercio?.phone || '+54 11 4567-8901' },
     { icon: <Mail className="h-5 w-5" />, label: 'Email', value: comercio?.email || 'email@example.com' },
@@ -94,11 +96,51 @@ export default function CuentaPage() {
             <div className="bg-white rounded-3xl shadow-sm border border-border divide-y divide-gray-100 overflow-hidden">
               <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
                 <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <Store className="h-5 w-5 text-gray-500" />
+                </div>
+                <div className="flex-1">
+                  <span className="block font-bold text-sm text-foreground">Perfil comercio</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Nombre, logo y datos de negocio</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+              <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+                <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-gray-500" />
+                </div>
+                <div className="flex-1">
+                  <span className="block font-bold text-sm text-foreground">Ubicación</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Dirección y zona de entrega</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+              <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+                <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <Phone className="h-5 w-5 text-gray-500" />
+                </div>
+                <div className="flex-1">
+                  <span className="block font-bold text-sm text-foreground">Datos de contacto</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Teléfono, email y WhatsApp</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+              <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+                <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
                   <Shield className="h-5 w-5 text-gray-500" />
                 </div>
                 <div className="flex-1">
                   <span className="block font-bold text-sm text-foreground">Seguridad</span>
                   <span className="block text-xs text-muted-foreground mt-0.5">Contraseña y acceso</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+              <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+                <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <Settings className="h-5 w-5 text-gray-500" />
+                </div>
+                <div className="flex-1">
+                  <span className="block font-bold text-sm text-foreground">Configuración</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Preferencias y notificaciones</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>

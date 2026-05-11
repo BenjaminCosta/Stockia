@@ -38,7 +38,7 @@ function PedidosContent() {
   const isLoading = useMockLoading()
   const [activeTab, setActiveTab] = useState<'Activos' | 'Historial'>('Activos')
 
-  const comercio = currentUser as Comercio | null
+  const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
   const orders = mockOrders.filter(o => o.comercioId === (comercio?.id || 'com-1'))
   const cartItemCount = getCartItemCount()
 

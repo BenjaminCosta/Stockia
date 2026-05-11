@@ -4,7 +4,7 @@ import { useState, use } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft, Minus, Plus, ShoppingCart,
-  Package, Clock, AlertTriangle, ShieldCheck, Star
+  Package, Clock, AlertTriangle, ShieldCheck, Star, CheckCircle2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useApp } from '@/lib/app-context'
@@ -137,12 +137,12 @@ export default function ProductoDetailPage({
                 <div className="flex justify-between items-center py-3 border-b border-gray-50">
                   <span className="text-muted-foreground font-medium">Entrega estimada</span>
                   <span className="font-bold flex items-center gap-2 bg-blue-50 text-blue-800 px-3 py-1 rounded-lg">
-                    <Clock className="h-4 w-4" /> 48hs hábiles
+                    <Clock className="h-4 w-4" /> {distribuidora.deliveryTimeLabel}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-muted-foreground font-medium">Pedido mínimo del distribuidor</span>
-                  <span className="font-bold text-foreground">{formatCurrency(distribuidora.minOrder || 15000)}</span>
+                  <span className="font-bold text-foreground">{formatCurrency(distribuidora.minOrder)}</span>
                 </div>
               </div>
             </div>
@@ -204,12 +204,19 @@ export default function ProductoDetailPage({
               </div>
 
               <Button
-                className="w-full h-14 text-base font-bold shadow-lg shadow-primary/20 gap-2 rounded-xl"
+                className={`w-full h-14 text-base font-bold shadow-lg gap-2 rounded-xl transition-all duration-300 ${
+                  isAdded
+                    ? 'bg-green-600 hover:bg-green-600 shadow-green-200'
+                    : 'shadow-primary/20'
+                }`}
                 onClick={handleAddToCart}
                 disabled={isAdded || product.stock === 0}
               >
-                <ShoppingCart className="h-5 w-5" />
-                {isAdded ? 'Agregado ✓' : 'Agregar al carrito'}
+                {isAdded ? (
+                  <><CheckCircle2 className="h-5 w-5 animate-check-pop" /> Agregado</>
+                ) : (
+                  <><ShoppingCart className="h-5 w-5" /> Agregar al carrito</>
+                )}
               </Button>
 
               <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground font-medium">
@@ -222,14 +229,14 @@ export default function ProductoDetailPage({
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6">
               <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-4">Calificaciones</h2>
               <div className="flex items-center gap-4">
-                <div className="text-center bg-gray-50 rounded-2xl p-4 min-w-[100px]">
-                  <p className="font-heading font-bold text-4xl text-foreground">4.8</p>
+                <div className="text-center bg-gray-50 rounded-2xl p-4 min-w-25">
+                  <p className="font-heading font-bold text-4xl text-foreground">{product.rating.toFixed(1)}</p>
                   <div className="flex gap-1 justify-center mt-2">
                     {[1, 2, 3, 4, 5].map(s => (
-                      <Star key={s} className={`h-3 w-3 ${s <= 4 ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`} />
+                      <Star key={s} className={`h-3 w-3 ${s <= Math.round(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`} />
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2 font-medium">38 reseñas</p>
+                  <p className="text-xs text-muted-foreground mt-2 font-medium">{product.reviewCount} reseñas</p>
                 </div>
                 <div className="flex-1 space-y-2">
                   {[5, 4, 3, 2, 1].map(s => (
@@ -273,12 +280,17 @@ export default function ProductoDetailPage({
             </button>
           </div>
           <Button
-            className="flex-1 h-14 text-base font-bold shadow-lg shadow-primary/20 rounded-xl"
+            className={`flex-1 h-14 text-base font-bold shadow-lg rounded-xl transition-all duration-300 ${
+              isAdded ? 'bg-green-600 hover:bg-green-600 shadow-green-200' : 'shadow-primary/20'
+            }`}
             onClick={handleAddToCart}
             disabled={isAdded || product.stock === 0}
           >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            {isAdded ? 'Agregado ✓' : formatCurrency(product.price * qty)}
+            {isAdded ? (
+              <><CheckCircle2 className="h-4 w-4 mr-2 animate-check-pop" /> Agregado</>
+            ) : (
+              <><ShoppingCart className="h-4 w-4 mr-2" /> {formatCurrency(product.price * qty)}</>
+            )}
           </Button>
         </div>
       </div>

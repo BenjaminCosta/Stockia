@@ -2,16 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { ClipboardList, Home, LogOut, Search, User } from 'lucide-react'
+import { ClipboardList, Home, LogOut, Search, User, Truck } from 'lucide-react'
 import { StockiaLogo } from '@/components/stockia-logo'
 import { useApp } from '@/lib/app-context'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/comercio', label: 'Inicio', icon: Home },
-  { href: '/comercio/buscar', label: 'Buscar', icon: Search },
-  { href: '/comercio/pedidos', label: 'Pedidos', icon: ClipboardList },
-  { href: '/comercio/cuenta', label: 'Cuenta', icon: User },
+  { href: '/comercio', label: 'Inicio', icon: Home, exact: true },
+  { href: '/comercio/distribuidoras', label: 'Distribuidoras', icon: Truck, exact: false },
+  { href: '/comercio/buscar', label: 'Buscar', icon: Search, exact: false },
+  { href: '/comercio/pedidos', label: 'Mis pedidos', icon: ClipboardList, exact: false },
+  { href: '/comercio/cuenta', label: 'Cuenta', icon: User, exact: false },
 ]
 
 export function ComercioSidebar() {
@@ -42,8 +43,9 @@ export function ComercioSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-4 mt-4 space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href || (href !== '/comercio' && pathname.startsWith(href))
+        {navItems.map((item) => {
+          const { href, label, icon: Icon } = item
+          const isActive = item.exact ? pathname === href : pathname === href || pathname.startsWith(href + '/')
           return (
             <Link
               key={href}

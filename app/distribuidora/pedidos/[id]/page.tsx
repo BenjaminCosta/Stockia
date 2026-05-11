@@ -3,7 +3,7 @@
 import { use, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Phone, Package, Clock, CheckCircle, Truck } from 'lucide-react'
-import { mockOrders, formatCurrency, mockComercios } from '@/lib/mock-data'
+import { mockOrders, formatCurrency, mockComercios, getDistribuidoraById, getEstimatedDeliveryDate } from '@/lib/mock-data'
 import { OrderStatus } from '@/lib/types'
 import { LoadingButton } from '@/components/ui/LoadingButton'
 
@@ -29,6 +29,10 @@ export default function PedidoDistribuidoraDetailPage({
   const { id } = use(params)
   const order = mockOrders.find(o => o.id === id)
   const [currentStatus, setCurrentStatus] = useState<OrderStatus>(order?.status || 'pendiente')
+  const distribuidora = order ? getDistribuidoraById(order.distribuidoraId) : null
+  const estimatedDelivery = distribuidora
+    ? getEstimatedDeliveryDate(distribuidora.deliveryTimeHours)
+    : 'Próximos días hábiles'
   const [isUpdating, setIsUpdating] = useState(false)
 
   if (!order) {
@@ -118,8 +122,8 @@ export default function PedidoDistribuidoraDetailPage({
                 <p className="text-sm text-muted-foreground mt-1">
                   {comercio?.address || 'Av. San Martín 450'}, {order.zone}
                 </p>
-                <div className="flex items-center gap-1.5 mt-3 text-xs md:text-sm font-medium text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg w-max">
-                  <Clock className="h-4 w-4" /> Entrega: Jueves 24 Oct
+                <div className="flex items-center gap-1.5 mt-3 text-xs md:text-sm font-medium text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg w-max capitalize">
+                  <Clock className="h-4 w-4" /> Entrega: {estimatedDelivery}
                 </div>
               </div>
             </div>

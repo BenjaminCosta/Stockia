@@ -2,14 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, ClipboardList, User } from 'lucide-react'
+import { Sun, ClipboardList, Package, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/distribuidora', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/distribuidora/productos', label: 'Productos', icon: Package },
-  { href: '/distribuidora/pedidos', label: 'Pedidos', icon: ClipboardList },
-  { href: '/distribuidora/perfil', label: 'Perfil', icon: User },
+  { href: '/distribuidora', label: 'Hoy', icon: Sun, exact: true },
+  { href: '/distribuidora/pedidos', label: 'Pedidos', icon: ClipboardList, exact: false },
+  { href: '/distribuidora/productos', label: 'Productos', icon: Package, exact: false },
+  { href: '/distribuidora/perfil', label: 'Cuenta', icon: User, exact: false },
 ]
 
 export function DistribuidoraBottomNav() {
@@ -18,8 +18,9 @@ export function DistribuidoraBottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-safe lg:hidden">
       <div className="flex items-center justify-around h-16">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href || (href !== '/distribuidora' && pathname.startsWith(href))
+        {navItems.map((item) => {
+          const { href, label, icon: Icon } = item
+          const isActive = item.exact ? pathname === href : pathname === href || pathname.startsWith(href + '/')
           return (
             <Link
               key={href}

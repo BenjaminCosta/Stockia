@@ -12,6 +12,8 @@ export interface User {
 export interface Comercio extends User {
   role: 'comercio'
   storeName: string
+  razonSocial: string
+  cuit: string
   phone: string
   address: string
   location: {
@@ -25,9 +27,16 @@ export interface Comercio extends User {
 export interface Distribuidora extends User {
   role: 'distribuidora'
   companyName: string
+  razonSocial: string
+  cuit: string
   phone: string
   address: string
   coverageRadiusKm: number
+  minOrder: number
+  deliveryTimeLabel: string  // "48 horas hábiles", "Mismo día", "En 2hs"
+  deliveryTimeHours: number  // for computing estimated date
+  deliveryZones: string[]
+  deliveryHours: string      // "Lunes a Viernes · 8 a 17hs"
   location: {
     lat: number
     lng: number
@@ -46,6 +55,8 @@ export interface Product {
   description: string
   imageUrl?: string
   active: boolean
+  rating: number
+  reviewCount: number
 }
 
 // Category type
@@ -53,6 +64,7 @@ export interface Category {
   id: string
   name: string
   iconName: string
+  image: string
 }
 
 // Distributor card type (for comercio view)

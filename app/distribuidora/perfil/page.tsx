@@ -1,11 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Truck, MapPin, Phone, Mail, FileText, Bell, Shield, ChevronRight, LogOut, Edit, TrendingUp, Package, Users } from 'lucide-react'
+import { Truck, MapPin, Phone, Mail, FileText, Bell, Shield, ChevronRight, LogOut, Edit, Settings, TrendingUp, Package, Users } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { Distribuidora } from '@/lib/types'
 import { Switch } from '@/components/ui/switch'
-import { getProductsByDistribuidora, getOrdersByDistribuidora } from '@/lib/mock-data'
+import { getProductsByDistribuidora, getOrdersByDistribuidora, formatCurrency } from '@/lib/mock-data'
 
 const notifications = [
   { label: 'Nuevos pedidos', sub: 'Recibí una alerta cuando entra un pedido nuevo', defaultOn: true },
@@ -17,7 +17,7 @@ const notifications = [
 export default function PerfilDistribuidoraPage() {
   const router = useRouter()
   const { currentUser, logout } = useApp()
-  const distribuidora = currentUser as Distribuidora | null
+  const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
 
   const companyName = distribuidora?.companyName || 'Mi distribuidora'
   const initials = companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -34,18 +34,18 @@ export default function PerfilDistribuidoraPage() {
 
   const infoFields = [
     { icon: <Truck className="h-5 w-5" />, label: 'Nombre de fantasía', value: companyName },
-    { icon: <FileText className="h-5 w-5" />, label: 'Razón Social', value: distribuidora?.companyName || 'Fernández Distribuciones S.A.' },
-    { icon: <FileText className="h-5 w-5" />, label: 'CUIT', value: '30-71234567-4' },
+    { icon: <FileText className="h-5 w-5" />, label: 'Razón Social', value: distribuidora?.razonSocial || 'Fernández Distribuciones S.A.' },
+    { icon: <FileText className="h-5 w-5" />, label: 'CUIT', value: distribuidora?.cuit || '—' },
     { icon: <MapPin className="h-5 w-5" />, label: 'Zona de cobertura', value: `${city} y alrededores` },
     { icon: <Phone className="h-5 w-5" />, label: 'Teléfono', value: distribuidora?.phone || '+54 11 4321-5678' },
     { icon: <Mail className="h-5 w-5" />, label: 'Email', value: distribuidora?.email || 'contacto@distribuidora.com' },
   ]
 
   const configFields = [
-    { label: 'Pedido mínimo', value: '$15.000' },
-    { label: 'Tiempo de entrega', value: '48 horas hábiles' },
-    { label: 'Zonas de entrega', value: `${city} · Avellaneda · Lanús` },
-    { label: 'Horario de pedidos', value: 'Lunes a Viernes · 8 a 17hs' },
+    { label: 'Pedido mínimo', value: distribuidora?.minOrder ? formatCurrency(distribuidora.minOrder) : '$15.000' },
+    { label: 'Tiempo de entrega', value: distribuidora?.deliveryTimeLabel || '48 horas hábiles' },
+    { label: 'Zonas de entrega', value: distribuidora?.deliveryZones?.join(' · ') || `${city} · Avellaneda · Lanús` },
+    { label: 'Horario de pedidos', value: distribuidora?.deliveryHours || 'Lunes a Viernes · 8 a 17hs' },
   ]
 
   return (
@@ -113,11 +113,51 @@ export default function PerfilDistribuidoraPage() {
             <div className="bg-white rounded-3xl shadow-sm border border-border divide-y divide-gray-100 overflow-hidden">
               <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
                 <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <Truck className="h-5 w-5 text-gray-500" />
+                </div>
+                <div className="flex-1">
+                  <span className="block font-bold text-sm text-foreground">Perfil empresa</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Nombre, logo y razón social</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+              <a href="/distribuidora/zonas" className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+                <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-gray-500" />
+                </div>
+                <div className="flex-1">
+                  <span className="block font-bold text-sm text-foreground">Zonas de entrega</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Cobertura y radio de reparto</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </a>
+              <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+                <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <Phone className="h-5 w-5 text-gray-500" />
+                </div>
+                <div className="flex-1">
+                  <span className="block font-bold text-sm text-foreground">Datos de contacto</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Teléfono, email y WhatsApp</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+              <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+                <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
                   <Shield className="h-5 w-5 text-gray-500" />
                 </div>
                 <div className="flex-1">
                   <span className="block font-bold text-sm text-foreground">Seguridad</span>
                   <span className="block text-xs text-muted-foreground mt-0.5">Contraseña y acceso</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+              <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+                <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <Settings className="h-5 w-5 text-gray-500" />
+                </div>
+                <div className="flex-1">
+                  <span className="block font-bold text-sm text-foreground">Configuración</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Preferencias y notificaciones</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>

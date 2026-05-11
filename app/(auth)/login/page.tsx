@@ -102,7 +102,7 @@ export default function LoginPage() {
         </div>
 
         <div className="auth-form-enter w-full max-w-md -mt-10 px-4 pb-8 md:mt-0 md:px-0 md:pb-0">
-          <div className="rounded-[24px] border border-border bg-white p-6 shadow-[0_18px_50px_rgba(17,24,39,0.06)] md:p-8">
+          <div className="rounded-3xl border border-border bg-white p-6 shadow-[0_18px_50px_rgba(17,24,39,0.06)] md:p-8">
             <h2 className="hidden md:block font-heading text-3xl font-bold text-foreground mb-8">
               Iniciar sesión
             </h2>
@@ -166,7 +166,7 @@ export default function LoginPage() {
 
               <LoadingButton
                 type="submit"
-                className="w-full h-[52px] rounded-xl text-base mt-6 transition-transform active:scale-[0.99]"
+                className="w-full h-13 rounded-xl text-base mt-6 transition-transform active:scale-[0.99]"
                 loading={isLoading}
                 loadingLabel="Iniciando sesión"
               >

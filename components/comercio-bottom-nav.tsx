@@ -2,14 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, ClipboardList, User } from 'lucide-react'
+import { ClipboardList, Home, Search, Truck, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/comercio', label: 'Inicio', icon: Home },
-  { href: '/comercio/buscar', label: 'Buscar', icon: Search },
-  { href: '/comercio/pedidos', label: 'Pedidos', icon: ClipboardList },
-  { href: '/comercio/cuenta', label: 'Cuenta', icon: User },
+  { href: '/comercio', label: 'Inicio', icon: Home, exact: true },
+  { href: '/comercio/distribuidoras', label: 'Distrib.', icon: Truck, exact: false },
+  { href: '/comercio/buscar', label: 'Buscar', icon: Search, exact: false },
+  { href: '/comercio/pedidos', label: 'Pedidos', icon: ClipboardList, exact: false },
+  { href: '/comercio/cuenta', label: 'Cuenta', icon: User, exact: false },
 ]
 
 export function ComercioBottomNav() {
@@ -18,8 +19,9 @@ export function ComercioBottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-safe lg:hidden">
       <div className="flex items-center justify-around h-16">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href || (href !== '/comercio' && pathname.startsWith(href))
+        {navItems.map((item) => {
+          const { href, label, icon: Icon } = item
+          const isActive = item.exact ? pathname === href : pathname === href || pathname.startsWith(href + '/')
           return (
             <Link
               key={href}

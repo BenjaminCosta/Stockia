@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { Inter, Sora } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { TopLoadingBar } from '@/components/ui/TopLoadingBar'
+import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen'
 import './globals.css'
 
 const inter = Inter({ 
@@ -57,6 +58,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <TopLoadingBar />
         </Suspense>
+        <AppLoadingScreen />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

@@ -4,7 +4,7 @@ function SkeletonBlock({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-md bg-muted after:absolute after:inset-0 after:-translate-x-full after:animate-stockia-shimmer after:bg-linear-to-r after:from-transparent after:via-white/70 after:to-transparent',
+        'relative overflow-hidden rounded-md bg-gray-100 after:absolute after:inset-0 after:-translate-x-full after:animate-stockia-shimmer after:bg-linear-to-r after:from-transparent after:via-white/70 after:to-transparent',
         className
       )}
     />
@@ -83,6 +83,41 @@ export function OrderCardSkeleton({ count = 4 }: SkeletonListProps) {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+export function DashboardCardSkeleton() {
+  return (
+    <div className="space-y-5" aria-busy="true" aria-label="Cargando dashboard">
+      {/* Main KPI */}
+      <div className="rounded-3xl border border-border bg-white p-6 shadow-sm">
+        <div className="flex justify-between items-start mb-6">
+          <div className="space-y-2">
+            <SkeletonBlock className="h-3 w-24" />
+            <SkeletonBlock className="h-10 w-40" />
+          </div>
+          <SkeletonBlock className="h-7 w-16 rounded-full" />
+        </div>
+        <div className="grid grid-cols-3 gap-4 border-t border-gray-100 pt-5">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <SkeletonBlock className="h-3 w-16" />
+              <SkeletonBlock className="h-5 w-12" />
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Secondary cards */}
+      <div className="grid grid-cols-2 gap-3">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="rounded-2xl border border-border bg-white p-4 shadow-sm space-y-3">
+            <SkeletonBlock className="h-9 w-9 rounded-xl" />
+            <SkeletonBlock className="h-3 w-16" />
+            <SkeletonBlock className="h-6 w-12" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

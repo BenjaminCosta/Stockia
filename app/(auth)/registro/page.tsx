@@ -225,7 +225,7 @@ export default function RegistroPage() {
           </button>
           <LoadingButton
             type="button"
-            className="h-12 min-w-[150px] rounded-xl bg-primary px-5 text-sm font-semibold"
+            className="h-12 min-w-37.5 rounded-xl bg-primary px-5 text-sm font-semibold"
             onClick={handleContinue}
             loading={isLoading}
             disabled={!canContinue}

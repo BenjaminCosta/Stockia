@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Clock, CreditCard, CheckCircle, ChevronRight, Lock } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency, getDistribuidoraById, getEstimatedDeliveryDate } from '@/lib/mock-data'
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -25,6 +25,11 @@ export default function CheckoutPage() {
 
   const total = getCartTotal()
   const comercio = currentUser as { storeName?: string; address?: string } | null
+  const distribuidora = cart ? getDistribuidoraById(cart.distribuidoraId) : null
+  const deliveryDate = distribuidora
+    ? getEstimatedDeliveryDate(distribuidora.deliveryTimeHours)
+    : 'Próximos días hábiles'
+  const deliveryLabel = distribuidora?.deliveryTimeLabel ?? '48 horas hábiles'
 
   const handlePagar = () => {
     setConfirmed(true)
@@ -94,9 +99,9 @@ export default function CheckoutPage() {
                   <Clock className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="font-bold text-foreground text-base md:text-lg">Jueves 24 de octubre</p>
+                  <p className="font-bold text-foreground text-base md:text-lg capitalize">{deliveryDate}</p>
                   <p className="text-sm md:text-base text-muted-foreground mt-1">
-                    {cart.distribuidoraName} • 48hs hábiles
+                    {cart.distribuidoraName} • {deliveryLabel}
                   </p>
                 </div>
               </div>

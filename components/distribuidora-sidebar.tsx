@@ -2,16 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Package, ClipboardList, User, LogOut } from 'lucide-react'
+import { LayoutDashboard, Package, ClipboardList, User, LogOut, MapPin, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/lib/app-context'
 import { StockiaLogo } from '@/components/stockia-logo'
 
 const navItems = [
-  { href: '/distribuidora', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/distribuidora/productos', label: 'Productos', icon: Package },
-  { href: '/distribuidora/pedidos', label: 'Pedidos', icon: ClipboardList },
-  { href: '/distribuidora/perfil', label: 'Perfil', icon: User },
+  { href: '/distribuidora', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/distribuidora/pedidos', label: 'Pedidos', icon: ClipboardList, exact: false },
+  { href: '/distribuidora/productos', label: 'Productos', icon: Package, exact: false },
+  { href: '/distribuidora/zonas', label: 'Zonas de entrega', icon: MapPin, exact: false },
+  { href: '/distribuidora/ventas', label: 'Ventas', icon: TrendingUp, exact: false },
+  { href: '/distribuidora/perfil', label: 'Cuenta', icon: User, exact: false },
 ]
 
 export function DistribuidoraSidebar() {
@@ -43,8 +45,9 @@ export function DistribuidoraSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-4 mt-4 space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href || (href !== '/distribuidora' && pathname.startsWith(href))
+        {navItems.map((item) => {
+          const { href, label, icon: Icon } = item
+          const isActive = item.exact ? pathname === href : pathname === href || pathname.startsWith(href + '/')
           return (
             <Link
               key={href}

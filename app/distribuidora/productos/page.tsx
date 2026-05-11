@@ -14,7 +14,7 @@ import { useMockLoading } from '@/hooks/use-mock-loading'
 
 export default function ProductosPage() {
   const { currentUser } = useApp()
-  const distribuidora = currentUser as Distribuidora | null
+  const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
   const [searchQuery, setSearchQuery] = useState('')
   const isLoading = useMockLoading()
 
