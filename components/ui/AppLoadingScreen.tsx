@@ -44,7 +44,7 @@ export function AppLoadingScreen() {
         >
           <div className="relative h-24 w-24 flex items-center justify-center drop-shadow-xl">
             <img
-              src="/logo-S.png"
+              src="/logo-iso.svg"
               alt="Stockia"
               className="h-24 w-24 object-contain"
             />
@@ -56,8 +56,8 @@ export function AppLoadingScreen() {
           className="flex flex-col items-center gap-1"
           style={{ animation: 'stockia-splash-text 0.4s ease-out 0.25s both' }}
         >
-          <span className="font-heading font-bold text-2xl text-[#111827] tracking-tight">Stockia</span>
-          <span className="text-sm text-[#6B7280] font-medium">Preparando tu stock&hellip;</span>
+          <span className="font-heading font-bold text-2xl text-foreground tracking-tight">Stockia</span>
+          <span className="text-sm text-muted-foreground font-medium">Preparando tu stock&hellip;</span>
         </div>
 
         {/* Progress bar */}
@@ -66,7 +66,7 @@ export function AppLoadingScreen() {
           style={{ animation: 'stockia-splash-text 0.4s ease-out 0.35s both' }}
         >
           <div
-            className="h-full rounded-full bg-[#B42318] relative"
+            className="h-full rounded-full bg-primary relative"
             style={{ animation: 'stockia-splash-bar 1.2s cubic-bezier(0.4,0,0.2,1) 0.4s both' }}
           >
             {/* Shine dot */}

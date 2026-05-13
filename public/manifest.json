@@ -4,19 +4,19 @@
   "description": "Marketplace B2B para conectar distribuidoras con comercios locales.",
   "start_url": "/login",
   "display": "standalone",
-  "background_color": "#F7F7F8",
-  "theme_color": "#B42318",
+  "background_color": "#F7F8FA",
+  "theme_color": "#0B1A45",
   "icons": [
     {
-      "src": "/logo-S.png",
+      "src": "/logo-iso.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/logo-S.png",
+      "src": "/logo-iso.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "maskable"
     }
   ]

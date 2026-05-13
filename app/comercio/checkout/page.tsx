@@ -77,7 +77,7 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
               <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Dirección de entrega</h2>
               <div className="flex items-start gap-4">
-                <div className="h-12 w-12 bg-red-50 text-primary rounded-2xl flex items-center justify-center shrink-0">
+                <div className="h-12 w-12 bg-[#F1FFD1] text-[#4A662E] rounded-2xl flex items-center justify-center shrink-0">
                   <MapPin className="h-6 w-6" />
                 </div>
                 <div className="flex-1">
@@ -114,7 +114,7 @@ export default function CheckoutPage() {
                 <button
                   onClick={() => setPaymentMethod('mp')}
                   className={`w-full flex items-center gap-4 p-5 rounded-2xl border-2 transition-all ${
-                    paymentMethod === 'mp' ? 'border-primary bg-red-50/50' : 'border-gray-200 bg-white hover:border-gray-300'
+                    paymentMethod === 'mp' ? 'border-primary bg-[#F1FFD1]/50' : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
                 >
                   <div className="h-12 w-12 bg-blue-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
@@ -132,7 +132,7 @@ export default function CheckoutPage() {
                 <button
                   onClick={() => setPaymentMethod('transferencia')}
                   className={`w-full flex items-center gap-4 p-5 rounded-2xl border-2 transition-all ${
-                    paymentMethod === 'transferencia' ? 'border-primary bg-red-50/50' : 'border-gray-200 bg-white hover:border-gray-300'
+                    paymentMethod === 'transferencia' ? 'border-primary bg-[#F1FFD1]/50' : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
                 >
                   <div className="h-12 w-12 bg-gray-800 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
@@ -182,7 +182,7 @@ export default function CheckoutPage() {
               <div className="hidden md:block mt-8">
                 <button
                   onClick={handlePagar}
-                  className="w-full h-14 text-lg font-bold bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:bg-red-700 transition-colors"
+                  className="w-full h-14 text-lg font-bold bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
                 >
                   Confirmar y pagar {formatCurrency(total)}
                 </button>
@@ -196,13 +196,13 @@ export default function CheckoutPage() {
       </div>
 
       {/* Mobile fixed bottom bar */}
-      <div className="md:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 pb-safe shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
+      <div className="md:hidden fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
         <p className="text-center text-xs text-muted-foreground mb-3 flex items-center justify-center gap-1.5 font-medium">
           <Lock className="h-3 w-3 text-muted-foreground" /> Tu información está cifrada y protegida
         </p>
         <button
           onClick={handlePagar}
-          className="w-full h-14 text-base font-bold bg-primary text-white rounded-xl shadow-lg hover:bg-red-700 transition-colors"
+          className="w-full h-14 text-base font-bold bg-primary text-white rounded-xl shadow-lg hover:bg-primary/90 transition-colors"
         >
           Confirmar y pagar {formatCurrency(total)}
         </button>

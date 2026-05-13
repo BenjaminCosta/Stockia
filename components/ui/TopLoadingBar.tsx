@@ -85,24 +85,21 @@ export function TopLoadingBar({ className }: TopLoadingBarProps) {
       aria-hidden={!isLoading}
       aria-busy={isLoading}
       className={cn(
-        'pointer-events-none fixed left-0 right-0 top-0 z-100 h-0.75 overflow-hidden',
+        'pointer-events-none fixed left-0 right-0 top-0 z-[200] h-[3px] overflow-hidden',
         className
       )}
     >
       <div
         className={cn(
-          'h-full origin-left bg-primary transition-all duration-300 ease-out',
-          'shadow-[0_0_12px_2px_rgba(180,35,24,0.5)]',
+          'h-full origin-left rounded-r-full transition-all duration-300 ease-out',
+          'bg-[#C8FF00]',
           isLoading ? 'opacity-100' : 'opacity-0'
         )}
-        style={{ transform: `scaleX(${progress / 100})` }}
-      >
-        {/* Glow dot that races along the bar tip */}
-        <span
-          className="absolute right-0 top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-white/80 blur-[3px]"
-          style={{ boxShadow: '0 0 8px 4px rgba(255,255,255,0.6)' }}
-        />
-      </div>
+        style={{
+          transform: `scaleX(${progress / 100})`,
+          boxShadow: '0 0 10px 2px rgba(200,255,0,0.6)',
+        }}
+      />
     </div>
   )
 }

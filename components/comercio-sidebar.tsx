@@ -31,13 +31,9 @@ export function ComercioSidebar() {
   return (
     <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 flex-col bg-sidebar">
       {/* Logo */}
-      <div className="p-6 border-b border-white/10">
-        <Link href="/comercio" className="flex items-center gap-2.5">
-          <StockiaLogo size={40} />
-          <div>
-            <span className="font-heading text-xl font-bold text-white">Stockia</span>
-            <p className="text-sidebar-foreground/50 text-xs mt-0.5">Portal Comercios</p>
-          </div>
+      <div className="px-6 py-5 border-b border-sidebar-border">
+        <Link href="/comercio" className="flex items-center gap-3">
+          <StockiaLogo size={32} variant="white" className="h-8" />
         </Link>
       </div>
 
@@ -53,8 +49,8 @@ export function ComercioSidebar() {
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-md transition-colors',
                 isActive
-                  ? 'bg-primary text-white font-medium'
-                  : 'text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
+                  : 'text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
               )}
             >
               <Icon className="h-5 w-5" />
@@ -65,19 +61,19 @@ export function ComercioSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-white/10">
+      <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 px-4 py-2 hover:bg-sidebar-accent rounded-md transition-colors mb-1">
-          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center font-bold text-white text-xs shrink-0">
+          <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center font-bold text-sidebar-accent-foreground text-xs shrink-0">
             {initials}
           </div>
           <div className="text-sm min-w-0">
-            <p className="font-medium text-white truncate">{storeName}</p>
+            <p className="font-semibold text-white truncate">{storeName}</p>
             <p className="text-sidebar-foreground/50 text-xs">Comercio</p>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-2 w-full rounded-md text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors text-sm"
+          className="flex items-center gap-3 px-4 py-2 w-full rounded-md text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors text-sm"
         >
           <LogOut className="h-4 w-4" />
           <span>Cerrar sesión</span>

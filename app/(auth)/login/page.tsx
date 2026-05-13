@@ -217,7 +217,7 @@ export default function LoginPage() {
 function PremiumBullet({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/8 px-4 py-3 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]" style={{ background: 'rgba(255,255,255,0.07)' }}>
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-primary/40 bg-primary/20 text-primary backdrop-blur-sm shadow-[0_0_16px_-6px_rgba(180,35,24,0.8)]">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-lima/40 bg-lima/20 text-lima backdrop-blur-sm shadow-[0_0_16px_-6px_rgba(11,26,69,0.8)]">
         <ArrowRight className="h-3.5 w-3.5" />
       </span>
       <span className="leading-5 text-white/90 text-sm font-medium">{text}</span>

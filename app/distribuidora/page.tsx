@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { TrendingUp, Package, Clock, CheckCircle, AlertCircle, ShoppingCart, ChevronRight } from 'lucide-react'
 import { StatusBadge } from '@/components/status-badge'
+import { PageHero } from '@/components/ui/PageHero'
 import { useApp } from '@/lib/app-context'
 import { mockDashboardKPIs, mockOrders, formatCurrency, getLowStockProducts } from '@/lib/mock-data'
 import { Distribuidora } from '@/lib/types'
@@ -19,32 +20,26 @@ export default function DistribuidoraDashboardPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Dark hero header */}
-      <div className="bg-sidebar pt-8 pb-20 px-4 md:px-8 text-white relative md:rounded-b-3xl md:mt-4 md:mx-4">
-        <svg className="absolute right-0 top-0 h-full opacity-[0.05] w-1/2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" preserveAspectRatio="none">
-          <circle cx="150" cy="50" r="80" fill="none" stroke="white" strokeWidth="2" />
-          <circle cx="180" cy="150" r="50" fill="none" stroke="white" strokeWidth="2" />
-          <path d="M 0,100 L 200,0" stroke="white" strokeWidth="2" />
-        </svg>
-        <div className="max-w-4xl mx-auto relative z-10">
-          <p className="text-sidebar-foreground/60 text-sm font-medium mb-1">Resumen de hoy</p>
-          <h1 className="font-heading font-bold text-2xl md:text-3xl mb-4">Hola, {companyName}</h1>
-          <div className="flex gap-3">
-            <Link
-              href="/distribuidora/pedidos"
-              className="bg-primary hover:bg-red-700 text-white text-sm font-bold py-2.5 px-4 rounded-lg transition-colors inline-flex items-center gap-2"
-            >
-              <ShoppingCart className="h-4 w-4" /> Ver pedidos
-            </Link>
-            <Link
-              href="/distribuidora/productos/nuevo"
-              className="bg-white/10 hover:bg-white/20 text-white text-sm font-bold py-2.5 px-4 rounded-lg transition-colors inline-flex items-center gap-2"
-            >
-              <Package className="h-4 w-4" /> Cargar producto
-            </Link>
-          </div>
+      <PageHero
+        label="Resumen de hoy"
+        title={`Hola, ${companyName}`}
+        className="pb-20 md:rounded-b-3xl md:mt-4 md:mx-4"
+      >
+        <div className="flex gap-3">
+          <Link
+            href="/distribuidora/pedidos"
+            className="bg-lima text-primary hover:bg-lima/90 text-sm font-bold py-2.5 px-4 rounded-lg transition-colors inline-flex items-center gap-2"
+          >
+            <ShoppingCart className="h-4 w-4" /> Ver pedidos
+          </Link>
+          <Link
+            href="/distribuidora/productos/nuevo"
+            className="bg-white/10 hover:bg-white/20 text-white text-sm font-bold py-2.5 px-4 rounded-lg transition-colors inline-flex items-center gap-2"
+          >
+            <Package className="h-4 w-4" /> Cargar producto
+          </Link>
         </div>
-      </div>
+      </PageHero>
 
       {/* Main content — floats over hero */}
       <div className="px-4 md:px-8 -mt-12 relative z-10 max-w-4xl mx-auto w-full pb-12">
@@ -107,7 +102,7 @@ export default function DistribuidoraDashboardPage() {
               style={{ animationDelay: '200ms' }}
             >
               <div className="flex gap-4 items-center">
-                <div className="h-12 w-12 bg-red-50 text-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                <div className="h-12 w-12 bg-lima-soft text-green-dark rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
                   <Package className="h-6 w-6" />
                 </div>
                 <div>

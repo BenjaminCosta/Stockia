@@ -1,18 +1,19 @@
 import type { Metadata, Viewport } from 'next'
 import { Suspense } from 'react'
-import { Inter, Sora } from 'next/font/google'
+import { Plus_Jakarta_Sans, Sora } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { TopLoadingBar } from '@/components/ui/TopLoadingBar'
 import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen'
 import './globals.css'
 
-const inter = Inter({ 
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: '--font-inter',
+  variable: '--font-jakarta',
+  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
 })
 
-const sora = Sora({ 
+const sora = Sora({
   subsets: ["latin"],
   variable: '--font-sora',
   display: 'swap',
@@ -31,16 +32,16 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/logo-S.png',
-        type: 'image/png',
+        url: '/logo-iso.svg',
+        type: 'image/svg+xml',
       },
     ],
-    apple: '/logo-S.png',
+    apple: '/logo-iso.svg',
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#B42318',
+  themeColor: '#0B1A45',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -53,7 +54,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className={`${inter.variable} ${sora.variable} bg-background`}>
+    <html lang="es" className={`${jakarta.variable} ${sora.variable} bg-background`}>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <Suspense fallback={null}>
           <TopLoadingBar />

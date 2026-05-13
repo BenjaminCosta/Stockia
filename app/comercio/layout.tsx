@@ -3,6 +3,7 @@
 import { AppProvider } from '@/lib/app-context'
 import { ComercioBottomNav } from '@/components/comercio-bottom-nav'
 import { ComercioTopHeader } from '@/components/comercio-top-header'
+import { ComercioFooter } from '@/components/comercio-footer'
 
 export default function ComercioLayout({
   children,
@@ -16,6 +17,7 @@ export default function ComercioLayout({
         <div className="pb-20 lg:pb-0">
           {children}
         </div>
+        <ComercioFooter />
         <ComercioBottomNav />
       </div>
     </AppProvider>

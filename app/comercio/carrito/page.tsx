@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Trash2, ChevronRight, ShoppingBag } from 'lucide-react'
+import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency, mockDistributorCards } from '@/lib/mock-data'
 import { LoadingButton } from '@/components/ui/LoadingButton'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 export default function CarritoPage() {
   const router = useRouter()
@@ -22,20 +24,14 @@ export default function CarritoPage() {
           </Link>
           <h1 className="font-heading font-bold text-xl text-foreground">Tu Pedido</h1>
         </div>
-        <div className="flex flex-col items-center justify-center gap-6 px-6 py-24 text-center">
-          <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
-            <ShoppingBag className="h-9 w-9 text-gray-400" />
-          </div>
-          <div>
-            <h2 className="font-heading font-bold text-xl text-foreground">Tu carrito está vacío</h2>
-            <p className="text-muted-foreground mt-2 text-sm max-w-[260px]">Explorá las distribuidoras y sumá productos para armar tu pedido</p>
-          </div>
-          <Link
-            href="/comercio"
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-red-700 transition-colors"
-          >
-            Explorar distribuidoras
-          </Link>
+        <div className="px-4 py-8">
+          <EmptyState
+            icon={ShoppingBag}
+            title="Tu carrito está vacío"
+            description="Explorá las distribuidoras y sumá productos para armar tu pedido"
+            actionLabel="Explorar distribuidoras"
+            actionHref="/comercio"
+          />
         </div>
       </div>
     )
@@ -121,9 +117,12 @@ export default function CarritoPage() {
               <h2 className="font-bold text-foreground mb-4 text-sm uppercase tracking-wide">Distribuidor</h2>
               <div className="flex items-center justify-between cursor-pointer group">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 bg-gray-100 rounded-xl flex items-center justify-center font-bold text-gray-500 text-sm group-hover:bg-red-50 group-hover:text-primary transition-colors">
-                    {distInitials}
-                  </div>
+                  <InitialsAvatar
+                    initials={distInitials}
+                    size="lg"
+                    variant="gray"
+                    className="group-hover:bg-[#F1FFD1] group-hover:text-[#4A662E] transition-colors"
+                  />
                   <div>
                     <p className="font-bold text-foreground group-hover:text-primary transition-colors">
                       {cart.distribuidoraName}
@@ -173,7 +172,7 @@ export default function CarritoPage() {
       </div>
 
       {/* Mobile fixed bottom */}
-      <div className="md:hidden fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-gray-200 z-40 pb-safe shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
+      <div className="md:hidden fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-200 z-40 shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
         <div className="mb-3">
           <MinimumOrderProgress
             total={total}

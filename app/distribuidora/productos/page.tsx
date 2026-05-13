@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Pencil, Package } from 'lucide-react'
+import { Plus, Pencil, Package } from 'lucide-react'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { useApp } from '@/lib/app-context'
@@ -33,18 +35,14 @@ export default function ProductosPage() {
           <h1 className="font-heading font-bold text-2xl text-foreground mb-4 md:mb-6">Catálogo de Productos</h1>
 
           <div className="flex gap-2 pb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Buscar productos..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl pl-10 md:pl-12 pr-4 py-3 md:py-3.5 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
-              />
-            </div>
+            <SearchInput
+              placeholder="Buscar productos..."
+              value={searchQuery}
+              onChange={setSearchQuery}
+              className="flex-1"
+            />
             <Link href="/distribuidora/productos/nuevo">
-              <button className="bg-primary hover:bg-red-700 text-white px-4 md:px-6 rounded-xl text-sm md:text-base font-bold shadow-sm flex items-center justify-center gap-2 h-full transition-colors">
+              <button className="bg-primary hover:bg-primary/90 text-white px-4 md:px-6 rounded-xl text-sm md:text-base font-bold shadow-sm flex items-center justify-center gap-2 h-full transition-colors">
                 <Plus className="h-5 w-5 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Nuevo</span>
               </button>
@@ -58,22 +56,13 @@ export default function ProductosPage() {
         {isLoading ? (
           <ProductCardSkeleton />
         ) : filteredProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
-              <Package className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h2 className="font-heading font-semibold text-xl text-foreground">No hay productos</h2>
-            <p className="text-muted-foreground mt-2 text-center">
-              {searchQuery ? 'No se encontraron productos' : 'Empezá cargando tu primer producto'}
-            </p>
-            {!searchQuery && (
-              <Link href="/distribuidora/productos/nuevo" className="mt-6">
-                <button className="bg-primary text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2">
-                  <Plus className="h-4 w-4" /> Cargar producto
-                </button>
-              </Link>
-            )}
-          </div>
+          <EmptyState
+            icon={Package}
+            title="No hay productos"
+            description={searchQuery ? 'No se encontraron productos' : 'Empezá cargando tu primer producto'}
+            actionLabel={!searchQuery ? 'Cargar producto' : undefined}
+            actionHref={!searchQuery ? '/distribuidora/productos/nuevo' : undefined}
+          />
         ) : (
           <div className="bg-white md:rounded-2xl md:shadow-sm border border-transparent md:border-gray-200 overflow-hidden">
             {/* Desktop header row */}

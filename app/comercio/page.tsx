@@ -2,13 +2,13 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { SearchInput } from '@/components/ui/SearchInput'
 import {
   ArrowRight,
   ChevronRight,
   Clock,
   MapPin,
   PackageCheck,
-  Search,
   ShoppingCart,
   Star,
   Truck,
@@ -20,127 +20,46 @@ import { useApp } from '@/lib/app-context'
 import { categories, formatCurrency, mockDistributorCards, mockProducts } from '@/lib/mock-data'
 import { Category, Comercio, DistributorCard, Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { DistribuidoraCard } from '@/components/distribuidora-card'
 
 const bannerImage =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuAD5c4yEJhHUZIMP3RN84tkDx7y8cPPOHsG6_E-idBHVVNqIJ5Rs3MUbGmuiHs6TqBmTHgurh_dkjU_ui6dxw6sh8cSMjyYZpF4OQaxM21_lw-wCqL-1li9q80Oqj-YZUcsIzCaJQXG3h4B0nDnblBxa8ZBtT5XFoSzG8S1KHVqbKQfsADKCYe_r2A8T6tBkqztMX3gU2odL_2RV_FFoYq3TfWgZ0P0W_7gbtpmJfWzZ3nEAw0qT-U2zC-PJzKSX_9-4pYOOlwmuxX1'
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuD5AyXfk8ajEi26pq48tlS5ch4s6KleLvBpkMakL1s-oa5bQ7Z1FDjB6tw3mmY5OzVH153BMmYuf7viMCuUJPOwpJX5u2_arVtIHwLb3TFVvTSfeyQw8901VqZg4xPG2znYiyo2V4ZadHAjcNaRJrFcNGj2wGDH6ulcZ7-3c0jjHZ-_sheGCoH_CfgECZ2TLcM2DL5Cg9ERywVrxKyLsYBkZDrCV4dM2Qphw2hinMpGymIsoz0VM2rFuKolkzsOq-kHikNxmaOMKzif'
 
-const categoryStyles = [
-  'bg-blue-50 border-blue-100 text-blue-600',
-  'bg-emerald-50 border-emerald-100 text-emerald-600',
-  'bg-orange-50 border-orange-100 text-orange-600',
-  'bg-violet-50 border-violet-100 text-violet-600',
-  'bg-red-50 border-red-100 text-primary',
-  'bg-amber-50 border-amber-100 text-amber-700',
-]
-
-const distributorCovers = [
-  'from-[#181D25] to-primary',
-  'from-primary to-[#7f1d1d]',
-  'from-[#2f3132] to-[#575e70]',
-  'from-[#181D25] via-[#312326] to-primary',
-]
-
-const distributorBadges = ['Entrega rápida', 'Más pedido', 'Cerca tuyo', 'Mayorista']
+const categoryPhotos: Record<string, string> = {
+  'Bebidas':  '/categorias/photos/bebidas.jpg',
+  'Limpieza': '/categorias/photos/limpieza.jpg',
+  'Lácteos':  '/categorias/photos/lacteos.jpg',
+  'Almacén':  '/categorias/photos/almacen.jpg',
+}
 
 function getCategoryImage(product: Product) {
   return categories.find((category) => category.name === product.category)?.image || '/placeholder.svg'
 }
 
-function ComercioDistributorCard({
-  distributor,
-  index,
-}: {
-  distributor: DistributorCard
-  index: number
-}) {
-  const cover = distributorCovers[index % distributorCovers.length]
-  const badge = distributorBadges[index % distributorBadges.length]
+function CategoryCard({ category }: { category: Category }) {
+  const photo = categoryPhotos[category.name]
 
-  return (
-    <Link href={`/comercio/distribuidora/${distributor.id}`} className="group block">
-      <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md md:rounded-3xl md:shadow-[0_12px_40px_rgba(24,29,37,0.07)] md:hover:shadow-[0_20px_50px_rgba(24,29,37,0.12)]">
-        <div className={cn('relative h-16 md:h-24 overflow-hidden bg-gradient-to-br', cover)}>
-          <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(135deg,rgba(255,255,255,.18)_1px,transparent_1px),linear-gradient(45deg,rgba(255,255,255,.12)_1px,transparent_1px)] [background-size:22px_22px,34px_34px]" />
-          <div className="absolute -right-6 -top-8 h-20 w-20 rounded-full bg-white/10 blur-sm md:-right-8 md:-top-10 md:h-28 md:w-28" />
-          <div className="absolute bottom-2 right-4 flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-md md:bottom-4 md:right-5 md:px-3 md:py-1 md:text-[11px]">
-            <Truck className="h-3 w-3 md:h-3.5 md:w-3.5" />
-            {badge}
-          </div>
-        </div>
-
-        <div className="relative px-3 pb-3 md:px-5 md:pb-5">
-          <div className="absolute -top-6 left-3 flex h-12 w-12 items-center justify-center rounded-xl border border-gray-200 bg-white p-0.5 shadow-md md:-top-10 md:left-5 md:h-20 md:w-20 md:rounded-2xl md:p-1 md:shadow-lg">
-            <div className="flex h-full w-full items-center justify-center rounded-lg bg-red-50 font-heading text-sm font-bold text-primary md:rounded-xl md:text-xl">
-              {distributor.initials}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-2 pt-8 md:pt-12">
-            <div className="min-w-0">
-              <h3 className="truncate font-heading text-sm font-bold text-foreground transition-colors group-hover:text-primary md:text-lg">
-                {distributor.companyName}
-              </h3>
-              <p className="truncate text-[11px] text-muted-foreground md:mt-0.5 md:text-sm">
-                {distributor.categories.join(' · ')}
-              </p>
-            </div>
-            <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
-              Abierto
-            </span>
-          </div>
-
-          <div className="mt-1.5 flex items-center gap-2.5 text-[11px] md:mt-3 md:text-sm">
-            <span className="flex items-center gap-1 text-muted-foreground">
-              <MapPin className="h-3 w-3 md:h-4 md:w-4" />
-              {distributor.distance}
-            </span>
-            <span className="h-1 w-1 rounded-full bg-gray-300" />
-            <span className="flex items-center gap-1 font-semibold text-amber-600">
-              <Star className="h-3 w-3 fill-current md:h-4 md:w-4" />
-              4.{8 + (index % 2)}
-            </span>
-          </div>
-
-          <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-lg bg-gray-50 p-2 text-[11px] md:mt-4 md:gap-3 md:rounded-2xl md:p-3 md:text-sm">
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground md:text-[10px]">Mínimo</p>
-              <p className="mt-0.5 font-semibold text-foreground">{formatCurrency(distributor.minOrder)}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground md:text-[10px]">Entrega</p>
-              <p className="mt-0.5 flex items-center gap-1 font-semibold text-foreground">
-                <Clock className="h-3 w-3 text-primary" />
-                {distributor.deliveryInfo.replace('Entrega ', '')}
-              </p>
-            </div>
-          </div>
-        </div>
-      </article>
-    </Link>
-  )
-}
-
-function CategoryCard({ category }: { category: Category; index: number }) {
   return (
     <Link
       href={`/comercio/buscar?categoria=${encodeURIComponent(category.name)}`}
-      className="group flex min-w-16 flex-col items-center gap-1 text-center transition-all duration-150 md:min-w-0"
+      className="group cursor-pointer overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_15px_35px_rgba(11,26,69,0.08)]"
     >
-      {/* mobile: círculo estilo ML — fondo blanco */}
-      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm transition-colors group-hover:border-primary/30 group-hover:bg-primary/5 md:hidden">
-        <img src={category.image} alt={category.name} className="h-8 w-8 object-contain" />
+      <div className="h-36 md:h-56 overflow-hidden">
+        {photo ? (
+          <img
+            src={photo}
+            alt={category.name}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="h-full w-full flex items-center justify-center bg-gray-50">
+            <img src={category.image} alt={category.name} className="h-16 w-16 md:h-20 md:w-20 object-contain" />
+          </div>
+        )}
       </div>
-      {/* desktop: card cuadrada con etiqueta adentro */}
-      <div className="hidden w-full aspect-square flex-col items-center justify-center gap-0.5 rounded-xl border border-gray-100 bg-white p-1 shadow-sm transition-all group-hover:border-primary/30 group-hover:shadow-md md:flex">
-        <img src={category.image} alt={category.name} className="h-12 w-12 object-contain" />
-        <span className="line-clamp-2 px-0.5 text-center text-[8px] font-semibold leading-tight text-gray-600 transition-colors group-hover:text-primary">
-          {category.name}
-        </span>
+      <div className="p-4 md:p-5">
+        <p className="font-semibold text-[#0B1A45] text-sm md:text-base">{category.name}</p>
       </div>
-      {/* mobile: etiqueta debajo del círculo */}
-      <span className="text-[14px] font-semibold leading-tight text-gray-600 transition-colors group-hover:text-primary md:hidden">
-        {category.name}
-      </span>
     </Link>
   )
 }
@@ -201,7 +120,7 @@ export default function ComercioHomePage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
-      <section className="mx-auto w-full max-w-7xl px-4 py-3 md:px-8 md:py-8">
+      <section className="mx-auto w-full max-w-[1400px] px-4 py-3 md:px-8 md:py-8">
         <div className="mb-3 md:mb-6">
           <div>
             <p className="text-xs font-semibold text-muted-foreground">Buen día,</p>
@@ -217,21 +136,18 @@ export default function ComercioHomePage() {
           </div>
         </div>
 
-        <div className="relative mb-3 md:hidden">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
+        <div className="mb-3 md:hidden">
+          <SearchInput
             placeholder="Buscar productos o distribuidoras..."
             value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            className="h-9 w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 text-sm font-medium shadow-sm outline-none transition-all focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
+            onChange={setSearchQuery}
           />
         </div>
 
         <section
           className="relative mb-5 flex min-h-[152px] overflow-hidden rounded-2xl bg-cover bg-center shadow-[0_20px_60px_rgba(24,29,37,0.14)] md:mb-12 md:min-h-[210px] md:rounded-[2rem]"
           style={{
-            backgroundImage: `linear-gradient(90deg, rgba(180,35,24,0.88) 0%, rgba(180,35,24,0.50) 46%, rgba(24,29,37,0.12) 100%), url(${bannerImage})`,
+            backgroundImage: `linear-gradient(90deg, rgba(11,26,69,0.90) 0%, rgba(11,26,69,0.55) 46%, rgba(24,29,37,0.12) 100%), url(${bannerImage})`,
           }}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(255,255,255,0.24),transparent_30%)]" />
@@ -245,7 +161,7 @@ export default function ComercioHomePage() {
             <div className="mt-3 flex flex-wrap gap-2">
               <Link
                 href="/comercio/buscar"
-                className="inline-flex items-center justify-center rounded-lg bg-white px-4 py-1.5 text-xs font-bold text-primary shadow-lg transition-transform hover:scale-[0.98] md:rounded-xl md:px-6 md:py-3 md:text-sm"
+                className="inline-flex items-center justify-center rounded-lg bg-lima px-4 py-1.5 text-xs font-bold text-primary shadow-lg transition-transform hover:scale-[0.98] hover:bg-lima/90 md:rounded-xl md:px-6 md:py-3 md:text-sm"
               >
                 Explorar ofertas
               </Link>
@@ -277,10 +193,12 @@ export default function ComercioHomePage() {
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-12 md:gap-1.5 md:px-0">
-            {categories.map((category, index) => (
-              <CategoryCard key={category.id} category={category} index={0} />
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+            {categories
+              .filter(c => ['Bebidas', 'Almacén', 'Limpieza', 'Lácteos'].includes(c.name))
+              .map((category) => (
+                <CategoryCard key={category.id} category={category} />
+              ))}
           </div>
         </section>
 
@@ -303,23 +221,19 @@ export default function ComercioHomePage() {
             </Link>
           </div>
 
-          <div className="relative mb-6 hidden max-w-md md:block">
-            <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Filtrar distribuidoras o productos..."
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              className="h-12 w-full rounded-2xl border border-gray-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition-all focus:border-primary/40 focus:ring-4 focus:ring-primary/10"
-            />
-          </div>
+          <SearchInput
+            placeholder="Filtrar distribuidoras o productos..."
+            value={searchQuery}
+            onChange={setSearchQuery}
+            className="mb-6 hidden max-w-md md:block"
+          />
 
           {isLoading ? (
             <DistributorCardSkeleton />
           ) : (
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 md:gap-5">
               {filteredDistributors.slice(0, 3).map((distributor, index) => (
-                <ComercioDistributorCard key={distributor.id} distributor={distributor} index={index} />
+                <DistribuidoraCard key={distributor.id} distributor={distributor} index={index} showProductCount={false} />
               ))}
             </div>
           )}
@@ -346,7 +260,7 @@ export default function ComercioHomePage() {
               </p>
               <Link
                 href="/comercio/pedidos"
-                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-red-700 md:mt-5 md:px-5 md:py-2.5 md:text-sm"
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-lima px-4 py-2 text-xs font-bold text-primary transition-colors hover:bg-lima/90 md:mt-5 md:px-5 md:py-2.5 md:text-sm"
               >
                 Ver historial completo
                 <PackageCheck className="h-3.5 w-3.5 md:h-4 md:w-4" />

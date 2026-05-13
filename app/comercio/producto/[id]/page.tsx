@@ -3,9 +3,10 @@
 import { useState, use } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft, Minus, Plus, ShoppingCart,
+  Minus, Plus, ShoppingCart,
   Package, Clock, AlertTriangle, ShieldCheck, Star, CheckCircle2
 } from 'lucide-react'
+import { PageHero } from '@/components/ui/PageHero'
 import { Button } from '@/components/ui/button'
 import { useApp } from '@/lib/app-context'
 import { mockProducts, formatCurrency, getDistribuidoraById } from '@/lib/mock-data'
@@ -55,30 +56,12 @@ export default function ProductoDetailPage({
     <div className="min-h-screen bg-background pb-44 md:pb-12">
       <div className="max-w-6xl mx-auto md:p-8">
 
-        {/* Dark hero header */}
-        <div className="bg-sidebar pt-6 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-3xl md:mt-4 overflow-hidden">
-          <svg className="absolute inset-0 w-full h-full opacity-[0.05]" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="90%" cy="10%" r="50%" fill="none" stroke="white" strokeWidth="20" />
-          </svg>
-          <div className="relative z-10">
-            <Link
-              href={`/comercio/distribuidora/${product.distribuidoraId}`}
-              className="inline-flex items-center justify-center h-10 w-10 md:h-12 md:w-12 rounded-full bg-white/10 hover:bg-white/20 mb-4 md:mb-8 transition-colors text-white backdrop-blur-sm"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="text-white/60 text-xs md:text-sm uppercase tracking-wider font-bold mb-2 block">
-                  {product.category}
-                </span>
-                <h1 className="font-heading font-bold text-2xl md:text-4xl text-white leading-tight max-w-2xl">
-                  {product.name}
-                </h1>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PageHero
+          label={product.category}
+          title={product.name}
+          backHref={`/comercio/distribuidora/${product.distribuidoraId}`}
+          className="md:rounded-3xl md:mt-4 pb-20 md:pb-24"
+        />
 
         {/* Floating grid */}
         <div className="px-4 md:px-8 -mt-8 md:-mt-12 relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -189,7 +172,7 @@ export default function ProductoDetailPage({
                   <button
                     onClick={() => setQty(q => Math.min(product.stock, q + 1))}
                     disabled={qty >= product.stock}
-                    className="w-14 h-full flex items-center justify-center text-primary hover:bg-red-50 transition-colors disabled:opacity-40"
+                    className="w-14 h-full flex items-center justify-center text-primary hover:bg-[#F1FFD1] transition-colors disabled:opacity-40"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
@@ -259,7 +242,7 @@ export default function ProductoDetailPage({
       </div>
 
       {/* Mobile fixed bottom action */}
-      <div className="md:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 pb-safe shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
+      <div className="md:hidden fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
         <div className="flex items-center gap-4 max-w-md mx-auto">
           <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl h-14 overflow-hidden shrink-0">
             <button

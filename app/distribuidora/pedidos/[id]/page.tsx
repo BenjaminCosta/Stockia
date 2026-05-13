@@ -114,7 +114,7 @@ export default function PedidoDistribuidoraDetailPage({
           <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm md:shadow-md border border-border p-5 md:p-8">
             <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Entrega</h2>
             <div className="flex items-start gap-4">
-              <div className="h-12 w-12 md:h-14 md:w-14 bg-red-50 text-primary rounded-2xl flex items-center justify-center shrink-0">
+              <div className="h-12 w-12 md:h-14 md:w-14 bg-[#F1FFD1] text-[#4A662E] rounded-2xl flex items-center justify-center shrink-0">
                 <MapPin className="h-6 w-6" />
               </div>
               <div>

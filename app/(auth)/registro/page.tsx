@@ -340,7 +340,7 @@ function RoleCard({
       onClick={onClick}
       className={`group relative rounded-2xl border p-5 text-left transition-all duration-200 ${
         active
-          ? 'border-primary bg-accent shadow-[0_16px_36px_-24px_rgba(180,35,24,0.8)]'
+          ? 'border-primary bg-accent shadow-[0_16px_36px_-24px_rgba(11,26,69,0.8)]'
           : 'border-border bg-card hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_16px_36px_-28px_rgba(31,41,55,0.45)]'
       }`}
     >

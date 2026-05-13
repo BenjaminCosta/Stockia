@@ -5,45 +5,53 @@
 
 :root {
   /* ─────────────────────────────────────────────────────────
-     STOCKIA BRAND PALETTE
+     STOCKIA BRAND PALETTE — Navy + Lima
      ─────────────────────────────────────────────────────────
-     Primary   #B42318  Rojo Stockia — botones, links, badges
-     Surface   #FFFFFF  Cards, modales, sidebars overlay
-     Base      #F7F7F8  Fondo general de la app
-     Sidebar   #181D25  Sidebar y hero headers (comercio y distribuidora)
-     Border    #E5E7EB  Bordes de cards y separadores
-     Muted     #6B7280  Texto secundario, placeholders
+     Primary   #0B1A45  Navy — botones, links, texto principal
+     Lima      #C8FF00  Acento — solo sobre fondos oscuros
+     Lima soft #F1FFD1  Lima suave — fondos claros
+     Surface   #FFFFFF  Cards, modales
+     Base      #F7F8FA  Fondo general de la app
+     Sidebar   #0B1A45  Sidebar y hero headers (navy)
+     Border    #DFE1E8  Bordes de cards y separadores
+     Muted     #7A839C  Texto secundario, placeholders
      ───────────────────────────────────────────────────────── */
 
   /* — Colores de superficie — */
-  --background: #F7F7F8;       /* Fondo base */
-  --foreground: #181D25;       /* Texto principal */
+  --background: #F7F8FA;       /* Fondo base */
+  --foreground: #0B1A45;       /* Texto principal navy */
   --card: #FFFFFF;             /* Cards */
-  --card-foreground: #181D25;
+  --card-foreground: #0B1A45;
   --popover: #FFFFFF;
-  --popover-foreground: #181D25;
+  --popover-foreground: #0B1A45;
 
   /* — Color primario — */
-  --primary: #B42318;          /* Rojo Stockia */
+  --primary: #0B1A45;          /* Navy Stockia */
   --primary-foreground: #FFFFFF;
 
   /* — Colores secundarios — */
-  --secondary: #F3F4F6;
-  --secondary-foreground: #181D25;
-  --muted: #F3F4F6;
-  --muted-foreground: #6B7280;
-  --accent: #FEF2F2;           /* Tinte rojo suave (hover states) */
-  --accent-foreground: #B42318;
+  --secondary: #F1FFD1;        /* Lima soft */
+  --secondary-foreground: #0B1A45;
+  --muted: #F7F8FA;
+  --muted-foreground: #7A839C;
+  --accent: #F1FFD1;           /* Lima soft para hover states */
+  --accent-foreground: #0B1A45;
 
   /* — Semánticos — */
   --destructive: #DC2626;
   --destructive-foreground: #FFFFFF;
-  --border: #E5E7EB;
-  --input: #E5E7EB;
-  --ring: #B42318;
+  --border: #DFE1E8;
+  --input: #DFE1E8;
+  --ring: #0B1A45;
+
+  /* — Brand tokens — */
+  --lima: #C8FF00;
+  --lima-soft: #F1FFD1;
+  --green-mid: #89B317;
+  --green-dark: #4A662E;
 
   /* — Charts — */
-  --chart-1: #B42318;
+  --chart-1: #89B317;
   --chart-2: #10B981;
   --chart-3: #3B82F6;
   --chart-4: #F59E0B;
@@ -52,28 +60,28 @@
   /* — Radio global — */
   --radius: 0.75rem;
 
-  /* — Sidebar oscuro (ambos roles) — */
-  --sidebar: #181D25;          /* Color unificado sidebar + hero headers */
+  /* — Sidebar oscuro navy (ambos roles) — */
+  --sidebar: #0B1A45;          /* Navy sidebar + hero headers */
   --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #B42318;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(255,255,255,0.08);
-  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-primary: #C8FF00;  /* Lima para item activo */
+  --sidebar-primary-foreground: #0B1A45;
+  --sidebar-accent: rgba(200,255,0,0.12);  /* Lima translúcido */
+  --sidebar-accent-foreground: #C8FF00;
   --sidebar-border: rgba(255,255,255,0.1);
-  --sidebar-ring: #B42318;
+  --sidebar-ring: #C8FF00;
 
   /* — Status colors — */
-  --success: #10B981;
+  --success: #89B317;
   --success-foreground: #FFFFFF;
   --warning: #F59E0B;
-  --warning-foreground: #181D25;
+  --warning-foreground: #0B1A45;
   --info: #3B82F6;
   --info-foreground: #FFFFFF;
 }
 
 @theme inline {
-  --font-sans: 'Inter', sans-serif;
-  --font-heading: 'Sora', sans-serif;
+  --font-sans: var(--font-jakarta);
+  --font-heading: var(--font-sora);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -116,6 +124,11 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  /* Brand tokens */
+  --color-lima: var(--lima);
+  --color-lima-soft: var(--lima-soft);
+  --color-green-mid: var(--green-mid);
+  --color-green-dark: var(--green-dark);
 }
 
 @layer base {

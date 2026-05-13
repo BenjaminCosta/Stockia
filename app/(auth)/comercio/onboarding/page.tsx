@@ -113,7 +113,7 @@ export default function OnboardingComercioPage() {
           </div>
 
           <div className="flex-1 flex flex-col items-center text-center justify-center gap-8 md:gap-10">
-            <div className="h-28 w-28 md:h-32 md:w-32 rounded-3xl bg-red-50 text-primary flex items-center justify-center shadow-inner relative">
+            <div className="h-28 w-28 md:h-32 md:w-32 rounded-3xl bg-[#F1FFD1] text-[#4A662E] flex items-center justify-center shadow-inner relative">
               <div className="absolute inset-0 bg-primary/10 blur-xl rounded-3xl" />
               <div className="relative z-10">
                 {steps[step].icon}

@@ -10,7 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-jakarta)', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
         heading: ['var(--font-sora)', 'Sora', 'system-ui', 'sans-serif'],
       },
       colors: {
@@ -59,6 +59,13 @@ const config: Config = {
           DEFAULT: "var(--info)",
           foreground: "var(--info-foreground)",
         },
+        /* Brand tokens */
+        lima: {
+          DEFAULT: "var(--lima)",
+          soft: "var(--lima-soft)",
+        },
+        'green-mid': "var(--green-mid)",
+        'green-dark': "var(--green-dark)",
       },
       borderRadius: {
         lg: "var(--radius)",
