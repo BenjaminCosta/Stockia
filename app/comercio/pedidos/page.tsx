@@ -35,10 +35,10 @@ function PedidosContent() {
   return (
     <div className="flex flex-col min-h-screen pb-20 md:pb-8">
       {/* Page header */}
-      <header className="sticky top-0 z-20 bg-white border-b border-border px-4 md:px-8 pt-5 md:pt-6 pb-4">
+      <header className="sticky top-0 z-20 bg-white border-b border-border px-4 md:px-8 pt-3 md:pt-6 pb-3 md:pb-4">
         <div className="max-w-5xl mx-auto">
-          <h1 className="font-heading font-bold text-2xl text-foreground">Mis pedidos</h1>
-          <p className="text-sm text-muted-foreground mt-1">{activeOrders.length} pedido{activeOrders.length !== 1 ? 's' : ''} activo{activeOrders.length !== 1 ? 's' : ''}</p>
+          <h1 className="font-heading font-bold text-xl md:text-2xl text-foreground">Mis pedidos</h1>
+          <p className="text-xs md:text-sm text-muted-foreground mt-0.5">{activeOrders.length} pedido{activeOrders.length !== 1 ? 's' : ''} activo{activeOrders.length !== 1 ? 's' : ''}</p>
         </div>
       </header>
 
@@ -86,36 +86,34 @@ function PedidosContent() {
             actionHref={activeTab === 'Activos' ? '/comercio' : undefined}
           />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Featured most-recent active order */}
             {featuredOrder && (
               <Link href={`/comercio/pedidos/${featuredOrder.id}`}>
-                <div className="bg-[#0B1A45] rounded-3xl p-6 relative overflow-hidden cursor-pointer group">
+                <div className="bg-[#0B1A45] rounded-2xl md:rounded-3xl p-4 md:p-6 relative overflow-hidden cursor-pointer group">
                   <svg className="absolute right-0 top-0 h-full opacity-[0.05]" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="100%" cy="0" r="50%" fill="none" stroke="white" strokeWidth="30" />
                   </svg>
                   <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-3 md:mb-4">
                       <StatusBadge status={featuredOrder.status} />
                       <span className="text-white/40 text-xs font-mono font-medium">{featuredOrder.orderNumber}</span>
                     </div>
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="h-12 w-12 bg-[#C8FF00]/15 rounded-2xl flex items-center justify-center font-bold text-[#C8FF00] text-sm shrink-0">
+                    <div className="flex items-center gap-3 mb-4 md:mb-5">
+                      <div className="h-10 w-10 md:h-12 md:w-12 bg-[#C8FF00]/15 rounded-xl md:rounded-2xl flex items-center justify-center font-bold text-[#C8FF00] text-xs md:text-sm shrink-0">
                         {featuredOrder.distribuidoraName.split(' ').map((w: string) => w[0]).join('').slice(0, 2)}
                       </div>
                       <div>
-                        <p className="text-white/50 text-xs font-medium mb-0.5">Distribuidor</p>
-                        <h3 className="font-bold text-white text-lg leading-tight">{featuredOrder.distribuidoraName}</h3>
+                        <p className="text-white/50 text-[10px] font-medium mb-0.5">Distribuidor</p>
+                        <h3 className="font-bold text-white text-base md:text-lg leading-tight">{featuredOrder.distribuidoraName}</h3>
                       </div>
                     </div>
-                    <div className="flex justify-between items-center pt-4 border-t border-white/10">
-                      <div>
-                        <p className="text-white/50 text-xs font-medium">{featuredOrder.items.length} productos · {new Date(featuredOrder.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}</p>
-                      </div>
+                    <div className="flex justify-between items-center pt-3 md:pt-4 border-t border-white/10">
+                      <p className="text-white/50 text-xs font-medium">{featuredOrder.items.length} productos · {new Date(featuredOrder.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}</p>
                       <div className="flex items-center gap-2">
-                        <span className="font-heading font-bold text-2xl text-white">{formatCurrency(featuredOrder.total)}</span>
-                        <div className="h-8 w-8 bg-[#C8FF00] rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
-                          <ChevronRight className="h-4 w-4 text-[#0B1A45]" />
+                        <span className="font-heading font-bold text-xl md:text-2xl text-white">{formatCurrency(featuredOrder.total)}</span>
+                        <div className="h-7 w-7 md:h-8 md:w-8 bg-[#C8FF00] rounded-lg md:rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                          <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#0B1A45]" />
                         </div>
                       </div>
                     </div>
@@ -127,7 +125,7 @@ function PedidosContent() {
             {/* Rest of orders */}
             {restOrders.map(order => (
               <Link key={order.id} href={`/comercio/pedidos/${order.id}`}>
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-border hover:shadow-md hover:border-primary/15 transition-all cursor-pointer flex items-center gap-4 group">
+                <div className="bg-white rounded-xl md:rounded-2xl p-4 shadow-sm border border-border hover:shadow-md hover:border-primary/15 transition-all cursor-pointer flex items-center gap-3 group">
                   <InitialsAvatar
                     initials={order.distribuidoraName.split(' ').map((w: string) => w[0]).join('').slice(0, 2)}
                     size="lg"
@@ -135,16 +133,16 @@ function PedidosContent() {
                     className="rounded-2xl group-hover:bg-[#F1FFD1] group-hover:text-[#4A662E] transition-colors"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-bold text-foreground text-base truncate pr-2">{order.distribuidoraName}</h3>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <h3 className="font-bold text-foreground text-sm md:text-base truncate pr-2">{order.distribuidoraName}</h3>
                       <StatusBadge status={order.status} />
                     </div>
                     <p className="text-muted-foreground text-xs font-medium">
                       {order.items.length} ítems · {new Date(order.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-heading font-bold text-lg text-foreground">{formatCurrency(order.total)}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="font-heading font-bold text-base md:text-lg text-foreground">{formatCurrency(order.total)}</span>
                     <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-primary transition-colors" />
                   </div>
                 </div>

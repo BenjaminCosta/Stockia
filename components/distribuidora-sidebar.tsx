@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Package, ClipboardList, User, LogOut, MapPin, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/lib/app-context'
+import { StockiaLogo } from '@/components/stockia-logo'
 
 const operationItems = [
   { href: '/distribuidora', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -61,12 +62,11 @@ export function DistribuidoraSidebar() {
   }
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 h-screen fixed left-0 top-0 bg-[#081436]">
+    <aside className="hidden lg:flex flex-col w-64 h-screen fixed left-0 top-0 bg-[#0B1A45]">
       {/* Logo + company switcher */}
       <div className="px-5 pt-5 pb-4 border-b border-white/8">
-        <Link href="/distribuidora" className="flex items-center gap-2.5 mb-4">
-          <img src="/iso-stockia.png" alt="StockIA" className="h-8 w-8 object-contain" />
-          <span className="text-white font-bold text-xl tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>StockIA</span>
+        <Link href="/distribuidora" className="flex items-center gap-3 mb-4">
+          <StockiaLogo size={28} variant="white" className="h-7" />
         </Link>
         <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/5 border border-white/8">
           <div className="h-8 w-8 rounded-lg bg-[rgba(200,255,0,0.15)] flex items-center justify-center font-bold text-[#C8FF00] text-xs shrink-0">

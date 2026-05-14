@@ -26,7 +26,7 @@ export function PageHero({
   className,
 }: PageHeroProps) {
   return (
-    <div className={cn('bg-[#0B1A45] px-4 md:px-8 pt-8 pb-10 relative overflow-hidden', className)}>
+    <div className={cn('bg-[#0B1A45] px-4 md:px-8 pt-5 pb-10 md:pt-8 relative overflow-hidden', className)}>
       {/* Decorative SVG circle */}
       <svg className="absolute right-0 top-0 h-full opacity-[0.04] pointer-events-none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="100%" cy="0" r="40%" fill="none" stroke="white" strokeWidth="40" />
@@ -36,29 +36,29 @@ export function PageHero({
         {backHref && (
           <Link
             href={backHref}
-            className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 mb-6 transition-colors text-white"
+            className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 mb-4 transition-colors text-white"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4" />
           </Link>
         )}
 
         {label && (
-          <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">{label}</p>
+          <p className="text-white/50 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-0.5">{label}</p>
         )}
 
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h1 className="font-heading font-bold text-3xl md:text-4xl text-white leading-tight mb-1">
+            <h1 className="font-heading font-bold text-2xl md:text-4xl text-white leading-tight mb-1">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-white/60 text-sm font-medium">{subtitle}</p>
+              <p className="text-white/60 text-xs md:text-sm font-medium">{subtitle}</p>
             )}
           </div>
           {badge && <div className="shrink-0">{badge}</div>}
         </div>
 
-        {children && <div className="mt-4">{children}</div>}
+        {children && <div className="mt-3 md:mt-4">{children}</div>}
       </div>
     </div>
   )
