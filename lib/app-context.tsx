@@ -88,6 +88,8 @@ async function buildCurrentUser(
       lng: (profile as any)?.location?.lng ?? 0,
       city: (profile as any)?.location?.city || '',
     },
+    commissionRate: (profile as any)?.commissionRate ?? 0.015,
+    commissionStatus: (profile as any)?.commissionStatus ?? 'ok',
     createdAt: '',
   }
 }

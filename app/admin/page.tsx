@@ -26,6 +26,8 @@ function StatCard({ label, value, sub, icon: Icon, iconBg, href }: {
   )
 }
 
+const monthLabel = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
 
@@ -46,7 +48,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="font-heading font-bold text-2xl md:text-3xl text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-1">Resumen general de la plataforma · Mayo 2025</p>
+        <p className="text-gray-500 text-sm mt-1 capitalize">Resumen general de la plataforma · {monthLabel}</p>
       </div>
 
       {/* KPI grid */}

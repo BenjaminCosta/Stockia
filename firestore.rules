@@ -9,8 +9,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function userDoc() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid))
+        : null;
+    }
+
     function userRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return userDoc() != null ? userDoc().data.role : null;
     }
 
     function isAdmin() {
@@ -53,7 +59,7 @@ service cloud.firestore {
 
     match /distributors/{distributorId} {
       allow read:   if isSignedIn();
-      allow create: if isDistribuidora() && request.resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
@@ -106,7 +112,7 @@ service cloud.firestore {
         resource.data.distributorId == request.auth.uid ||
         isAdmin()
       );
-      allow create: if isDistribuidora() && request.resource.data.distributorId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.distributorId == request.auth.uid;
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -116,9 +122,31 @@ service cloud.firestore {
 
     match /reviews/{reviewId} {
       allow read:   if isSignedIn();
-      allow create: if isComercio();
-      allow update: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.commerceId == request.auth.uid;
+      allow update: if isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // ─── Commerce Reviews ────────────────────────────────────────────────────────
+    // Distributors rate commerces after completed/cancelled/undelivered orders.
+    // Any signed-in user can read (for distributor to see commerce profile).
+    // Only the owning distributor can create (their own distributorId).
+    // Admin can moderate.
+
+    match /commerceReviews/{reviewId} {
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.distributorId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Platform Feedback ───────────────────────────────────────────────────────
+    // Any authenticated user can create their own feedback.
+    // Only admin can read and manage.
+
+    match /platformFeedback/{feedbackId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAdmin();
     }
 
     // ─── Admin Settings ─────────────────────────────────────────────────────────

@@ -42,6 +42,9 @@ export interface Distribuidora extends User {
     lng: number
     city: string
   }
+  // Commission fields
+  commissionRate?: number                            // e.g. 0.015 = 1.5%
+  commissionStatus?: 'ok' | 'overdue' | 'blocked'   // platform sets this
 }
 
 // Product types
@@ -163,6 +166,39 @@ export interface CommerceHistory {
   reportedIssues: number
   lastOrderAt: string
   joinedAt: string
+}
+
+// Commerce review — distributor rates a commerce after an order
+export interface CommerceReview {
+  id: string
+  orderId: string
+  orderNumber: string
+  distributorId: string
+  distributorName: string
+  commerceId: string
+  commerceName: string
+  ratingGeneral: number
+  ratingPayment: number
+  ratingReception: number
+  ratingCommunication: number
+  ratingReliability: number
+  comment: string
+  status: 'visible' | 'hidden' | 'reported'
+  createdAt: string
+}
+
+// Platform feedback — user sends internal feedback to Stockia
+export interface PlatformFeedback {
+  id: string
+  userId: string
+  userRole: 'comercio' | 'distribuidora'
+  userName: string
+  relatedOrderId?: string
+  rating: number
+  message: string
+  category: 'general' | 'problema' | 'mejora' | 'elogio'
+  status: 'new' | 'reviewed' | 'resolved'
+  createdAt: string
 }
 
 // Dashboard KPIs

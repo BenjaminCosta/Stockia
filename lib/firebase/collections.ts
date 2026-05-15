@@ -10,6 +10,8 @@ export const COLLECTIONS = {
   categories: 'categories',
   commissions: 'commissions',
   reviews: 'reviews',
+  commerceReviews: 'commerceReviews',
+  platformFeedback: 'platformFeedback',
   adminSettings: 'adminSettings',
 } as const
 

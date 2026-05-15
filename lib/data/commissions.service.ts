@@ -1,4 +1,5 @@
 import {
+  getCollection,
   getDocumentsByField,
   updateDocument,
 } from '../firebase/firestore'
@@ -6,7 +7,7 @@ import { COLLECTIONS } from '../firebase/collections'
 
 // ─── Firestore shape ──────────────────────────────────────────────────────────
 
-export type CommissionStatus = 'pending' | 'paid' | 'overdue'
+export type CommissionStatus = 'pending' | 'paid' | 'overdue' | 'waived'
 
 export interface FirestoreCommission {
   distributorId: string
@@ -85,33 +86,24 @@ export async function getCommissionsByDistributor(
   distributorId: string
 ): Promise<(FirestoreCommission & { id: string })[]> {
   try {
-    const docs = await getDocumentsByField<FirestoreCommission>(
+    return await getDocumentsByField<FirestoreCommission>(
       COLLECTIONS.commissions,
       'distributorId',
       '==',
       distributorId
     )
-    if (docs.length > 0) return docs
   } catch {
-    // fall through
+    return []
   }
-  return MOCK_COMMISSIONS.filter(c => c.distributorId === distributorId)
 }
 
 /** Returns all commissions (admin view). */
 export async function getAllCommissions(): Promise<(FirestoreCommission & { id: string })[]> {
   try {
-    const docs = await getDocumentsByField<FirestoreCommission>(
-      COLLECTIONS.commissions,
-      'status',
-      'in',
-      ['pending', 'paid', 'overdue']
-    )
-    if (docs.length > 0) return docs
+    return await getCollection<FirestoreCommission>(COLLECTIONS.commissions)
   } catch {
-    // fall through
+    return []
   }
-  return MOCK_COMMISSIONS
 }
 
 /**

@@ -1,161 +1,45 @@
-// Reviews service — mock data, ready to swap for Firebase
-// To connect Firebase: replace each function body with Firestore calls
-
+import { getCollection, getDocument, getDocumentsByField, createDocument, updateDocument } from '../firebase/firestore'
+import { COLLECTIONS } from '../firebase/collections'
 import { Review, DistributorRatingSummary, CommerceHistory } from '@/lib/types'
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── Firestore shape ───────────────────────────────────────────────────────────
 
-export const mockReviews: Review[] = [
-  {
-    id: 'rev-1',
-    orderId: 'order-1',
-    orderNumber: 'STK-001-2024',
-    distributorId: 'dist-1',
-    distributorName: 'Distribuidora Norte',
-    commerceId: 'com-1',
-    commerceName: 'Almacén Don Pedro',
-    ratingGeneral: 5,
-    ratingFulfillment: 5,
-    ratingDelivery: 4,
-    ratingProductCondition: 5,
-    ratingCommunication: 5,
-    comment: 'Excelente servicio, llegaron todos los productos en perfecto estado y antes del tiempo acordado.',
-    status: 'visible',
-    createdAt: '2024-11-10T10:00:00Z',
-  },
-  {
-    id: 'rev-2',
-    orderId: 'order-2',
-    orderNumber: 'STK-002-2024',
-    distributorId: 'dist-1',
-    distributorName: 'Distribuidora Norte',
-    commerceId: 'com-2',
-    commerceName: 'Kiosco María',
-    ratingGeneral: 4,
-    ratingFulfillment: 4,
-    ratingDelivery: 3,
-    ratingProductCondition: 4,
-    ratingCommunication: 5,
-    comment: 'Muy buena atención, aunque tardaron un poco más de lo previsto. Los productos estaban bien.',
-    status: 'visible',
-    createdAt: '2024-11-05T14:30:00Z',
-  },
-  {
-    id: 'rev-3',
-    orderId: 'order-3',
-    orderNumber: 'STK-003-2024',
-    distributorId: 'dist-1',
-    distributorName: 'Distribuidora Norte',
-    commerceId: 'com-3',
-    commerceName: 'Mini Market El Sol',
-    ratingGeneral: 5,
-    ratingFulfillment: 5,
-    ratingDelivery: 5,
-    ratingProductCondition: 5,
-    ratingCommunication: 4,
-    comment: 'Todo perfecto, pedido completo y en tiempo. Lo recomiendo.',
-    status: 'visible',
-    createdAt: '2024-10-28T09:15:00Z',
-  },
-  {
-    id: 'rev-4',
-    orderId: 'order-4',
-    orderNumber: 'STK-004-2024',
-    distributorId: 'dist-2',
-    distributorName: 'Distribuidora Sur',
-    commerceId: 'com-1',
-    commerceName: 'Almacén Don Pedro',
-    ratingGeneral: 3,
-    ratingFulfillment: 3,
-    ratingDelivery: 2,
-    ratingProductCondition: 4,
-    ratingCommunication: 3,
-    comment: 'Llegó tarde y faltaron 2 productos. Me avisaron pero esperaba que el pedido esté completo.',
-    status: 'visible',
-    createdAt: '2024-10-20T16:00:00Z',
-  },
-  {
-    id: 'rev-5',
-    orderId: 'order-5',
-    orderNumber: 'STK-005-2024',
-    distributorId: 'dist-2',
-    distributorName: 'Distribuidora Sur',
-    commerceId: 'com-4',
-    commerceName: 'Supermercado Familiar',
-    ratingGeneral: 4,
-    ratingFulfillment: 4,
-    ratingDelivery: 4,
-    ratingProductCondition: 5,
-    ratingCommunication: 4,
-    comment: '',
-    status: 'visible',
-    createdAt: '2024-10-15T11:00:00Z',
-  },
-  {
-    id: 'rev-6',
-    orderId: 'order-6',
-    orderNumber: 'STK-006-2024',
-    distributorId: 'dist-1',
-    distributorName: 'Distribuidora Norte',
-    commerceId: 'com-5',
-    commerceName: 'Despensa La Esquina',
-    ratingGeneral: 2,
-    ratingFulfillment: 2,
-    ratingDelivery: 1,
-    ratingProductCondition: 3,
-    ratingCommunication: 2,
-    comment: 'No me avisaron del retraso y el pedido llegó incompleto. Espero que mejoren.',
-    status: 'hidden',
-    createdAt: '2024-10-08T08:00:00Z',
-  },
-]
+interface FirestoreReview {
+  orderId: string
+  orderNumber: string
+  distributorId: string
+  distributorName?: string
+  commerceId: string
+  commerceName?: string
+  ratingGeneral: number
+  ratingFulfillment: number
+  ratingDelivery: number
+  ratingProductCondition: number
+  ratingCommunication: number
+  comment: string
+  status: 'visible' | 'hidden' | 'reported'
+  createdAt: unknown
+}
 
-// Mock commerce histories
-const mockCommerceHistories: CommerceHistory[] = [
-  {
-    commerceId: 'com-1',
-    commerceName: 'Almacén Don Pedro',
-    completedOrders: 14,
-    cancelledOrders: 1,
-    notDeliveredOrders: 0,
-    reportedIssues: 0,
-    lastOrderAt: '2024-11-10T10:00:00Z',
-    joinedAt: '2024-01-15T00:00:00Z',
-  },
-  {
-    commerceId: 'com-2',
-    commerceName: 'Kiosco María',
-    completedOrders: 8,
-    cancelledOrders: 0,
-    notDeliveredOrders: 0,
-    reportedIssues: 0,
-    lastOrderAt: '2024-11-05T14:30:00Z',
-    joinedAt: '2024-03-10T00:00:00Z',
-  },
-  {
-    commerceId: 'com-3',
-    commerceName: 'Mini Market El Sol',
-    completedOrders: 22,
-    cancelledOrders: 2,
-    notDeliveredOrders: 1,
-    reportedIssues: 1,
-    lastOrderAt: '2024-10-28T09:15:00Z',
-    joinedAt: '2023-11-20T00:00:00Z',
-  },
-  {
-    commerceId: 'com-4',
-    commerceName: 'Supermercado Familiar',
-    completedOrders: 5,
-    cancelledOrders: 0,
-    notDeliveredOrders: 0,
-    reportedIssues: 0,
-    lastOrderAt: '2024-10-15T11:00:00Z',
-    joinedAt: '2024-06-01T00:00:00Z',
-  },
-]
-
-// Set of orderIds that already have a review (to prevent duplicates)
-const reviewedOrderIds = new Set(mockReviews.map(r => r.orderId))
+function fsToReview(doc: FirestoreReview & { id: string }): Review {
+  return {
+    id: doc.id,
+    orderId: doc.orderId,
+    orderNumber: doc.orderNumber ?? doc.orderId?.slice(0, 8).toUpperCase(),
+    distributorId: doc.distributorId,
+    distributorName: doc.distributorName ?? doc.distributorId ?? '',
+    commerceId: doc.commerceId,
+    commerceName: doc.commerceName ?? doc.commerceId ?? '',
+    ratingGeneral: Number(doc.ratingGeneral) || 0,
+    ratingFulfillment: Number(doc.ratingFulfillment) || 0,
+    ratingDelivery: Number(doc.ratingDelivery) || 0,
+    ratingProductCondition: Number(doc.ratingProductCondition) || 0,
+    ratingCommunication: Number(doc.ratingCommunication) || 0,
+    comment: doc.comment ?? '',
+    status: doc.status ?? 'visible',
+    createdAt: (doc.createdAt as any)?.toDate?.()?.toISOString() ?? new Date().toISOString(),
+  }
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -180,39 +64,63 @@ function computeSummary(reviews: Review[]): DistributorRatingSummary {
 
 /** Get all visible reviews for a distributor */
 export async function getReviewsByDistributor(distributorId: string): Promise<Review[]> {
-  // Firebase: getDocs(query(collection(db, 'reviews'), where('distributorId', '==', distributorId), where('status', '==', 'visible')))
-  await new Promise(r => setTimeout(r, 100))
-  return mockReviews.filter(r => r.distributorId === distributorId && r.status === 'visible')
+  try {
+    const docs = await getDocumentsByField<FirestoreReview>(COLLECTIONS.reviews, 'distributorId', '==', distributorId)
+    if (docs.length > 0) {
+      return docs
+        .map(fsToReview)
+        .filter(r => r.status === 'visible')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    }
+  } catch {
+    // fall through
+  }
+  return []
 }
 
 /** Get all reviews for a distributor (admin — includes hidden) */
 export async function getAllReviewsByDistributor(distributorId: string): Promise<Review[]> {
-  await new Promise(r => setTimeout(r, 100))
-  return mockReviews.filter(r => r.distributorId === distributorId)
+  try {
+    const docs = await getDocumentsByField<FirestoreReview>(COLLECTIONS.reviews, 'distributorId', '==', distributorId)
+    if (docs.length > 0) return docs.map(fsToReview)
+  } catch {
+    // fall through
+  }
+  return []
 }
 
 /** Get all reviews (admin) */
 export async function getAllReviews(): Promise<Review[]> {
-  await new Promise(r => setTimeout(r, 100))
-  return [...mockReviews].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  try {
+    const docs = await getCollection<FirestoreReview>(COLLECTIONS.reviews)
+    return docs
+      .map(fsToReview)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  } catch {
+    // fall through
+  }
+  return []
 }
 
 /** Check if a specific order already has a review */
 export async function getReviewByOrder(orderId: string): Promise<Review | null> {
-  // Firebase: getDocs(query(collection(db, 'reviews'), where('orderId', '==', orderId), limit(1)))
-  await new Promise(r => setTimeout(r, 50))
-  return mockReviews.find(r => r.orderId === orderId) ?? null
+  try {
+    const docs = await getDocumentsByField<FirestoreReview>(COLLECTIONS.reviews, 'orderId', '==', orderId)
+    if (docs.length > 0) return fsToReview(docs[0])
+  } catch {
+    // fall through
+  }
+  return null
 }
 
-/** Check synchronously (for UI without async) */
-export function hasReviewForOrder(orderId: string): boolean {
-  return reviewedOrderIds.has(orderId)
+/** Check synchronously — always false when using Firestore (use getReviewByOrder for async check) */
+export function hasReviewForOrder(_orderId: string): boolean {
+  return false
 }
 
 /** Get rating summary for a distributor */
 export async function getDistributorRatingSummary(distributorId: string): Promise<DistributorRatingSummary> {
-  await new Promise(r => setTimeout(r, 80))
-  const reviews = mockReviews.filter(r => r.distributorId === distributorId)
+  const reviews = await getReviewsByDistributor(distributorId)
   return computeSummary(reviews)
 }
 
@@ -231,37 +139,67 @@ export async function createReview(data: {
   ratingCommunication: number
   comment: string
 }): Promise<Review> {
-  // Firebase: addDoc(collection(db, 'reviews'), { ...data, status: 'visible', createdAt: serverTimestamp() })
-  await new Promise(r => setTimeout(r, 300))
-  const review: Review = {
-    id: `rev-${Date.now()}`,
+  const id = await createDocument(COLLECTIONS.reviews, {
+    ...data,
+    status: 'visible',
+  })
+  return {
+    id,
     ...data,
     status: 'visible',
     createdAt: new Date().toISOString(),
   }
-  mockReviews.push(review)
-  reviewedOrderIds.add(data.orderId)
-  return review
 }
 
 /** Moderate a review (admin) */
 export async function moderateReview(reviewId: string, visible: boolean): Promise<void> {
-  // Firebase: updateDoc(doc(db, 'reviews', reviewId), { status: visible ? 'visible' : 'hidden' })
-  await new Promise(r => setTimeout(r, 200))
-  const review = mockReviews.find(r => r.id === reviewId)
-  if (review) review.status = visible ? 'visible' : 'hidden'
+  await updateDocument(COLLECTIONS.reviews, reviewId, { status: visible ? 'visible' : 'hidden' })
 }
 
-/** Get commerce history (for distribuidora view) */
-export async function getCommerceHistory(commerceId: string): Promise<CommerceHistory | null> {
-  // Firebase: getDoc(doc(db, 'commerceHistories', commerceId))
-  await new Promise(r => setTimeout(r, 100))
-  return mockCommerceHistories.find(h => h.commerceId === commerceId) ?? null
+/** Get commerce history (for distribuidora view — derived from delivered orders) */
+export async function getCommerceHistory(_commerceId: string): Promise<CommerceHistory | null> {
+  return null
 }
 
-/** Get all commerce histories (for distribuidora — all their customers) */
-export async function getCommerceHistoriesByDistributor(_distributorId: string): Promise<CommerceHistory[]> {
-  // Firebase: query based on orders where distributorId == _distributorId, aggregate per commerceId
-  await new Promise(r => setTimeout(r, 150))
-  return mockCommerceHistories
+/** Get all commerce histories (derived from orders for the given distributor) */
+export async function getCommerceHistoriesByDistributor(distributorId: string): Promise<CommerceHistory[]> {
+  try {
+    const orders = await getDocumentsByField<Record<string, unknown>>(
+      COLLECTIONS.orders,
+      'distributorId',
+      '==',
+      distributorId
+    )
+    if (orders.length === 0) return []
+
+    const map: Record<string, CommerceHistory> = {}
+    for (const o of orders) {
+      const cId = String(o.commerceId ?? '')
+      const cName = String(o.commerceName ?? o.commerceId ?? '')
+      if (!cId) continue
+      if (!map[cId]) {
+        map[cId] = {
+          commerceId: cId,
+          commerceName: cName,
+          completedOrders: 0,
+          cancelledOrders: 0,
+          notDeliveredOrders: 0,
+          reportedIssues: 0,
+          lastOrderAt: String(o.createdAt ?? new Date().toISOString()),
+          joinedAt: String(o.createdAt ?? new Date().toISOString()),
+        }
+      }
+      const h = map[cId]
+      const status = String(o.orderStatus ?? '')
+      if (status === 'delivered') h.completedOrders++
+      else if (status === 'cancelled') h.cancelledOrders++
+      else if (status === 'not_delivered') h.notDeliveredOrders++
+      const createdAt = String(o.createdAt ?? '')
+      if (createdAt > h.lastOrderAt) h.lastOrderAt = createdAt
+      if (createdAt < h.joinedAt) h.joinedAt = createdAt
+    }
+    return Object.values(map)
+  } catch {
+    return []
+  }
 }

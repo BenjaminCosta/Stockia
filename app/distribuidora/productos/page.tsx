@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, Pencil, Package, Upload, Download, FileSpreadsheet } from 'lucide-react'
+import { Plus, Pencil, Package, Upload, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Switch } from '@/components/ui/switch'
@@ -21,6 +21,7 @@ export default function ProductosPage() {
   const { currentUser } = useApp()
   const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
   const distributorId = distribuidora?.id || 'dist-1'
+  const isBlocked = distribuidora?.commissionStatus === 'blocked'
   const [searchQuery, setSearchQuery] = useState('')
   const [showImport, setShowImport] = useState(false)
   const { data: products, loading: isLoading } = useProducts(distributorId)
@@ -51,6 +52,17 @@ export default function ProductosPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Blocked banner */}
+      {isBlocked && (
+        <div className="bg-red-600 text-white px-4 py-3 flex items-center gap-3">
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-bold text-sm">Cuenta bloqueada por comisiones vencidas</p>
+            <p className="text-xs text-red-100 mt-0.5">No podés publicar ni activar productos. Contactá a Stockia para regularizar tu situación.</p>
+          </div>
+        </div>
+      )}
+
       {/* Page header */}
       <header className="sticky top-0 md:top-0 z-20 bg-white border-b border-border px-4 md:px-8 pt-5 md:pt-6 pb-0">
         <div className="max-w-5xl mx-auto">
@@ -89,12 +101,23 @@ export default function ProductosPage() {
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">Importar</span>
             </button>
-            <Link href="/distribuidora/productos/nuevo">
-              <button className="bg-primary hover:bg-primary/90 text-white px-4 md:px-6 rounded-xl text-sm md:text-base font-bold shadow-sm flex items-center justify-center gap-2 h-10 transition-colors">
+            {isBlocked ? (
+              <button
+                disabled
+                title="Cuenta bloqueada"
+                className="bg-gray-200 text-gray-400 px-4 md:px-6 rounded-xl text-sm md:text-base font-bold flex items-center justify-center gap-2 h-10 cursor-not-allowed"
+              >
                 <Plus className="h-5 w-5 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Nuevo</span>
               </button>
-            </Link>
+            ) : (
+              <Link href="/distribuidora/productos/nuevo">
+                <button className="bg-primary hover:bg-primary/90 text-white px-4 md:px-6 rounded-xl text-sm md:text-base font-bold shadow-sm flex items-center justify-center gap-2 h-10 transition-colors">
+                  <Plus className="h-5 w-5 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Nuevo</span>
+                </button>
+              </Link>
+            )}
           </div>
         </div>
       </header>

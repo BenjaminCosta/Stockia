@@ -24,6 +24,8 @@ export type OrderStatus =
 export interface FirestoreOrder {
   commerceId: string
   distributorId: string
+  commerceName?: string
+  distributorName?: string
   items: OrderItem[]
   subtotal: number
   total: number
@@ -52,9 +54,9 @@ function toOrder(doc: FirestoreOrder & { id: string }): Order {
     id: doc.id,
     orderNumber: doc.id.slice(0, 8).toUpperCase(),
     comercioId: doc.commerceId,
-    comercioName: '',   // TODO: join with users/commerces collection
+    comercioName: doc.commerceName ?? doc.commerceId ?? '',
     distribuidoraId: doc.distributorId,
-    distribuidoraName: '', // TODO: join with distributors collection
+    distribuidoraName: doc.distributorName ?? doc.distributorId ?? '',
     items: doc.items,
     subtotal: doc.subtotal,
     total: doc.total,
@@ -134,8 +136,18 @@ export async function createOrder(data: {
   const paymentStatus: PaymentStatus =
     data.paymentMethod === 'mercado_pago' ? 'pending' : 'external_agreed'
 
+  // Resolve display names at creation time so order documents are self-contained
+  const [commerceDoc, distributorDoc] = await Promise.all([
+    getDocument<Record<string, unknown>>(COLLECTIONS.commerces, data.commerceId).catch(() => null),
+    getDocument<Record<string, unknown>>(COLLECTIONS.distributors, data.distributorId).catch(() => null),
+  ])
+  const commerceName = String(commerceDoc?.businessName ?? commerceDoc?.storeName ?? '')
+  const distributorName = String(distributorDoc?.companyName ?? '')
+
   return createDocument(COLLECTIONS.orders, {
     ...data,
+    commerceName,
+    distributorName,
     paymentStatus,
     orderStatus: 'pending_confirmation' as OrderStatus,
     commissionGenerated: false,
@@ -180,16 +192,20 @@ async function generateCommissionForOrder(orderId: string): Promise<void> {
     const doc = await getDocument<FirestoreOrder>(COLLECTIONS.orders, orderId)
     if (!doc || doc.commissionGenerated) return
 
-    const COMMISSION_RATE = 0.015
-    const commissionAmount = doc.total * COMMISSION_RATE
+    // Use per-distributor rate if set, otherwise default 1.5%
+    const distDoc = await getDocument<Record<string, unknown>>(COLLECTIONS.distributors, doc.distributorId).catch(() => null)
+    const commissionRate = Number((distDoc as any)?.commissionRate ?? 0.015)
+    const commissionAmount = Math.round(doc.total * commissionRate * 100) / 100
 
     const period = new Date().toISOString().slice(0, 7) // "YYYY-MM"
 
     await createDocument(COLLECTIONS.commissions, {
       distributorId: doc.distributorId,
+      distributorName: doc.distributorName ?? doc.distributorId,
       orderId,
+      orderNumber: orderId.slice(0, 8).toUpperCase(),
       orderTotal: doc.total,
-      commissionRate: COMMISSION_RATE,
+      commissionRate,
       commissionAmount,
       status: 'pending',
       period,

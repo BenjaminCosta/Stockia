@@ -52,8 +52,9 @@ export type AdminCommission = {
   distributorName: string
   period: string
   orderTotal: number
+  commissionRate: number
   commissionAmount: number
-  status: 'pending' | 'paid' | 'overdue'
+  status: 'pending' | 'paid' | 'overdue' | 'waived'
   orderId: string
   orderNumber: string
   createdAt: string
@@ -185,17 +186,19 @@ function fsToOrder(doc: Record<string, unknown> & { id: string }): AdminOrder {
 }
 
 function fsToCommission(doc: Record<string, unknown> & { id: string }): AdminCommission {
+  const orderId = String(doc.orderId ?? '')
   return {
     id: doc.id,
     distributorId: String(doc.distributorId ?? ''),
     distributorName: String(doc.distributorName ?? doc.distributorId ?? ''),
     period: String(doc.period ?? ''),
     orderTotal: Number(doc.orderTotal ?? 0),
+    commissionRate: Number(doc.commissionRate ?? 0.015),
     commissionAmount: Number(doc.commissionAmount ?? 0),
     status: (doc.status as AdminCommission['status']) ?? 'pending',
-    orderId: String(doc.orderId ?? ''),
-    orderNumber: String(doc.orderId ?? '').slice(0, 8).toUpperCase(),
-    createdAt: doc.createdAt ? String(doc.createdAt) : new Date().toISOString(),
+    orderId,
+    orderNumber: doc.orderNumber ? String(doc.orderNumber) : orderId.slice(0, 8).toUpperCase(),
+    createdAt: (doc.createdAt as any)?.toDate?.()?.toISOString() ?? new Date().toISOString(),
   }
 }
 
@@ -214,9 +217,9 @@ function fsToCategory(doc: Record<string, unknown> & { id: string }): AdminCateg
 function fsToReview(doc: Record<string, unknown> & { id: string }): AdminReview {
   return {
     id: doc.id,
-    distributorName: String(doc.distributorName ?? ''),
-    commerceName: String(doc.authorId ?? ''),
-    rating: Number(doc.rating ?? 0),
+    distributorName: String(doc.distributorName ?? doc.distributorId ?? ''),
+    commerceName: String(doc.commerceName ?? doc.commerceId ?? ''),
+    rating: Number(doc.ratingGeneral ?? doc.rating ?? 0),
     comment: String(doc.comment ?? ''),
     createdAt: doc.createdAt ? String(doc.createdAt) : new Date().toISOString(),
     visible: doc.visible !== false,
@@ -243,18 +246,35 @@ export async function getAdminCommerces(): Promise<AdminCommerce[]> {
 
 export async function getAdminOrders(): Promise<AdminOrder[]> {
   try {
-    const docs = await getCollection<Record<string, unknown>>(COLLECTIONS.orders)
-    if (docs.length > 0) return docs.map(fsToOrder)
+    const [orderDocs, distDocs, commDocs] = await Promise.all([
+      getCollection<Record<string, unknown>>(COLLECTIONS.orders),
+      getCollection<Record<string, unknown>>(COLLECTIONS.distributors),
+      getCollection<Record<string, unknown>>(COLLECTIONS.commerces),
+    ])
+    if (orderDocs.length > 0) {
+      const distNames: Record<string, string> = {}
+      distDocs.forEach(d => { distNames[d.id] = String(d.companyName ?? '') })
+      const commerceNames: Record<string, string> = {}
+      commDocs.forEach(c => { commerceNames[c.id] = String(c.businessName ?? c.storeName ?? '') })
+      return orderDocs.map(doc => ({
+        ...fsToOrder(doc),
+        commerceName:    commerceNames[String(doc.commerceId)]   || String(doc.commerceId ?? ''),
+        distributorName: distNames[String(doc.distributorId)]    || String(doc.distributorId ?? ''),
+      }))
+    }
   } catch { /* fall through */ }
   return MOCK_ORDERS
 }
 
 export async function getAdminCommissions(): Promise<AdminCommission[]> {
   try {
-    const docs = await getCollection<Record<string, unknown>>(COLLECTIONS.commissions)
-    if (docs.length > 0) return docs.map(fsToCommission)
-  } catch { /* fall through */ }
-  return MOCK_COMMISSIONS
+    const commDocs = await getCollection<Record<string, unknown>>(COLLECTIONS.commissions)
+    return commDocs
+      .map(fsToCommission)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  } catch {
+    return []
+  }
 }
 
 export async function getAdminCategories(): Promise<AdminCategory[]> {
@@ -290,7 +310,25 @@ export async function adminSetCommerceStatus(
 }
 
 export async function adminMarkCommissionPaid(id: string): Promise<void> {
-  await updateDocument(COLLECTIONS.commissions, id, { status: 'paid' })
+  await updateDocument(COLLECTIONS.commissions, id, { status: 'paid', paidAt: new Date().toISOString() })
+}
+
+export async function adminWaiveCommission(id: string): Promise<void> {
+  await updateDocument(COLLECTIONS.commissions, id, { status: 'waived' })
+}
+
+export async function adminSetDistributorCommissionStatus(
+  distributorId: string,
+  status: 'ok' | 'overdue' | 'blocked'
+): Promise<void> {
+  await updateDocument(COLLECTIONS.distributors, distributorId, { commissionStatus: status })
+}
+
+export async function adminSetDistributorCommissionRate(
+  distributorId: string,
+  rate: number
+): Promise<void> {
+  await updateDocument(COLLECTIONS.distributors, distributorId, { commissionRate: rate })
 }
 
 export async function adminSetCategoryVisibility(id: string, visible: boolean): Promise<void> {
@@ -317,6 +355,8 @@ export async function adminModerateReview(id: string, visible: boolean): Promise
 // ─── Dashboard stats ──────────────────────────────────────────────────────────
 
 export async function getAdminDashboardStats() {
+  const currentPeriod = new Date().toISOString().slice(0, 7) // "YYYY-MM"
+
   const [distributors, commerces, orders, commissions] = await Promise.all([
     getAdminDistributors(),
     getAdminCommerces(),
@@ -324,14 +364,17 @@ export async function getAdminDashboardStats() {
     getAdminCommissions(),
   ])
 
+  // Filter orders to current calendar month
+  const monthOrders = orders.filter(o => o.createdAt.slice(0, 7) === currentPeriod)
+
   return {
     activeDistributors:  distributors.filter(d => d.status === 'active').length,
     activeCommerces:     commerces.filter(c => c.status === 'active').length,
-    monthOrders:         orders.length,
+    monthOrders:         monthOrders.length,
     pendingCommissions:  commissions.filter(c => c.status === 'pending').reduce((s, c) => s + c.commissionAmount, 0),
     overdueCommissions:  commissions.filter(c => c.status === 'overdue').reduce((s, c) => s + c.commissionAmount, 0),
-    totalRevenue:        orders.filter(o => o.orderStatus === 'delivered').reduce((s, o) => s + o.total, 0),
-    cancelledOrders:     orders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'not_delivered').length,
+    totalRevenue:        monthOrders.filter(o => o.orderStatus === 'delivered').reduce((s, o) => s + o.total, 0),
+    cancelledOrders:     monthOrders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'not_delivered').length,
     pausedDistributors:  distributors.filter(d => d.status === 'paused'),
     overdueDistributors: [...new Set(commissions.filter(c => c.status === 'overdue').map(c => c.distributorName))],
   }

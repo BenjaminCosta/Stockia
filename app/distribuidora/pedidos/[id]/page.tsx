@@ -2,12 +2,17 @@
 
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Phone, Package, Clock, CheckCircle, Truck, X, AlertTriangle, Handshake, CreditCard, BadgePercent } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Package, Clock, CheckCircle, Truck, X, AlertTriangle, Handshake, CreditCard, BadgePercent, Star } from 'lucide-react'
 import { formatCurrency, mockComercios, getEstimatedDeliveryDate } from '@/lib/mock-data'
 import { useOrder, useDistributor } from '@/hooks/use-data'
 import { updateOrderStatus } from '@/lib/data/orders.service'
 import type { OrderStatus as FSOrderStatus } from '@/lib/data/orders.service'
 import { LoadingButton } from '@/components/ui/LoadingButton'
+import { getCommerceReviewByOrder } from '@/lib/data/commerce-reviews.service'
+import { CommerceReviewModal } from '@/components/CommerceReviewModal'
+import { FeedbackModal } from '@/components/FeedbackModal'
+import { useApp } from '@/lib/app-context'
+import type { Distribuidora } from '@/lib/types'
 
 // ─── Status system ────────────────────────────────────────────────────────────
 
@@ -107,12 +112,17 @@ function CancellationModal({
 // ─── Main detail component ────────────────────────────────────────────────────
 
 function PedidoDistribuidoraDetail({ id }: { id: string }) {
+  const { currentUser } = useApp()
+  const distribuidoraUser = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
   const { data: order, loading } = useOrder(id)
   const { data: distribuidora } = useDistributor(order?.distribuidoraId || '')
   const [currentFSStatus, setCurrentFSStatus] = useState<DistribStatus>('pending_confirmation')
   const [isUpdating, setIsUpdating] = useState(false)
   const [cancellationModal, setCancellationModal] = useState<'cancelled' | 'not_delivered' | null>(null)
   const [showSuccessMsg, setShowSuccessMsg] = useState<string | null>(null)
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [showFeedbackAfterReview, setShowFeedbackAfterReview] = useState(false)
+  const [alreadyReviewed, setAlreadyReviewed] = useState<boolean | null>(null)
 
   // Sync status when order loads
   useEffect(() => {
@@ -120,6 +130,15 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
       const fs = order.firestoreStatus as DistribStatus | undefined
       setCurrentFSStatus(fs ?? toFirestoreStatus(order.status))
     }
+  }, [order])
+
+  // Check if this order already has a commerce review
+  useEffect(() => {
+    if (!order?.id) return
+    const fsStatus = (order.firestoreStatus as DistribStatus | undefined) ?? toFirestoreStatus(order.status)
+    const isTerminalStatus = ['delivered', 'cancelled', 'not_delivered'].includes(fsStatus)
+    if (!isTerminalStatus) { setAlreadyReviewed(false); return }
+    getCommerceReviewByOrder(order.id).then(r => setAlreadyReviewed(r !== null))
   }, [order])
 
   if (loading) {
@@ -186,6 +205,26 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
           onCancel={() => setCancellationModal(null)}
           loading={isUpdating}
         />
+      )}
+
+      {/* Commerce review modal → step 1 */}
+      {showReviewModal && order && distribuidoraUser && (
+        <CommerceReviewModal
+          order={order}
+          distributorId={distribuidoraUser.id}
+          distributorName={distribuidoraUser.companyName}
+          onClose={() => setShowReviewModal(false)}
+          onSubmitted={() => {
+            setAlreadyReviewed(true)
+            setShowReviewModal(false)
+            setShowFeedbackAfterReview(true)
+          }}
+        />
+      )}
+
+      {/* Feedback modal → step 2 (after rating a commerce) */}
+      {showFeedbackAfterReview && (
+        <FeedbackModal onClose={() => setShowFeedbackAfterReview(false)} />
       )}
 
       {/* Sticky header */}
@@ -366,6 +405,29 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
             </div>
           </div>
         </div>
+
+        {/* Calificar comercio — shown when order is terminal */}
+        {isTerminal && alreadyReviewed !== null && (
+          <div className="pb-2">
+            {alreadyReviewed ? (
+              <div className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                <Star className="h-5 w-5 text-amber-400 fill-amber-400 shrink-0" />
+                <div>
+                  <p className="font-semibold text-gray-700 text-sm">Reseña enviada</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Ya calificaste a este comercio para este pedido.</p>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowReviewModal(true)}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border-2 border-[#0B1A45]/20 text-[#0B1A45] font-bold text-sm hover:bg-[#0B1A45] hover:text-[#C8FF00] transition-all"
+              >
+                <Star className="h-4 w-4" />
+                Calificar comercio
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Action buttons */}
         {!isTerminal && (

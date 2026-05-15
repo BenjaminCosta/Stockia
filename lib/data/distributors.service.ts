@@ -4,6 +4,30 @@ import { mockDistribuidoras, mockDistributorCards } from '../mock-data'
 import { getDistanceKm, formatDistance, isWithinCoverage, type LatLng } from '../firebase/geo'
 import type { Distribuidora, DistributorCard } from '../types'
 
+// ─── Internal helper: aggregate ratings per distributor ────────────────────────
+
+async function fetchRatingsByDistributor(): Promise<Record<string, { avg: number; count: number }>> {
+  try {
+    const reviews = await getCollection<{ distributorId: string; ratingGeneral: number; status: string }>(COLLECTIONS.reviews)
+    const map: Record<string, { sum: number; count: number }> = {}
+    for (const r of reviews) {
+      if (r.status !== 'visible') continue
+      if (!r.distributorId) continue
+      if (!map[r.distributorId]) map[r.distributorId] = { sum: 0, count: 0 }
+      map[r.distributorId].sum += Number(r.ratingGeneral) || 0
+      map[r.distributorId].count++
+    }
+    return Object.fromEntries(
+      Object.entries(map).map(([id, { sum, count }]) => [
+        id,
+        { avg: Math.round((sum / count) * 10) / 10, count },
+      ])
+    )
+  } catch {
+    return {}
+  }
+}
+
 // ─── Firestore shape ──────────────────────────────────────────────────────────
 
 export interface FirestoreDistributor {
@@ -90,12 +114,10 @@ export async function getDistributorCards(
   commerceLocation?: LatLng
 ): Promise<DistributorCard[]> {
   try {
-    const docs = await getDocumentsByField<FirestoreDistributor>(
-      COLLECTIONS.distributors,
-      'status',
-      '==',
-      'active'
-    )
+    const [docs, ratings] = await Promise.all([
+      getDocumentsByField<FirestoreDistributor>(COLLECTIONS.distributors, 'status', '==', 'active'),
+      fetchRatingsByDistributor(),
+    ])
     if (docs.length > 0) {
       return docs
         .filter(d =>
@@ -107,6 +129,7 @@ export async function getDistributorCards(
           const distKm = commerceLocation
             ? getDistanceKm(commerceLocation, { lat: d.lat, lng: d.lng })
             : null
+          const r = ratings[d.id]
           return {
             id: d.id,
             companyName: d.companyName,
@@ -119,8 +142,10 @@ export async function getDistributorCards(
             distance: distKm !== null ? formatDistance(distKm) : '—',
             deliveryInfo: d.deliveryTimeLabel ?? '',
             minOrder: d.minimumOrder,
-            productCount: 0,  // TODO: derive from products subcollection count
+            productCount: 0,
             categories: d.categories ?? [],
+            rating: r ? r.avg : undefined,
+            reviewCount: r ? r.count : undefined,
           }
         })
         .sort((a, b) =>
