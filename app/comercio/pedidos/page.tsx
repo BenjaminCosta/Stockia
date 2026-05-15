@@ -7,25 +7,24 @@ import Link from 'next/link'
 import { ChevronRight, CheckCircle, Package } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
-import { mockOrders, formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/mock-data'
 import { useApp } from '@/lib/app-context'
+import { useComercioOrders } from '@/hooks/use-data'
 import { Comercio, OrderStatus } from '@/lib/types'
 import { OrderCardSkeleton } from '@/components/ui/SkeletonCard'
-import { useMockLoading } from '@/hooks/use-mock-loading'
 import { StatusBadge } from '@/components/status-badge'
 
 function PedidosContent() {
   const searchParams = useSearchParams()
   const showSuccess = searchParams.get('success') === 'true'
   const { currentUser } = useApp()
-  const isLoading = useMockLoading()
   const [activeTab, setActiveTab] = useState<'Activos' | 'Historial'>('Activos')
 
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
-  const orders = mockOrders.filter(o => o.comercioId === (comercio?.id || 'com-1'))
+  const { data: orders, loading: isLoading } = useComercioOrders(comercio?.id || 'com-1')
 
-  const activeOrders = orders.filter(o => o.status !== 'entregado' && o.status !== 'cancelado')
-  const historialOrders = orders.filter(o => o.status === 'entregado' || o.status === 'cancelado')
+  const activeOrders = orders.filter(o => o.status !== 'entregado')
+  const historialOrders = orders.filter(o => o.status === 'entregado')
   const filtered = activeTab === 'Activos' ? activeOrders : historialOrders
 
   // The most recent active order gets featured treatment

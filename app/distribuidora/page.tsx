@@ -5,7 +5,8 @@ import { TrendingUp, Package, Clock, CheckCircle, AlertCircle, ShoppingCart, Che
 import { StatusBadge } from '@/components/status-badge'
 import { PageHero } from '@/components/ui/PageHero'
 import { useApp } from '@/lib/app-context'
-import { mockDashboardKPIs, mockOrders, formatCurrency, getLowStockProducts } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/mock-data'
+import { useDistribuidoraOrders, useProducts } from '@/hooks/use-data'
 import { Distribuidora } from '@/lib/types'
 
 export default function DistribuidoraDashboardPage() {
@@ -14,9 +15,16 @@ export default function DistribuidoraDashboardPage() {
   const companyName = distribuidora?.companyName || 'Mi distribuidora'
 
   const distId = distribuidora?.id || 'dist-1'
-  const recentOrders = mockOrders.filter(o => o.distribuidoraId === distId).slice(0, 4)
-  const lowStockProducts = getLowStockProducts(distId)
-  const kpis = mockDashboardKPIs
+  const { data: orders } = useDistribuidoraOrders(distId)
+  const { data: products } = useProducts(distId)
+  const recentOrders = orders.slice(0, 4)
+  const lowStockProducts = products.filter(p => p.stock <= 10).slice(0, 3)
+  const kpis = {
+    ventasHoy: orders.reduce((s, o) => s + o.total, 0),
+    pendientes: orders.filter(o => o.status === 'pendiente').length,
+    pedidosHoy: orders.length,
+    stockOk: 85,
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -129,7 +137,7 @@ export default function DistribuidoraDashboardPage() {
             {recentOrders.length === 0 ? (
               <p className="text-muted-foreground text-center py-6 text-sm">No hay pedidos recientes</p>
             ) : (
-              recentOrders.map((order, i) => (
+              recentOrders.map((order: any, i: number) => (
                 <Link key={order.id} href={`/distribuidora/pedidos/${order.id}`}>
                   <div
                     className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-primary/20 hover:shadow-md transition-all cursor-pointer group animate-fade-up"

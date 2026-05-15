@@ -1,22 +1,33 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
-import { UserRole, Comercio, Distribuidora, Cart, CartItem, Product } from './types'
-import { mockComercios, mockDistribuidoras } from './mock-data'
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  type User as FirebaseUser,
+} from 'firebase/auth'
+import { auth } from './firebase/client'
+import { getUserById, getCommerceById } from './data/users.service'
+import { getDistributorById } from './data/distributors.service'
+import { setSessionCookie, clearSessionCookie } from './cookies'
+import { UserRole, Comercio, Distribuidora, Cart, Product } from './types'
 
 interface AppContextType {
   // Auth state
   isAuthenticated: boolean
-  userRole: UserRole | null
+  authLoading: boolean
+  userRole: UserRole | 'admin' | null
   currentUser: Comercio | Distribuidora | null
-  
+  firebaseUser: FirebaseUser | null
+
   // Auth actions
-  login: (role?: UserRole, email?: string) => UserRole
-  logout: () => void
-  
+  login: (email: string, password: string) => Promise<UserRole>
+  logout: () => Promise<void>
+
   // Cart state
   cart: Cart | null
-  
+
   // Cart actions
   addToCart: (product: Product, distribuidoraName: string, quantity?: number) => void
   removeFromCart: (productId: string) => void
@@ -28,68 +39,129 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
+// Build a fully-populated Comercio/Distribuidora by combining the base user doc
+// with the commerce or distributor profile doc.
+async function buildCurrentUser(
+  uid: string,
+  email: string,
+  name: string,
+  role: UserRole
+): Promise<Comercio | Distribuidora> {
+  if (role === 'comercio') {
+    const profile = await getCommerceById(uid).catch(() => null)
+    return {
+      id: uid,
+      email,
+      role: 'comercio',
+      storeName: profile?.businessName || name,
+      razonSocial: '',
+      cuit: '',
+      phone: profile?.phone || '',
+      address: profile?.address || '',
+      location: {
+        lat: profile?.lat ?? 0,
+        lng: profile?.lng ?? 0,
+        city: profile?.city || '',
+        zone: '',
+      },
+      createdAt: '',
+    }
+  }
+  const profile = await getDistributorById(uid).catch(() => null)
+  return {
+    id: uid,
+    email,
+    role: 'distribuidora',
+    companyName: (profile as any)?.companyName || name,
+    razonSocial: (profile as any)?.razonSocial || '',
+    cuit: (profile as any)?.cuit || '',
+    phone: (profile as any)?.phone || '',
+    address: (profile as any)?.address || '',
+    coverageRadiusKm: (profile as any)?.coverageRadiusKm ?? 0,
+    minOrder: (profile as any)?.minOrder ?? 0,
+    deliveryTimeLabel: (profile as any)?.deliveryTimeLabel || '',
+    deliveryTimeHours: (profile as any)?.deliveryTimeHours ?? 24,
+    deliveryZones: (profile as any)?.deliveryZones ?? [],
+    deliveryHours: (profile as any)?.deliveryHours || '',
+    location: {
+      lat: (profile as any)?.location?.lat ?? 0,
+      lng: (profile as any)?.location?.lng ?? 0,
+      city: (profile as any)?.location?.city || '',
+    },
+    createdAt: '',
+  }
+}
+
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [userRole, setUserRole] = useState<UserRole | 'admin' | null>(null)
   const [currentUser, setCurrentUser] = useState<Comercio | Distribuidora | null>(null)
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
   const [cart, setCart] = useState<Cart | null>(null)
 
+  // Restore session from Firebase Auth on mount
   useEffect(() => {
-    const savedRole = window.localStorage.getItem('stockia-account-role')
-    const savedEmail = window.localStorage.getItem('stockia-account-email')
-    if (savedRole !== 'comercio' && savedRole !== 'distribuidora') return
-
-    const comercioByEmail = mockComercios.find((user) => user.email.toLowerCase() === savedEmail)
-    const distribuidoraByEmail = mockDistribuidoras.find((user) => user.email.toLowerCase() === savedEmail)
-
-    setIsAuthenticated(true)
-    setUserRole(savedRole)
-    setCurrentUser(
-      savedRole === 'comercio'
-        ? comercioByEmail || mockComercios[0]
-        : distribuidoraByEmail || mockDistribuidoras[0]
-    )
-  }, [])
-
-  const login = useCallback((role?: UserRole, email?: string) => {
-    const normalizedEmail = email?.trim().toLowerCase()
-    const comercioByEmail = mockComercios.find((user) => user.email.toLowerCase() === normalizedEmail)
-    const distribuidoraByEmail = mockDistribuidoras.find((user) => user.email.toLowerCase() === normalizedEmail)
-    const savedRole =
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem('stockia-account-role')
-        : null
-    const resolvedRole =
-      role ||
-      comercioByEmail?.role ||
-      distribuidoraByEmail?.role ||
-      (savedRole === 'comercio' || savedRole === 'distribuidora' ? savedRole : 'comercio')
-
-    setIsAuthenticated(true)
-    setUserRole(resolvedRole)
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('stockia-account-role', resolvedRole)
-      if (normalizedEmail) {
-        window.localStorage.setItem('stockia-account-email', normalizedEmail)
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (!fbUser) {
+        setIsAuthenticated(false)
+        setUserRole(null)
+        setCurrentUser(null)
+        setFirebaseUser(null)
+        setAuthLoading(false)
+        return
       }
-    }
 
-    // Set mock user based on role
-    if (resolvedRole === 'comercio') {
-      setCurrentUser(comercioByEmail || mockComercios[0])
-    } else {
-      setCurrentUser(distribuidoraByEmail || mockDistribuidoras[0])
-    }
+      setFirebaseUser(fbUser)
 
-    return resolvedRole
+      try {
+        const userDoc = await getUserById(fbUser.uid)
+        if (userDoc?.role === 'admin') {
+          setIsAuthenticated(true)
+          setUserRole('admin')
+          setCurrentUser(null)
+          setSessionCookie('admin')
+        } else if (userDoc && (userDoc.role === 'comercio' || userDoc.role === 'distribuidora')) {
+          setIsAuthenticated(true)
+          setUserRole(userDoc.role)
+          setCurrentUser(await buildCurrentUser(fbUser.uid, fbUser.email ?? '', userDoc.name, userDoc.role))
+          setSessionCookie(userDoc.role)
+        } else {
+          setIsAuthenticated(true)
+          setUserRole(null)
+          setCurrentUser(null)
+          setSessionCookie('guest')
+        }
+      } catch {
+        setIsAuthenticated(true)
+        setUserRole(null)
+        setCurrentUser(null)
+      } finally {
+        setAuthLoading(false)
+      }
+    })
+
+    return () => unsubscribe()
   }, [])
 
-  const logout = useCallback(() => {
-    setIsAuthenticated(false)
-    setUserRole(null)
-    setCurrentUser(null)
+  const login = useCallback(async (email: string, password: string): Promise<UserRole> => {
+    const credential = await signInWithEmailAndPassword(auth, email, password)
+    // onAuthStateChanged will update the state; fetch role here just for immediate redirect
+    const userDoc = await getUserById(credential.user.uid)
+    const role: UserRole =
+      userDoc?.role === 'comercio' || userDoc?.role === 'distribuidora'
+        ? userDoc.role
+        : 'comercio'
+    return role
+  }, [])
+
+  const logout = useCallback(async () => {
     setCart(null)
+    clearSessionCookie()
+    await signOut(auth)
+    // onAuthStateChanged will clear remaining state
   }, [])
 
   const addToCart = useCallback((product: Product, distribuidoraName: string, quantity: number = 1) => {
@@ -171,8 +243,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         isAuthenticated,
+        authLoading,
         userRole,
         currentUser,
+        firebaseUser,
         login,
         logout,
         cart,

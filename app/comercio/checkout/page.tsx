@@ -3,54 +3,133 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Clock, CreditCard, CheckCircle, ChevronRight, Lock } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, CreditCard, CheckCircle, Lock, Handshake, Info } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
-import { formatCurrency, getDistribuidoraById, getEstimatedDeliveryDate } from '@/lib/mock-data'
+import { formatCurrency, getEstimatedDeliveryDate } from '@/lib/mock-data'
+import { useDistributor } from '@/hooks/use-data'
+import { createOrder } from '@/lib/data/orders.service'
+import type { OrderItem } from '@/lib/types'
+
+type PaymentMethod = 'mp' | 'external'
+
+// ─── Confirmation screens ─────────────────────────────────────────────────────
+
+function MpConfirmation() {
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
+      <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
+        <CheckCircle className="h-10 w-10 text-green-600" />
+      </div>
+      <h1 className="font-heading font-bold text-2xl text-foreground mb-2">¡Pedido confirmado!</h1>
+      <p className="text-muted-foreground mb-4">Tu pago fue procesado correctamente.</p>
+      <p className="text-sm text-gray-400">Redirigiendo a tus pedidos...</p>
+    </div>
+  )
+}
+
+function ExternalConfirmation({ distribuidoraName }: { distribuidoraName: string }) {
+  return (
+    <div className="min-h-screen bg-[#F4F5F7] flex flex-col items-center justify-center px-6 text-center">
+      <div className="h-20 w-20 rounded-full bg-amber-50 flex items-center justify-center mb-6">
+        <Handshake className="h-10 w-10 text-amber-500" />
+      </div>
+      <h1 className="font-heading font-bold text-2xl text-foreground mb-2">
+        Pedido enviado a la distribuidora
+      </h1>
+      <p className="text-gray-500 text-sm max-w-xs mb-6">
+        Cuando <span className="font-semibold text-gray-700">{distribuidoraName}</span> confirme el pedido,
+        se habilitarán los datos de contacto para coordinar el pago y la entrega.
+      </p>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 max-w-xs w-full text-left mb-8">
+        <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Próximos pasos</p>
+        <div className="space-y-3">
+          {[
+            { step: '1', text: 'La distribuidora revisa stock y condiciones' },
+            { step: '2', text: 'Confirma el pedido en la plataforma' },
+            { step: '3', text: 'Coordinan pago y entrega por fuera' },
+          ].map(s => (
+            <div key={s.step} className="flex items-start gap-3">
+              <div className="h-5 w-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                {s.step}
+              </div>
+              <p className="text-sm text-gray-600">{s.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <p className="text-sm text-gray-400">Redirigiendo a tus pedidos...</p>
+    </div>
+  )
+}
+
+// ─── Main checkout ────────────────────────────────────────────────────────────
 
 export default function CheckoutPage() {
   const router = useRouter()
   const { cart, getCartTotal, clearCart, currentUser } = useApp()
-  const [paymentMethod, setPaymentMethod] = useState<'mp' | 'transferencia'>('mp')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mp')
   const [confirmed, setConfirmed] = useState(false)
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false)
 
   const hasCart = !!cart && cart.items.length > 0
 
+  // Must be called before any early return
+  const { data: distribuidora } = useDistributor(cart?.distribuidoraId || '')
+
   useEffect(() => {
-    if (!hasCart) {
-      router.push('/comercio/carrito')
-    }
+    if (!hasCart) router.push('/comercio/carrito')
   }, [hasCart, router])
 
   if (!hasCart) return null
 
   const total = getCartTotal()
   const comercio = currentUser as { storeName?: string; address?: string } | null
-  const distribuidora = cart ? getDistribuidoraById(cart.distribuidoraId) : null
   const deliveryDate = distribuidora
-    ? getEstimatedDeliveryDate(distribuidora.deliveryTimeHours)
+    ? getEstimatedDeliveryDate((distribuidora as any).deliveryTimeHours)
     : 'Próximos días hábiles'
   const deliveryLabel = distribuidora?.deliveryTimeLabel ?? '48 horas hábiles'
 
-  const handlePagar = () => {
+  const handleConfirmar = async () => {
+    if (!currentUser || !cart) return
+    setIsPlacingOrder(true)
+    const subtotal = getCartTotal()
+    const items: OrderItem[] = cart.items.map(item => ({
+      productId: item.product.id,
+      productName: item.product.name,
+      quantity: item.quantity,
+      unitPrice: item.product.price,
+    }))
+    try {
+      await createOrder({
+        commerceId: currentUser.id,
+        distributorId: cart.distribuidoraId,
+        items,
+        subtotal,
+        total: subtotal,
+        paymentMethod: paymentMethod === 'mp' ? 'mercado_pago' : 'external',
+      })
+    } catch (err) {
+      console.error('[checkout] createOrder failed', err)
+    } finally {
+      setIsPlacingOrder(false)
+    }
     setConfirmed(true)
     setTimeout(() => {
       clearCart()
       router.push('/comercio/pedidos?success=true')
-    }, 2500)
+    }, 3000)
   }
 
   if (confirmed) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
-        <div className="h-20 w-20 md:h-24 md:w-24 rounded-full bg-green-100 flex items-center justify-center mb-6">
-          <CheckCircle className="h-10 w-10 md:h-12 md:w-12 text-green-600" />
-        </div>
-        <h1 className="font-heading font-bold text-2xl md:text-3xl text-foreground mb-2 md:mb-4">¡Pedido confirmado!</h1>
-        <p className="text-muted-foreground mb-4 md:text-lg">Tu pago fue procesado correctamente.</p>
-        <p className="text-sm md:text-base text-gray-500">Redirigiendo a tus pedidos...</p>
-      </div>
-    )
+    return paymentMethod === 'mp'
+      ? <MpConfirmation />
+      : <ExternalConfirmation distribuidoraName={cart.distribuidoraName} />
   }
+
+  const isExternal = paymentMethod === 'external'
+  const btnLabel = isExternal
+    ? `Enviar pedido a distribuidora`
+    : `Confirmar y pagar ${formatCurrency(total)}`
 
   return (
     <div className="min-h-screen bg-background pb-44 md:pb-12">
@@ -61,13 +140,14 @@ export default function CheckoutPage() {
           <Link href="/comercio/carrito" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="font-heading font-bold text-xl md:text-3xl text-foreground">Confirmar pago</h1>
-          <div className="ml-auto flex items-center gap-1.5 text-xs md:text-sm font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-full">
-            <Lock className="h-3.5 w-3.5" /> Pago seguro
-          </div>
+          <h1 className="font-heading font-bold text-xl md:text-3xl text-foreground">Confirmar pedido</h1>
+          {!isExternal && (
+            <div className="ml-auto flex items-center gap-1.5 text-xs md:text-sm font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-full">
+              <Lock className="h-3.5 w-3.5" /> Pago seguro
+            </div>
+          )}
         </div>
 
-        {/* Grid */}
         <div className="px-4 md:px-0 mt-4 md:mt-0 grid grid-cols-1 md:grid-cols-12 gap-6">
 
           {/* Left column */}
@@ -85,9 +165,7 @@ export default function CheckoutPage() {
                   <p className="text-sm md:text-base text-muted-foreground mt-1">
                     {comercio?.address || 'Av. Mitre 1234, Avellaneda'}
                   </p>
-                  <p className="text-xs md:text-sm text-muted-foreground mt-0.5">Buenos Aires, GBA Sur</p>
                 </div>
-                <button className="text-sm text-primary font-bold hover:underline shrink-0">Cambiar</button>
               </div>
             </div>
 
@@ -101,7 +179,7 @@ export default function CheckoutPage() {
                 <div>
                   <p className="font-bold text-foreground text-base md:text-lg capitalize">{deliveryDate}</p>
                   <p className="text-sm md:text-base text-muted-foreground mt-1">
-                    {cart.distribuidoraName} • {deliveryLabel}
+                    {cart.distribuidoraName} · {deliveryLabel}
                   </p>
                 </div>
               </div>
@@ -111,16 +189,17 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
               <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Método de pago</h2>
               <div className="space-y-4">
+                {/* Mercado Pago */}
                 <button
                   onClick={() => setPaymentMethod('mp')}
-                  className={`w-full flex items-center gap-4 p-5 rounded-2xl border-2 transition-all ${
+                  className={`w-full flex items-center gap-4 p-5 rounded-2xl border-2 transition-all text-left ${
                     paymentMethod === 'mp' ? 'border-primary bg-[#F1FFD1]/50' : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
                 >
                   <div className="h-12 w-12 bg-blue-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
                     <CreditCard className="h-6 w-6" />
                   </div>
-                  <div className="text-left flex-1">
+                  <div className="flex-1">
                     <p className="font-bold text-foreground text-base">Mercado Pago</p>
                     <p className="text-sm text-muted-foreground mt-0.5">Pagá con saldo, tarjeta o QR</p>
                   </div>
@@ -129,23 +208,37 @@ export default function CheckoutPage() {
                   </div>
                 </button>
 
+                {/* Coordinar con distribuidora */}
                 <button
-                  onClick={() => setPaymentMethod('transferencia')}
-                  className={`w-full flex items-center gap-4 p-5 rounded-2xl border-2 transition-all ${
-                    paymentMethod === 'transferencia' ? 'border-primary bg-[#F1FFD1]/50' : 'border-gray-200 bg-white hover:border-gray-300'
+                  onClick={() => setPaymentMethod('external')}
+                  className={`w-full flex items-center gap-4 p-5 rounded-2xl border-2 transition-all text-left ${
+                    paymentMethod === 'external' ? 'border-amber-400 bg-amber-50/50' : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
                 >
-                  <div className="h-12 w-12 bg-gray-800 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
-                    <ChevronRight className="h-6 w-6" />
+                  <div className="h-12 w-12 bg-amber-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
+                    <Handshake className="h-6 w-6" />
                   </div>
-                  <div className="text-left flex-1">
-                    <p className="font-bold text-foreground text-base">Transferencia bancaria</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">CBU / CVU del distribuidor</p>
+                  <div className="flex-1">
+                    <p className="font-bold text-foreground text-base">Coordinar con distribuidora</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Efectivo, transferencia, cuenta corriente o plazo</p>
                   </div>
-                  <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === 'transferencia' ? 'border-primary' : 'border-gray-300'}`}>
-                    {paymentMethod === 'transferencia' && <div className="h-3 w-3 rounded-full bg-primary" />}
+                  <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === 'external' ? 'border-amber-400' : 'border-gray-300'}`}>
+                    {paymentMethod === 'external' && <div className="h-3 w-3 rounded-full bg-amber-400" />}
                   </div>
                 </button>
+
+                {/* Info card when external is selected */}
+                {isExternal && (
+                  <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                    <Info className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-amber-800 text-sm">El pedido queda pendiente de confirmación</p>
+                      <p className="text-sm text-amber-700 mt-1 leading-relaxed">
+                        La distribuidora revisará stock y condiciones. Cuando lo confirme, podrán coordinar el pago y la entrega directamente.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -181,14 +274,21 @@ export default function CheckoutPage() {
               {/* Desktop button */}
               <div className="hidden md:block mt-8">
                 <button
-                  onClick={handlePagar}
-                  className="w-full h-14 text-lg font-bold bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
+                  onClick={handleConfirmar}
+                  disabled={isPlacingOrder}
+                  className={`w-full h-14 text-base font-bold rounded-xl shadow-lg transition-colors disabled:opacity-70 ${
+                    isExternal
+                      ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
+                      : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20'
+                  }`}
                 >
-                  Confirmar y pagar {formatCurrency(total)}
+                  {isPlacingOrder ? 'Enviando...' : btnLabel}
                 </button>
-                <p className="text-center text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1.5 font-medium">
-                  <Lock className="h-3.5 w-3.5 text-muted-foreground" /> Tu información está cifrada y protegida
-                </p>
+                {!isExternal && (
+                  <p className="text-center text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1.5 font-medium">
+                    <Lock className="h-3.5 w-3.5" /> Tu información está cifrada y protegida
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -197,14 +297,21 @@ export default function CheckoutPage() {
 
       {/* Mobile fixed bottom bar */}
       <div className="md:hidden fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
-        <p className="text-center text-xs text-muted-foreground mb-3 flex items-center justify-center gap-1.5 font-medium">
-          <Lock className="h-3 w-3 text-muted-foreground" /> Tu información está cifrada y protegida
-        </p>
+        {!isExternal && (
+          <p className="text-center text-xs text-muted-foreground mb-3 flex items-center justify-center gap-1.5 font-medium">
+            <Lock className="h-3 w-3" /> Tu información está cifrada y protegida
+          </p>
+        )}
         <button
-          onClick={handlePagar}
-          className="w-full h-14 text-base font-bold bg-primary text-white rounded-xl shadow-lg hover:bg-primary/90 transition-colors"
+          onClick={handleConfirmar}
+          disabled={isPlacingOrder}
+          className={`w-full h-14 text-base font-bold rounded-xl shadow-lg transition-colors disabled:opacity-70 ${
+            isExternal
+              ? 'bg-amber-500 text-white hover:bg-amber-600'
+              : 'bg-primary text-white hover:bg-primary/90'
+          }`}
         >
-          Confirmar y pagar {formatCurrency(total)}
+          {isPlacingOrder ? 'Enviando...' : btnLabel}
         </button>
       </div>
     </div>

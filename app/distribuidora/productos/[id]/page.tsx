@@ -18,19 +18,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { mockProducts, categories } from '@/lib/mock-data'
+import { categories } from '@/lib/mock-data'
+import { useProducts } from '@/hooks/use-data'
 import { CategoryIcon } from '@/components/category-icon'
+import { useApp } from '@/lib/app-context'
+import { updateProduct, deleteProduct } from '@/lib/data/products.service'
 
-export default function EditProductoPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> 
-}) {
-  const { id } = use(params)
+function EditProductoContent({ id }: { id: string }) {
   const router = useRouter()
-  const product = mockProducts.find(p => p.id === id)
+  const { currentUser } = useApp()
+  const { data: products } = useProducts()
+  const product = products.find(p => p.id === id)
   
   const [isLoading, setIsLoading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return
+    setIsDeleting(true)
+    try {
+      await deleteProduct(id)
+    } catch (err) {
+      console.error('[edit-producto] deleteProduct failed', err)
+    } finally {
+      router.push('/distribuidora/productos')
+    }
+  }
   const [name, setName] = useState(product?.name || '')
   const [category, setCategory] = useState(product?.category || '')
   const [price, setPrice] = useState(product?.price?.toString() || '')
@@ -41,11 +54,21 @@ export default function EditProductoPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    router.push('/distribuidora/productos')
+    try {
+      await updateProduct(id, {
+        name,
+        categoryId: category,
+        price: parseFloat(price) || 0,
+        stock: parseInt(stock, 10) || 0,
+        description,
+        status: active ? 'active' : 'paused',
+      })
+    } catch (err) {
+      console.error('[edit-producto] updateProduct failed', err)
+    } finally {
+      setIsLoading(false)
+      router.push('/distribuidora/productos')
+    }
   }
 
   if (!product) {
@@ -70,7 +93,13 @@ export default function EditProductoPage({
             </Link>
             <h1 className="font-heading font-semibold text-lg ml-2 text-foreground">Editar producto</h1>
           </div>
-          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
             <Trash2 className="h-5 w-5" />
           </Button>
         </div>
@@ -207,4 +236,13 @@ export default function EditProductoPage({
       </main>
     </div>
   )
+}
+
+export default function EditProductoPage({
+  params
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = use(params)
+  return <EditProductoContent id={id} />
 }

@@ -2,17 +2,15 @@
 
 import { useState } from 'react'
 import { TrendingUp, ShoppingBag, Receipt, Package, Info, CheckCircle2, Clock, Truck } from 'lucide-react'
-import { mockOrders, formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/mock-data'
 import { StatusBadge } from '@/components/status-badge'
 import { useApp } from '@/lib/app-context'
-import { Distribuidora } from '@/lib/types'
-
-// Usamos mockOrders directamente — ya contiene todos los pedidos de todas las distribuidoras
-const allOrders = mockOrders
+import { useDistribuidoraOrders } from '@/hooks/use-data'
+import { Distribuidora, type Order } from '@/lib/types'
 
 type Period = 'hoy' | 'semana' | 'mes'
 
-function computeKPIs(orders: typeof allOrders) {
+function computeKPIs(orders: Order[]) {
   const total = orders.reduce((s, o) => s + o.total, 0)
   const completed = orders.filter(o => o.status === 'entregado').length
   const avg = orders.length > 0 ? Math.round(total / orders.length) : 0
@@ -20,7 +18,7 @@ function computeKPIs(orders: typeof allOrders) {
   return { total, completed, avg, units, count: orders.length }
 }
 
-function computeTopProducts(orders: typeof allOrders) {
+function computeTopProducts(orders: Order[]) {
   const map: Record<string, { name: string; units: number; revenue: number }> = {}
   orders.forEach(o => o.items.forEach(i => {
     if (!map[i.productId]) map[i.productId] = { name: i.productName, units: 0, revenue: 0 }
@@ -42,9 +40,7 @@ export default function VentasPage() {
   const distId = distribuidora?.id || 'dist-1'
 
   const [period, setPeriod] = useState<Period>('mes')
-
-  // In a real app we'd filter by date; for proto we show all orders for this distribuidora
-  const orders = allOrders.filter(o => o.distribuidoraId === distId)
+  const { data: orders } = useDistribuidoraOrders(distId)
   const kpis = computeKPIs(orders)
   const topProducts = computeTopProducts(orders)
 

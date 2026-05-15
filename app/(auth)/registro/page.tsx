@@ -10,17 +10,34 @@ import {
   Boxes,
   Building2,
   Check,
+  KeyRound,
+  Mail,
   MapPin,
   Phone,
   Route,
   Store,
   Truck,
 } from 'lucide-react'
-import { useApp } from '@/lib/app-context'
+import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '@/lib/firebase/client'
+import { upsertUser, upsertCommerce } from '@/lib/data/users.service'
+import { upsertDistributor } from '@/lib/data/distributors.service'
+import { setSessionCookie } from '@/lib/cookies'
+// useApp no longer needed — auth handled via Firebase directly
 import { LoadingButton } from '@/components/ui/LoadingButton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserRole } from '@/lib/types'
+
+function registroErrorMessage(code: string): string {
+  switch (code) {
+    case 'auth/email-already-in-use': return 'Ya existe una cuenta con ese email.'
+    case 'auth/invalid-email':        return 'El email no tiene un formato válido.'
+    case 'auth/weak-password':        return 'La contraseña debe tener al menos 6 caracteres.'
+    case 'auth/network-request-failed': return 'Sin conexión. Verificá tu internet.'
+    default:                          return 'Ocurrió un error. Intentá de nuevo.'
+  }
+}
 
 type OnboardingStep = 1 | 2 | 3 | 4
 
@@ -35,11 +52,16 @@ const zones = ['Avellaneda', 'Lanús', 'Quilmes', 'Lomas de Zamora', 'Berazategu
 
 export default function RegistroPage() {
   const router = useRouter()
-  const { login } = useApp()
   const [step, setStep] = useState<OnboardingStep>(1)
   const [role, setRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
+  // Credentials
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  // Business data
   const [businessName, setBusinessName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
@@ -72,7 +94,11 @@ export default function RegistroPage() {
             ? 'Definí el radio y las zonas donde tu distribuidora reparte pedidos.'
             : 'Confirmá la zona para mostrar proveedores cercanos desde el inicio.'
 
-  const canContinue = step !== 2 || !!role
+  const canContinue =
+    (step === 1) ||
+    (step === 2 && !!role) ||
+    (step === 3 && email.trim().length > 0 && password.length >= 6) ||
+    (step === 4)
 
   const handleContinue = async () => {
     if (!canContinue) return
@@ -83,10 +109,53 @@ export default function RegistroPage() {
     }
 
     if (!role) return
+    setError(null)
     setIsLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 650))
-    login(role)
-    router.push(role === 'comercio' ? '/comercio' : '/distribuidora')
+    try {
+      const credential = await createUserWithEmailAndPassword(auth, email.trim(), password)
+      const uid = credential.user.uid
+      const name = businessName || email.split('@')[0]
+
+      await upsertUser(uid, { name, email: email.trim(), role })
+
+      if (role === 'comercio') {
+        await upsertCommerce(uid, {
+          userId: uid,
+          businessName: name,
+          phone,
+          address,
+          city: cityZone,
+          province: 'Buenos Aires',
+          lat: 0,
+          lng: 0,
+          status: 'active',
+        })
+      } else {
+        await upsertDistributor(uid, {
+          userId: uid,
+          companyName: name,
+          phone,
+          address,
+          city: cityZone,
+          province: 'Buenos Aires',
+          lat: 0,
+          lng: 0,
+          coverageRadiusKm: parseFloat(coverageRadius) || 15,
+          minimumOrder: 0,
+          categories: [],
+          status: 'active',
+          deliveryZones: deliveryZones.split(',').map(z => z.trim()).filter(Boolean),
+        })
+      }
+
+      // Set session cookies immediately so middleware allows the redirect
+      setSessionCookie(role)
+      router.push(role === 'comercio' ? '/comercio' : '/distribuidora')
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? ''
+      setError(registroErrorMessage(code))
+      setIsLoading(false)
+    }
   }
 
   const handleBack = () => {
@@ -185,11 +254,15 @@ export default function RegistroPage() {
             {step === 3 && (
               <BusinessDataStep
                 role={role}
+                email={email}
+                password={password}
                 businessName={businessName}
                 phone={phone}
                 address={address}
                 cityZone={cityZone}
                 coverageRadius={coverageRadius}
+                onEmailChange={setEmail}
+                onPasswordChange={setPassword}
                 onBusinessNameChange={setBusinessName}
                 onPhoneChange={setPhone}
                 onAddressChange={setAddress}
@@ -223,6 +296,11 @@ export default function RegistroPage() {
             <ArrowLeft className="h-4 w-4" />
             {step === 1 ? 'Login' : 'Atrás'}
           </button>
+          {error && (
+            <p className="flex-1 rounded-xl bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive text-center">
+              {error}
+            </p>
+          )}
           <LoadingButton
             type="button"
             className="h-12 min-w-37.5 rounded-xl bg-primary px-5 text-sm font-semibold"
@@ -361,11 +439,15 @@ function RoleCard({
 
 function BusinessDataStep({
   role,
+  email,
+  password,
   businessName,
   phone,
   address,
   cityZone,
   coverageRadius,
+  onEmailChange,
+  onPasswordChange,
   onBusinessNameChange,
   onPhoneChange,
   onAddressChange,
@@ -373,11 +455,15 @@ function BusinessDataStep({
   onCoverageRadiusChange,
 }: {
   role: UserRole | null
+  email: string
+  password: string
   businessName: string
   phone: string
   address: string
   cityZone: string
   coverageRadius: string
+  onEmailChange: (value: string) => void
+  onPasswordChange: (value: string) => void
   onBusinessNameChange: (value: string) => void
   onPhoneChange: (value: string) => void
   onAddressChange: (value: string) => void
@@ -396,6 +482,30 @@ function BusinessDataStep({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
+        {/* Credentials */}
+        <FormField icon={Mail} label="Email">
+          <Input
+            type="email"
+            value={email}
+            onChange={(event) => onEmailChange(event.target.value)}
+            placeholder="tu@email.com"
+            required
+            className="h-12 bg-background pl-11"
+          />
+        </FormField>
+
+        <FormField icon={KeyRound} label="Contraseña">
+          <Input
+            type="password"
+            value={password}
+            onChange={(event) => onPasswordChange(event.target.value)}
+            placeholder="Mínimo 6 caracteres"
+            required
+            className="h-12 bg-background pl-11"
+          />
+        </FormField>
+
+        {/* Business info */}
         <FormField icon={isDistributor ? Building2 : Store} label={isDistributor ? 'Nombre de la empresa' : 'Nombre del comercio'}>
           <Input
             value={businessName}

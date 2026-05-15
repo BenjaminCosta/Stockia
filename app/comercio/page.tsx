@@ -15,10 +15,10 @@ import {
   Zap,
 } from 'lucide-react'
 import { DistributorCardSkeleton } from '@/components/ui/SkeletonCard'
-import { useMockLoading } from '@/hooks/use-mock-loading'
 import { useApp } from '@/lib/app-context'
-import { categories, formatCurrency, mockDistributorCards, mockProducts } from '@/lib/mock-data'
-import { Category, Comercio, DistributorCard, Product } from '@/lib/types'
+import { categories, formatCurrency } from '@/lib/mock-data'
+import { useDistributors, useProducts } from '@/hooks/use-data'
+import { Category, Comercio, Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { DistribuidoraCard } from '@/components/distribuidora-card'
 
@@ -99,23 +99,25 @@ function ReorderProductCard({ product, index }: { product: Product; index: numbe
 export default function ComercioHomePage() {
   const { currentUser } = useApp()
   const [searchQuery, setSearchQuery] = useState('')
-  const isLoading = useMockLoading()
 
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
   const storeName = comercio?.storeName || 'Tu comercio'
   const currentLocation = comercio?.location
 
-  const filteredDistributors = mockDistributorCards.filter((distributor) => {
-    const distributorProducts = mockProducts.filter((product) => product.distribuidoraId === distributor.id)
+  const { data: distributors, loading: isLoading } = useDistributors(currentLocation ?? undefined)
+  const { data: products } = useProducts()
+
+  const filteredDistributors = distributors.filter((distributor) => {
+    const distributorProducts = products.filter((product: Product) => product.distribuidoraId === distributor.id)
     const query = searchQuery.toLowerCase()
 
     return distributor.companyName.toLowerCase().includes(query) ||
-      distributor.categories.some((category) => category.toLowerCase().includes(query)) ||
-      distributorProducts.some((product) => product.name.toLowerCase().includes(query))
+      distributor.categories.some((category: string) => category.toLowerCase().includes(query)) ||
+      distributorProducts.some((product: Product) => product.name.toLowerCase().includes(query))
   })
 
-  const lowStockProducts = mockProducts
-    .filter((product) => product.stock <= 10)
+  const lowStockProducts = products
+    .filter((product: Product) => product.stock <= 10)
     .slice(0, 3)
 
   return (

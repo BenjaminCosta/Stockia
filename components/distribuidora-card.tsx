@@ -74,10 +74,20 @@ export function DistribuidoraCard({
               <MapPin className="h-3 w-3 md:h-4 md:w-4" />
               {distributor.distance}{city ? ` · ${city}` : ''}
             </span>
-            <span className="flex items-center gap-1 font-semibold text-amber-600">
-              <Star className="h-3 w-3 fill-current md:h-4 md:w-4" />
-              4.{8 + (index % 2)}
-            </span>
+            {distributor.rating ? (
+              <span className="flex items-center gap-1 font-semibold text-amber-600">
+                <Star className="h-3 w-3 fill-current md:h-4 md:w-4" />
+                {distributor.rating.toFixed(1)}
+                {distributor.reviewCount !== undefined && (
+                  <span className="text-gray-400 font-normal">({distributor.reviewCount})</span>
+                )}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-gray-300 text-[10px] md:text-xs">
+                <Star className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                Sin reseñas
+              </span>
+            )}
           </div>
 
           {/* Footer stats */}

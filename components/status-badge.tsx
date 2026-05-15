@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle, Clock, Package, Truck } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, Package, Truck, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface StatusBadgeProps {
@@ -8,13 +8,14 @@ interface StatusBadgeProps {
 }
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType | null; className: string }> = {
+  // Legacy local statuses
   pendiente: {
     label: 'Pendiente',
     icon: Clock,
     className: 'bg-amber-50 text-amber-700 border-amber-200',
   },
   pagado: {
-    label: 'Pagado',
+    label: 'Confirmado',
     icon: CheckCircle,
     className: 'bg-blue-50 text-blue-700 border-blue-200',
   },
@@ -30,9 +31,46 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType | nu
   },
   cancelado: {
     label: 'Cancelado',
-    icon: AlertCircle,
-    className: 'bg-gray-100 text-gray-500 border-gray-200',
+    icon: X,
+    className: 'bg-red-50 text-red-600 border-red-200',
   },
+  // Firestore statuses (used in distribuidora detail + admin)
+  pending_confirmation: {
+    label: 'Pend. confirmación',
+    icon: Clock,
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+  },
+  confirmed: {
+    label: 'Confirmado',
+    icon: CheckCircle,
+    className: 'bg-blue-50 text-blue-700 border-blue-200',
+  },
+  preparing: {
+    label: 'En preparación',
+    icon: Package,
+    className: 'bg-[#F1FFD1] text-[#4A662E] border-[#89B317]/30',
+  },
+  ready_or_on_the_way: {
+    label: 'En camino',
+    icon: Truck,
+    className: 'bg-sky-50 text-sky-700 border-sky-200',
+  },
+  delivered: {
+    label: 'Entregado',
+    icon: Truck,
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  },
+  cancelled: {
+    label: 'Cancelado',
+    icon: X,
+    className: 'bg-red-50 text-red-600 border-red-200',
+  },
+  not_delivered: {
+    label: 'No entregado',
+    icon: AlertCircle,
+    className: 'bg-orange-50 text-orange-700 border-orange-200',
+  },
+  // Other
   abierto: {
     label: 'Abierto',
     icon: null,

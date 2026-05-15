@@ -5,7 +5,7 @@ import { Store, MapPin, Phone, Mail, FileText, Bell, Shield, ChevronRight, LogOu
 import { useApp } from '@/lib/app-context'
 import { Comercio } from '@/lib/types'
 import { Switch } from '@/components/ui/switch'
-import { mockOrders } from '@/lib/mock-data'
+import { useComercioOrders } from '@/hooks/use-data'
 
 // Notifications config is static UI — no mock data needed
 
@@ -25,7 +25,7 @@ export default function CuentaPage() {
   const city = comercio?.location?.city || 'Avellaneda'
   const zone = comercio?.location?.zone || 'Centro'
 
-  const myOrders = mockOrders.filter(o => o.comercioId === (comercio?.id || 'com-1'))
+  const { data: myOrders } = useComercioOrders(comercio?.id || 'com-1')
   const uniqueDistributors = new Set(myOrders.map(o => o.distribuidoraId)).size
 
   const handleLogout = () => {

@@ -9,20 +9,25 @@ import {
 import { PageHero } from '@/components/ui/PageHero'
 import { Button } from '@/components/ui/button'
 import { useApp } from '@/lib/app-context'
-import { mockProducts, formatCurrency, getDistribuidoraById } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/mock-data'
+import { useProducts, useDistributor } from '@/hooks/use-data'
 
-export default function ProductoDetailPage({
-  params
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = use(params)
+function ProductoDetail({ id }: { id: string }) {
   const { addToCart, cart } = useApp()
   const [qty, setQty] = useState(1)
   const [isAdded, setIsAdded] = useState(false)
 
-  const product = mockProducts.find(p => p.id === id)
-  const distribuidora = product ? getDistribuidoraById(product.distribuidoraId) : null
+  const { data: products, loading } = useProducts()
+  const product = products.find(p => p.id === id)
+  const { data: distribuidora } = useDistributor(product?.distribuidoraId || '')
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    )
+  }
 
   if (!product || !distribuidora) {
     return (
@@ -279,4 +284,13 @@ export default function ProductoDetailPage({
       </div>
     </div>
   )
+}
+
+export default function ProductoDetailPage({
+  params
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = use(params)
+  return <ProductoDetail id={id} />
 }

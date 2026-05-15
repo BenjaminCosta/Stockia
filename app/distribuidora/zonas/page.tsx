@@ -5,6 +5,8 @@ import { MapPin, Edit, Save, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useApp } from '@/lib/app-context'
 import { Distribuidora } from '@/lib/types'
+import { updateDocument } from '@/lib/firebase/firestore'
+import { COLLECTIONS } from '@/lib/firebase/collections'
 
 const COVERAGE_OPTIONS = [
   { value: 10, label: '10 km' },
@@ -35,7 +37,18 @@ export default function ZonasPage() {
     )
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!distribuidora?.id) return
+    try {
+      await updateDocument(COLLECTIONS.distributors, distribuidora.id, {
+        coverageRadiusKm: radius,
+        minimumOrder: Number(minOrder) || 0,
+        deliveryTimeHours: Number(deliveryTime) || 48,
+        deliveryZones: MOCK_ZONES,
+      })
+    } catch (err) {
+      console.error('[zonas] updateDocument failed', err)
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }

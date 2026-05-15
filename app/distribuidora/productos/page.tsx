@@ -2,25 +2,47 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, Pencil, Package } from 'lucide-react'
+import { Plus, Pencil, Package, Upload, Download, FileSpreadsheet } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { useApp } from '@/lib/app-context'
-import { getProductsByDistribuidora, formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/mock-data'
+import { useProducts } from '@/hooks/use-data'
 import { Distribuidora } from '@/lib/types'
 import { CategoryIcon } from '@/components/category-icon'
 import { ProductCardSkeleton } from '@/components/ui/SkeletonCard'
-import { useMockLoading } from '@/hooks/use-mock-loading'
+import ImportProductsModal from '@/components/products/ImportProductsModal'
+import { exportProductsToXlsx, downloadTemplate } from '@/lib/export/productsExport'
+import type { ParsedProductRow } from '@/lib/import/productsImport'
+import { createProduct } from '@/lib/data/products.service'
 
 export default function ProductosPage() {
   const { currentUser } = useApp()
   const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
+  const distributorId = distribuidora?.id || 'dist-1'
   const [searchQuery, setSearchQuery] = useState('')
-  const isLoading = useMockLoading()
+  const [showImport, setShowImport] = useState(false)
+  const { data: products, loading: isLoading } = useProducts(distributorId)
 
-  const products = getProductsByDistribuidora(distribuidora?.id || 'dist-1')
+  const handleImport = async (rows: ParsedProductRow[]) => {
+    await Promise.all(
+      rows.map(row =>
+        createProduct({
+          distributorId,
+          name: row.nombre,
+          description: row.descripcion,
+          categoryId: row.categoria,
+          brand: row.marca || undefined,
+          sku: row.sku || undefined,
+          price: row.precio ?? 0,
+          stock: row.stock ?? 0,
+          unit: row.unidad || undefined,
+          status: row.estado,
+        }).catch(err => console.error('[import] createProduct failed', err))
+      )
+    )
+  }
 
   const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -34,15 +56,41 @@ export default function ProductosPage() {
         <div className="max-w-5xl mx-auto">
           <h1 className="font-heading font-bold text-2xl text-foreground mb-4 md:mb-6">Catálogo de Productos</h1>
 
-          <div className="flex gap-2 pb-4">
+          <div className="flex gap-2 pb-4 flex-wrap">
             <SearchInput
               placeholder="Buscar productos..."
               value={searchQuery}
               onChange={setSearchQuery}
-              className="flex-1"
+              className="flex-1 min-w-40"
             />
+            {/* Import / Export / Template */}
+            <button
+              onClick={() => downloadTemplate()}
+              className="h-10 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+              title="Descargar plantilla"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="hidden sm:inline">Plantilla</span>
+            </button>
+            <button
+              onClick={() => exportProductsToXlsx(products, 'mis-productos')}
+              disabled={products.length === 0}
+              className="h-10 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Exportar productos"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Exportar</span>
+            </button>
+            <button
+              onClick={() => setShowImport(true)}
+              className="h-10 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+              title="Importar productos"
+            >
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline">Importar</span>
+            </button>
             <Link href="/distribuidora/productos/nuevo">
-              <button className="bg-primary hover:bg-primary/90 text-white px-4 md:px-6 rounded-xl text-sm md:text-base font-bold shadow-sm flex items-center justify-center gap-2 h-full transition-colors">
+              <button className="bg-primary hover:bg-primary/90 text-white px-4 md:px-6 rounded-xl text-sm md:text-base font-bold shadow-sm flex items-center justify-center gap-2 h-10 transition-colors">
                 <Plus className="h-5 w-5 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Nuevo</span>
               </button>
@@ -147,6 +195,14 @@ export default function ProductosPage() {
           </div>
         )}
       </main>
+
+      {/* Import modal */}
+      {showImport && (
+        <ImportProductsModal
+          onClose={() => setShowImport(false)}
+          onImport={handleImport}
+        />
+      )}
     </div>
   )
 }

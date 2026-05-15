@@ -1,26 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { Package } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { mockDistributorCards, mockDistribuidoras, categories } from '@/lib/mock-data'
+import { categories } from '@/lib/mock-data'
 import { DistributorCardSkeleton } from '@/components/ui/SkeletonCard'
-import { useMockLoading } from '@/hooks/use-mock-loading'
+import { useDistributors } from '@/hooks/use-data'
 import { DistribuidoraCard } from '@/components/distribuidora-card'
 import { EmptyState } from '@/components/ui/EmptyState'
-
-// Build a city lookup from the full distribuidoras list
-const cityMap: Record<string, string> = Object.fromEntries(
-  mockDistribuidoras.map(d => [d.id, d.location?.city || ''])
-)
 
 export default function DistribuidorasPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const isLoading = useMockLoading()
+  const { data: distributors, loading: isLoading } = useDistributors()
 
-  const filtered = mockDistributorCards.filter(d => {
+  const filtered = distributors.filter(d => {
     const matchesSearch =
       d.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       d.categories.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -87,7 +81,7 @@ export default function DistribuidorasPage() {
             </p>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
               {filtered.map((distributor, index) => (
-                <DistribuidoraCard key={distributor.id} distributor={distributor} index={index} city={cityMap[distributor.id]} />
+                <DistribuidoraCard key={distributor.id} distributor={distributor} index={index} />
               ))}
             </div>
           </>

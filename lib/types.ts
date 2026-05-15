@@ -77,6 +77,8 @@ export interface DistributorCard {
   minOrder: number
   productCount: number
   categories: string[]
+  rating?: number
+  reviewCount?: number
 }
 
 // Cart types
@@ -115,6 +117,52 @@ export interface Order {
   createdAt: string
   updatedAt: string
   zone: string
+  // Extended fields (populated from Firestore or set on mock orders)
+  paymentMethod?: 'mercado_pago' | 'external'
+  firestoreStatus?: string  // raw Firestore orderStatus
+  cancellationReason?: string
+  commissionGenerated?: boolean
+  commissionAmount?: number
+  deliveredAt?: string
+}
+
+// Review types
+export interface Review {
+  id: string
+  orderId: string
+  orderNumber: string
+  distributorId: string
+  distributorName: string
+  commerceId: string
+  commerceName: string
+  ratingGeneral: number
+  ratingFulfillment: number
+  ratingDelivery: number
+  ratingProductCondition: number
+  ratingCommunication: number
+  comment: string
+  status: 'visible' | 'hidden' | 'reported'
+  createdAt: string
+}
+
+export interface DistributorRatingSummary {
+  averageGeneral: number
+  averageFulfillment: number
+  averageDelivery: number
+  averageProductCondition: number
+  averageCommunication: number
+  reviewCount: number
+}
+
+export interface CommerceHistory {
+  commerceId: string
+  commerceName: string
+  completedOrders: number
+  cancelledOrders: number
+  notDeliveredOrders: number
+  reportedIssues: number
+  lastOrderAt: string
+  joinedAt: string
 }
 
 // Dashboard KPIs

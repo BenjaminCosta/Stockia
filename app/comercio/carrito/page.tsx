@@ -6,13 +6,15 @@ import Link from 'next/link'
 import { ArrowLeft, Trash2, ChevronRight, ShoppingBag } from 'lucide-react'
 import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { useApp } from '@/lib/app-context'
-import { formatCurrency, mockDistributorCards } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/mock-data'
+import { useDistributors } from '@/hooks/use-data'
 import { LoadingButton } from '@/components/ui/LoadingButton'
 import { EmptyState } from '@/components/ui/EmptyState'
 
 export default function CarritoPage() {
   const router = useRouter()
   const { cart, removeFromCart, getCartTotal } = useApp()
+  const { data: distributors } = useDistributors()
   const [isConfirming, setIsConfirming] = useState(false)
 
   if (!cart || cart.items.length === 0) {
@@ -39,7 +41,7 @@ export default function CarritoPage() {
 
   const total = getCartTotal()
   const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0)
-  const distributor = mockDistributorCards.find((item) => item.id === cart.distribuidoraId)
+  const distributor = distributors.find((item) => item.id === cart.distribuidoraId)
   const minOrder = distributor?.minOrder || 20000
   const minProgress = Math.min((total / minOrder) * 100, 100)
   const remainingToMin = Math.max(minOrder - total, 0)

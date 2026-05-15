@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Package, ClipboardList, User, LogOut, MapPin, TrendingUp } from 'lucide-react'
+import { LayoutDashboard, Package, ClipboardList, User, LogOut, MapPin, TrendingUp, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/lib/app-context'
 import { StockiaLogo } from '@/components/stockia-logo'
@@ -13,6 +13,7 @@ const operationItems = [
   { href: '/distribuidora/productos', label: 'Productos', icon: Package, exact: false },
   { href: '/distribuidora/zonas', label: 'Zonas de entrega', icon: MapPin, exact: false },
   { href: '/distribuidora/ventas', label: 'Ventas', icon: TrendingUp, exact: false },
+  { href: '/distribuidora/resenas', label: 'Reseñas', icon: Star, exact: false },
 ]
 
 const accountItems = [
@@ -56,8 +57,8 @@ export function DistribuidoraSidebar() {
   const companyName = distribuidora?.companyName || 'Mi distribuidora'
   const initials = companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     router.push('/login')
   }
 

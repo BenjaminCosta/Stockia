@@ -1,0 +1,132 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ────────────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && userRole() == 'admin';
+    }
+
+    function isComercio() {
+      return isSignedIn() && userRole() == 'comercio';
+    }
+
+    function isDistribuidora() {
+      return isSignedIn() && userRole() == 'distribuidora';
+    }
+
+    // ─── Users ──────────────────────────────────────────────────────────────────
+    // Each user can only read/write their own document.
+    // Admin can read all.
+
+    match /users/{userId} {
+      allow read:  if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    // ─── Commerces ──────────────────────────────────────────────────────────────
+    // Commerces can read/write their own profile.
+    // Distributors and admins can read (to show commerce info on orders).
+
+    match /commerces/{commerceId} {
+      allow read:   if isSignedIn();
+      allow create: if isComercio() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ─── Distributors ───────────────────────────────────────────────────────────
+    // Public read for authenticated users (commerces browse distributors).
+    // Only the owning distributor or admin can write.
+
+    match /distributors/{distributorId} {
+      allow read:   if isSignedIn();
+      allow create: if isDistribuidora() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ─── Products ───────────────────────────────────────────────────────────────
+    // Authenticated users can read all active products.
+    // Only the owning distributor can write their products.
+
+    match /products/{productId} {
+      allow read:   if isSignedIn();
+      allow create: if isDistribuidora() && request.resource.data.distributorId == request.auth.uid;
+      allow update: if isDistribuidora() && resource.data.distributorId == request.auth.uid;
+      allow delete: if isDistribuidora() && resource.data.distributorId == request.auth.uid;
+    }
+
+    // ─── Categories ─────────────────────────────────────────────────────────────
+    // Read: any authenticated user.
+    // Write: admin only.
+
+    match /categories/{categoryId} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ─── Orders ─────────────────────────────────────────────────────────────────
+    // Commerce: create orders & read their own.
+    // Distributor: read and update orders assigned to them.
+    // Admin: full access.
+
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && (
+        resource.data.commerceId    == request.auth.uid ||
+        resource.data.distributorId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isComercio() && request.resource.data.commerceId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        resource.data.distributorId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ─── Commissions ────────────────────────────────────────────────────────────
+    // Distributor: read their own commissions + create when marking order delivered.
+    // Admin: full access (mark paid, query all).
+
+    match /commissions/{commissionId} {
+      allow read: if isSignedIn() && (
+        resource.data.distributorId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isDistribuidora() && request.resource.data.distributorId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Reviews ────────────────────────────────────────────────────────────────
+    // Authenticated users can read. Only commerces can create reviews.
+
+    match /reviews/{reviewId} {
+      allow read:   if isSignedIn();
+      allow create: if isComercio();
+      allow update: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // ─── Admin Settings ─────────────────────────────────────────────────────────
+    // Admin only.
+
+    match /adminSettings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+
+  }
+}

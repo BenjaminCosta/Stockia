@@ -4,9 +4,9 @@ import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Package, Check, Minus, Plus, ShoppingCart, Trash2, ChevronRight } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { mockProducts, categories, formatCurrency, mockDistributorCards } from '@/lib/mock-data'
-import { useMockLoading } from '@/hooks/use-mock-loading'
+import { categories, formatCurrency } from '@/lib/mock-data'
 import { useApp } from '@/lib/app-context'
+import { useProducts, useDistributors } from '@/hooks/use-data'
 import { Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { ProductCard } from '@/components/product-card'
@@ -18,8 +18,9 @@ const VISIBLE_CATEGORIES = ['Bebidas', 'Almacén', 'Limpieza', 'Lácteos']
 
 function CartSidebar() {
   const { cart, getCartTotal, removeFromCart, updateCartItemQuantity } = useApp()
+  const { data: distributors } = useDistributors()
   const total = getCartTotal()
-  const dist = mockDistributorCards.find(d => d.id === cart?.distribuidoraId)
+  const dist = distributors.find(d => d.id === cart?.distribuidoraId)
 
   if (!cart || cart.items.length === 0) {
     return (
@@ -183,14 +184,15 @@ export default function BuscarPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [quantities, setQuantities]             = useState<Record<string, number>>({})
   const [justAdded, setJustAdded]               = useState<Record<string, boolean>>({})
-  const isLoading = useMockLoading()
   const { addToCart, getCartItemCount } = useApp()
   const cartItemCount = getCartItemCount()
+  const { data: products, loading: isLoading } = useProducts()
+  const { data: distributors } = useDistributors()
 
   const visibleCategories = categories.filter(c => VISIBLE_CATEGORIES.includes(c.name))
 
-  const activeProducts = mockProducts.filter(p => p.active)
-  const filteredProducts = activeProducts.filter(p => {
+  const activeProducts = products.filter((p: Product) => p.active)
+  const filteredProducts = activeProducts.filter((p: Product) => {
     const q = searchQuery.toLowerCase()
     const matchesSearch = p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
     const matchesCategory = !selectedCategory || p.category === selectedCategory
@@ -201,7 +203,7 @@ export default function BuscarPage() {
   const setQty = (id: string, v: number) => setQuantities(prev => ({ ...prev, [id]: v }))
 
   const handleAdd = useCallback((product: Product) => {
-    const dist = mockDistributorCards.find(d => d.id === product.distribuidoraId)
+    const dist = distributors.find(d => d.id === product.distribuidoraId)
     if (!dist) return
     const qty = quantities[product.id] ?? 1
     addToCart(product, dist.companyName, qty)
@@ -302,8 +304,8 @@ export default function BuscarPage() {
 
                 {/* Mobile — list */}
                 <div className="flex flex-col gap-3 lg:hidden">
-                  {filteredProducts.map(product => {
-                    const dist = mockDistributorCards.find(d => d.id === product.distribuidoraId)
+                  {filteredProducts.map((product: Product) => {
+                    const dist = distributors.find(d => d.id === product.distribuidoraId)
                     return (
                       <ProductCard
                         key={product.id}
@@ -322,8 +324,8 @@ export default function BuscarPage() {
 
                 {/* Desktop — grid */}
                 <div className="hidden lg:grid grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filteredProducts.map(product => {
-                    const dist = mockDistributorCards.find(d => d.id === product.distribuidoraId)
+                  {filteredProducts.map((product: Product) => {
+                    const dist = distributors.find(d => d.id === product.distribuidoraId)
                     return (
                       <ProductCard
                         key={product.id}

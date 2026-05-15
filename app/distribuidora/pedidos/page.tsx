@@ -2,17 +2,18 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Check, Clock, MapPin, Package, X } from 'lucide-react'
+import { Check, Clock, MapPin, Package, X, Handshake } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { PillFilter } from '@/components/ui/PillFilter'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { useApp } from '@/lib/app-context'
-import { getOrdersByDistribuidora, formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/mock-data'
+import { useDistribuidoraOrders } from '@/hooks/use-data'
 import { Distribuidora, OrderStatus } from '@/lib/types'
 import { OrderCardSkeleton } from '@/components/ui/SkeletonCard'
-import { useMockLoading } from '@/hooks/use-mock-loading'
 import { StatusBadge } from '@/components/status-badge'
+import { updateOrderStatus } from '@/lib/data/orders.service'
 
 const statusFilters: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -27,9 +28,19 @@ export default function PedidosDistribuidoraPage() {
   const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
-  const isLoading = useMockLoading()
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const { data: orders, loading: isLoading } = useDistribuidoraOrders(distribuidora?.id || 'dist-1')
 
-  const orders = getOrdersByDistribuidora(distribuidora?.id || 'dist-1')
+  const handleQuickAction = async (orderId: string, action: 'confirmed' | 'cancelled') => {
+    setUpdatingId(orderId)
+    try {
+      await updateOrderStatus(orderId, action)
+    } catch (err) {
+      console.error('[pedidos-list] updateOrderStatus failed', err)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
 
   const filteredOrders = orders.filter(o => {
     const matchesSearch = o.comercioName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -38,7 +49,9 @@ export default function PedidosDistribuidoraPage() {
     return matchesSearch && matchesStatus
   })
 
-  const pendingCount = orders.filter(o => o.status === 'pendiente').length
+  const pendingCount = orders.filter(o =>
+    o.status === 'pendiente' || o.firestoreStatus === 'pending_confirmation'
+  ).length
 
   return (
     <div className="flex flex-col min-h-screen pb-20 md:pb-8">
@@ -98,7 +111,12 @@ export default function PedidosDistribuidoraPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold text-foreground text-sm">{order.comercioName}</h3>
-                      <StatusBadge status={order.status} />
+                      <StatusBadge status={order.firestoreStatus ?? order.status} />
+                      {order.paymentMethod === 'external' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          <Handshake className="h-2.5 w-2.5" /> Coordinar
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2.5 text-xs text-muted-foreground mt-0.5 flex-wrap">
                       <span className="font-mono">{order.orderNumber}</span>
@@ -127,11 +145,19 @@ export default function PedidosDistribuidoraPage() {
                   </Link>
                   {order.status === 'pendiente' && (
                     <>
-                      <button className="h-8 md:h-9 px-3 rounded-lg md:rounded-xl bg-white border border-border text-red-500 text-xs font-bold inline-flex items-center gap-1 hover:bg-red-50 transition-colors">
+                      <button
+                        onClick={() => handleQuickAction(order.id, 'cancelled')}
+                        disabled={updatingId === order.id}
+                        className="h-8 md:h-9 px-3 rounded-lg md:rounded-xl bg-white border border-border text-red-500 text-xs font-bold inline-flex items-center gap-1 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
                         <X className="h-3 w-3" /> Rechazar
                       </button>
-                      <button className="h-8 md:h-9 px-3 rounded-lg md:rounded-xl bg-[#C8FF00] text-[#0B1A45] text-xs font-bold inline-flex items-center gap-1 hover:bg-[#C8FF00]/90 transition-colors">
-                        <Check className="h-3 w-3" strokeWidth={3} /> Aceptar
+                      <button
+                        onClick={() => handleQuickAction(order.id, 'confirmed')}
+                        disabled={updatingId === order.id}
+                        className="h-8 md:h-9 px-3 rounded-lg md:rounded-xl bg-[#C8FF00] text-[#0B1A45] text-xs font-bold inline-flex items-center gap-1 hover:bg-[#C8FF00]/90 transition-colors disabled:opacity-50"
+                      >
+                        <Check className="h-3 w-3" strokeWidth={3} /> {updatingId === order.id ? '...' : 'Aceptar'}
                       </button>
                     </>
                   )}

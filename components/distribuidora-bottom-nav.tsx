@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sun, ClipboardList, Package, User } from 'lucide-react'
+import { Sun, ClipboardList, Package, Star, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/distribuidora', label: 'Hoy', icon: Sun, exact: true },
   { href: '/distribuidora/pedidos', label: 'Pedidos', icon: ClipboardList, exact: false },
   { href: '/distribuidora/productos', label: 'Productos', icon: Package, exact: false },
+  { href: '/distribuidora/resenas', label: 'Reseñas', icon: Star, exact: false },
   { href: '/distribuidora/perfil', label: 'Cuenta', icon: User, exact: false },
 ]
 

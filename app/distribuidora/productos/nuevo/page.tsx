@@ -19,11 +19,14 @@ import {
 } from '@/components/ui/select'
 import { categories } from '@/lib/mock-data'
 import { CategoryIcon } from '@/components/category-icon'
+import { useApp } from '@/lib/app-context'
+import { createProduct } from '@/lib/data/products.service'
 
 export default function NuevoProductoPage() {
   const router = useRouter()
+  const { currentUser } = useApp()
   const [isLoading, setIsLoading] = useState(false)
-  
+
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [price, setPrice] = useState('')
@@ -32,12 +35,24 @@ export default function NuevoProductoPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!currentUser) return
     setIsLoading(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    router.push('/distribuidora/productos')
+    try {
+      await createProduct({
+        distributorId: currentUser.id,
+        name,
+        description,
+        categoryId: category,
+        price: parseFloat(price) || 0,
+        stock: parseInt(stock, 10) || 0,
+        status: 'active',
+      })
+    } catch (err) {
+      console.error('[nuevo-producto] createProduct failed', err)
+    } finally {
+      setIsLoading(false)
+      router.push('/distribuidora/productos')
+    }
   }
 
   return (

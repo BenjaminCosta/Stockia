@@ -5,7 +5,8 @@ import { Truck, MapPin, Phone, Mail, FileText, Bell, Shield, ChevronRight, LogOu
 import { useApp } from '@/lib/app-context'
 import { Distribuidora } from '@/lib/types'
 import { Switch } from '@/components/ui/switch'
-import { getProductsByDistribuidora, getOrdersByDistribuidora, formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/mock-data'
+import { useProducts, useDistribuidoraOrders } from '@/hooks/use-data'
 
 const notifications = [
   { label: 'Nuevos pedidos', sub: 'Recibí una alerta cuando entra un pedido nuevo', defaultOn: true },
@@ -23,9 +24,9 @@ export default function PerfilDistribuidoraPage() {
   const initials = companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const city = distribuidora?.location?.city || 'Quilmes'
 
-  const products = getProductsByDistribuidora(distribuidora?.id || 'dist-1')
-  const orders = getOrdersByDistribuidora(distribuidora?.id || 'dist-1')
-  const todaySales = orders.reduce((sum, o) => sum + o.total, 0)
+  const { data: products } = useProducts(distribuidora?.id || 'dist-1')
+  const { data: orders } = useDistribuidoraOrders(distribuidora?.id || 'dist-1')
+  const todaySales = orders.reduce((sum: number, o: any) => sum + o.total, 0)
 
   const handleLogout = () => {
     logout()
