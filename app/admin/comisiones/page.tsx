@@ -119,7 +119,7 @@ export default function AdminComisionesPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl">
+    <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
       <div className="mb-6">
         <h1 className="font-heading font-bold text-2xl text-gray-900">Comisiones</h1>
         <p className="text-gray-500 text-sm mt-1">Tasa base: 1.5% sobre pedidos entregados · Pago externo coordinado con la distribuidora</p>

@@ -21,7 +21,7 @@ const notifications = [
   { label: 'Nuevos pedidos', sub: 'Recibí una alerta cuando entra un pedido nuevo', defaultOn: true },
   { label: 'Cambios de estado', sub: 'Confirmaciones de pago y actualizaciones de entrega', defaultOn: true },
   { label: 'Stock bajo', sub: 'Te avisamos cuando un producto queda con poco stock', defaultOn: true },
-  { label: 'Novedades de Stockia', sub: 'Actualizaciones de la plataforma y nuevas funciones', defaultOn: false },
+  { label: 'Novedades de StockIA', sub: 'Actualizaciones de la plataforma y nuevas funciones', defaultOn: false },
 ]
 
 // ─── Editable company info ─────────────────────────────────────────────────────
@@ -250,7 +250,7 @@ export default function PerfilDistribuidoraPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Dark hero header */}
-      <div className="bg-sidebar pt-8 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-b-3xl md:mt-4 md:mx-4 overflow-hidden shadow-lg">
+      <div className="bg-primary pt-8 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-b-3xl md:mt-4 md:mx-4 overflow-hidden shadow-lg">
         <svg className="absolute inset-0 w-full h-full opacity-[0.06]" xmlns="http://www.w3.org/2000/svg">
           <circle cx="88%" cy="25%" r="90" fill="none" stroke="white" strokeWidth="5" />
           <rect x="3%" y="60%" width="80" height="80" fill="none" stroke="white" strokeWidth="4" transform="rotate(20)" />
@@ -346,7 +346,7 @@ export default function PerfilDistribuidoraPage() {
                 </div>
                 <div className="flex-1">
                   <span className="block font-bold text-sm text-foreground">Enviar feedback</span>
-                  <span className="block text-xs text-muted-foreground mt-0.5">Contanos tu experiencia con Stockia</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Contanos tu experiencia con StockIA</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>

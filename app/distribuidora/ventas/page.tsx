@@ -107,7 +107,7 @@ function CommissionSection({
         <AlertTriangle className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
         <p className="leading-relaxed">
           El pago entre tu distribuidora y los comercios se coordina por fuera de la plataforma.
-          Stockia registra una comisión por cada pedido entregado que se abona directamente al equipo de Stockia.
+          StockIA registra una comisión por cada pedido entregado que se abona directamente al equipo de StockIA.
         </p>
       </div>
 
@@ -174,7 +174,7 @@ export default function VentasPage() {
           <AlertTriangle className="h-5 w-5 shrink-0" />
           <div className="flex-1">
             <p className="font-bold text-sm">Tu cuenta está bloqueada por comisiones vencidas</p>
-            <p className="text-xs text-red-100 mt-0.5">No podés publicar productos ni recibir nuevos pedidos. Contactá a Stockia para resolver la situación.</p>
+            <p className="text-xs text-red-100 mt-0.5">No podés publicar productos ni recibir nuevos pedidos. Contactá a StockIA para resolver la situación.</p>
           </div>
         </div>
       )}

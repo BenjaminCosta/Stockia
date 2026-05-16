@@ -76,8 +76,8 @@ export function ProductCard({
   const outOfStock = product.stock === 0
   const catObj = categories.find(c => c.name === product.category)
 
-  const productImg = (sizeClass: string) => (
-    <div className={cn('flex items-center justify-center bg-[#F7F8FA] overflow-hidden rounded-xl', sizeClass)}>
+  const productImg = (sizeClass: string, rounded = 'rounded-xl') => (
+    <div className={cn('flex items-center justify-center bg-white overflow-hidden', rounded, sizeClass)}>
       {catObj ? (
         <img src={catObj.image} alt={product.category} className="h-2/3 w-2/3 object-contain" />
       ) : (
@@ -149,11 +149,11 @@ export function ProductCard({
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl border border-[#DFE1E8] flex flex-col overflow-hidden transition-all duration-200 hover:shadow-[0_8px_24px_rgba(11,26,69,0.08)] hover:-translate-y-0.5',
+        'bg-white rounded-2xl flex flex-col overflow-hidden transition-all duration-200 shadow-[0_2px_12px_rgba(11,26,69,0.06)] hover:shadow-[0_8px_24px_rgba(11,26,69,0.10)] hover:-translate-y-0.5',
         justAdded && 'ring-2 ring-[#C8FF00]/60',
       )}
     >
-      <Link href={`/comercio/producto/${product.id}`} className="relative mx-3 mt-3 block">
+      <Link href={`/comercio/producto/${product.id}`} className="relative block">
         {(bestSeller || offer) && (
           <div className="absolute top-2 left-2 z-10 flex gap-1 flex-wrap">
             {bestSeller && (
@@ -168,16 +168,19 @@ export function ProductCard({
             )}
           </div>
         )}
-        {productImg('h-44 w-full')}
+        {productImg('aspect-square w-full', 'rounded-none')}
       </Link>
 
-      <div className="flex flex-col flex-1 p-4 pt-3">
+      {/* Separator */}
+      <div className="h-px mx-3 bg-linear-to-r from-transparent via-gray-200 to-transparent shadow-[0_1px_6px_rgba(11,26,69,0.07)]" />
+
+      <div className="flex flex-col flex-1 p-2.5 pt-2 md:p-4 md:pt-3">
         <Link href={`/comercio/producto/${product.id}`}>
-          <h3 className="font-bold text-sm text-[#0B1A45] leading-snug line-clamp-2 mb-0.5 hover:underline">
+          <h3 className="font-bold text-xs md:text-sm text-[#0B1A45] leading-snug line-clamp-2 mb-0.5 hover:underline">
             {product.name}
           </h3>
         </Link>
-        <p className="text-[11px] text-[#7A839C] mb-3 flex items-center gap-1 flex-wrap">
+        <p className="text-[10px] md:text-[11px] text-[#7A839C] mb-1.5 md:mb-3 flex items-center gap-1 flex-wrap">
           {product.category}
           {distDistance && (
             <span className="inline-flex items-center gap-0.5">
@@ -187,33 +190,50 @@ export function ProductCard({
           )}
         </p>
 
-        <div className="mb-4">
-          <span className="font-bold text-xl text-[#0B1A45]">{formatCurrency(product.price)}</span>
+        <div className="mb-2 md:mb-4">
+          <span className="font-bold text-base md:text-xl text-[#0B1A45]">{formatCurrency(product.price)}</span>
         </div>
 
         <div className="mt-auto flex items-center gap-2">
-          <Stepper qty={qty} onChange={onQtyChange} disabled={outOfStock} />
+          {/* Mobile: compact + button */}
           <button
             onClick={onAdd}
             disabled={outOfStock}
             className={cn(
-              'flex-1 h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5',
+              'md:hidden ml-auto h-8 w-8 rounded-xl flex items-center justify-center transition-all shrink-0',
               justAdded
                 ? 'bg-[rgba(137,179,23,0.15)] text-[#4A662E]'
-                : 'bg-[#0B1A45] text-white hover:bg-[#0B1A45]/90 active:scale-[0.98]',
-              outOfStock && 'bg-gray-100 text-gray-400 cursor-not-allowed',
+                : 'bg-[#F7F8FA] text-[#0B1A45] active:scale-[0.95]',
+              outOfStock && 'opacity-40 cursor-not-allowed',
             )}
           >
-            {justAdded ? (
-              <>
-                <Check className="h-3.5 w-3.5" /> Agregado
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="h-3.5 w-3.5" /> Agregar
-              </>
-            )}
+            {justAdded ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
           </button>
+          {/* Desktop: stepper + full Agregar button */}
+          <div className="hidden md:flex items-center gap-2 w-full">
+            <Stepper qty={qty} onChange={onQtyChange} disabled={outOfStock} />
+            <button
+              onClick={onAdd}
+              disabled={outOfStock}
+              className={cn(
+                'flex-1 h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5',
+                justAdded
+                  ? 'bg-[rgba(137,179,23,0.15)] text-[#4A662E]'
+                  : 'bg-[#0B1A45] text-white hover:bg-[#0B1A45]/90 active:scale-[0.98]',
+                outOfStock && 'bg-gray-100 text-gray-400 cursor-not-allowed',
+              )}
+            >
+              {justAdded ? (
+                <>
+                  <Check className="h-3.5 w-3.5" /> Agregado
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-3.5 w-3.5" /> Agregar
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

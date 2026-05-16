@@ -249,7 +249,7 @@ export default function CuentaPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Dark hero header */}
-      <div className="bg-sidebar pt-8 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-b-3xl md:mt-4 md:mx-4 overflow-hidden shadow-lg">
+      <div className="bg-primary pt-8 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-b-3xl md:mt-4 md:mx-4 overflow-hidden shadow-lg">
         <svg className="absolute inset-0 w-full h-full opacity-[0.06]" xmlns="http://www.w3.org/2000/svg">
           <circle cx="90%" cy="20%" r="80" fill="none" stroke="white" strokeWidth="5" />
           <rect x="5%" y="65%" width="70" height="70" fill="none" stroke="white" strokeWidth="4" transform="rotate(15)" />
@@ -336,7 +336,7 @@ export default function CuentaPage() {
                 </div>
                 <div className="flex-1">
                   <span className="block font-bold text-sm text-foreground">Enviar feedback</span>
-                  <span className="block text-xs text-muted-foreground mt-0.5">Contanos tu experiencia con Stockia</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Contanos tu experiencia con StockIA</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>

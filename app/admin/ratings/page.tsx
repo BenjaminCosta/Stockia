@@ -42,7 +42,7 @@ type TabKey = 'distribuidoras' | 'comercios' | 'feedback'
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'distribuidoras', label: 'Reseñas a distribuidoras', icon: Truck },
   { key: 'comercios',      label: 'Reseñas a comercios',      icon: Store },
-  { key: 'feedback',       label: 'Feedback Stockia',         icon: MessageSquare },
+  { key: 'feedback',       label: 'Feedback StockIA',         icon: MessageSquare },
 ]
 
 // ─── Criteria pill ────────────────────────────────────────────────────────────
@@ -492,7 +492,7 @@ export default function AdminRatingsPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('distribuidoras')
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl">
+    <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
       <div className="mb-6">
         <h1 className="font-heading font-bold text-2xl text-gray-900">Reseñas y Feedback</h1>
         <p className="text-gray-500 text-sm mt-1">Gestión de calificaciones y feedback interno de la plataforma</p>

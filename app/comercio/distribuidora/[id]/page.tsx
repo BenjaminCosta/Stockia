@@ -158,8 +158,8 @@ export default function DistribuidoraCatalogPage({
                 />
               ) : (
                 <>
-                  {/* Mobile — list cards */}
-                  <div className="flex flex-col gap-3 md:hidden pb-12">
+                  {/* Mobile — 2-col grid */}
+                  <div className="grid grid-cols-2 gap-3 md:hidden pb-12 px-4">
                     {filteredProducts.map(product => (
                       <ProductCard
                         key={product.id}
@@ -168,7 +168,7 @@ export default function DistribuidoraCatalogPage({
                         onQtyChange={v => setQuantities(prev => ({ ...prev, [product.id]: v }))}
                         onAdd={() => handleAgregar(product.id)}
                         justAdded={addedProducts.has(product.id)}
-                        view="list"
+                        view="grid"
                       />
                     ))}
                   </div>

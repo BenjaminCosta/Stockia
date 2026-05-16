@@ -38,7 +38,7 @@ function NavItem({ href, label, icon: Icon, exact, pathname }: {
         'relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group',
         isActive
           ? 'bg-[rgba(200,255,0,0.1)] text-[#C8FF00]'
-          : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+          : 'text-white/90 hover:text-white hover:bg-white/5'
       )}
     >
       {isActive && (
@@ -90,13 +90,13 @@ export function AdminSidebar() {
             SK
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-white truncate">Stockia Admin</p>
+            <p className="text-xs font-semibold text-white truncate">StockIA Admin</p>
             <p className="text-[11px] text-white/40 truncate">admin@stockia.app</p>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all group"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/90 hover:text-red-400 hover:bg-red-500/10 transition-all group"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 group-hover:bg-red-500/10 shrink-0">
             <LogOut className="h-4 w-4" />

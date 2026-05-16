@@ -26,10 +26,18 @@ const bannerImage =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuD5AyXfk8ajEi26pq48tlS5ch4s6KleLvBpkMakL1s-oa5bQ7Z1FDjB6tw3mmY5OzVH153BMmYuf7viMCuUJPOwpJX5u2_arVtIHwLb3TFVvTSfeyQw8901VqZg4xPG2znYiyo2V4ZadHAjcNaRJrFcNGj2wGDH6ulcZ7-3c0jjHZ-_sheGCoH_CfgECZ2TLcM2DL5Cg9ERywVrxKyLsYBkZDrCV4dM2Qphw2hinMpGymIsoz0VM2rFuKolkzsOq-kHikNxmaOMKzif'
 
 const categoryPhotos: Record<string, string> = {
-  'Bebidas':  '/categorias/photos/bebidas.jpg',
-  'Limpieza': '/categorias/photos/limpieza.jpg',
-  'Lácteos':  '/categorias/photos/lacteos.jpg',
-  'Almacén':  '/categorias/photos/almacen.jpg',
+  'Bebidas':           '/assets/categories/bebidas.jpg',
+  'Almacén':           '/assets/categories/almacen.jpg',
+  'Limpieza':          '/assets/categories/limpieza.jpg',
+  'Lácteos':           '/assets/categories/lacteos.jpg',
+  'Panadería':         '/assets/categories/panaderia.jpg',
+  'Snacks':            '/assets/categories/snacks.jpg',
+  'Fiambres':          '/assets/categories/fiambres.jpg',
+  'Congelados':        '/assets/categories/congelados.jpg',
+  'Golosinas y Kiosco':'/assets/categories/golosinas.jpg',
+  'Perfumería':        '/assets/categories/perfumeria.jpg',
+  'Mascotas':          '/assets/categories/mascotas.jpg',
+  'Otros':             '/assets/categories/otros.jpg',
 }
 
 function getCategoryImage(product: Product) {
@@ -42,9 +50,9 @@ function CategoryCard({ category }: { category: Category }) {
   return (
     <Link
       href={`/comercio/buscar?categoria=${encodeURIComponent(category.name)}`}
-      className="group cursor-pointer overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_15px_35px_rgba(11,26,69,0.08)]"
+      className="group relative block cursor-pointer overflow-hidden rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_15px_35px_rgba(11,26,69,0.12)]"
     >
-      <div className="h-36 md:h-56 overflow-hidden">
+      <div className="h-36 md:h-56">
         {photo ? (
           <img
             src={photo}
@@ -52,13 +60,14 @@ function CategoryCard({ category }: { category: Category }) {
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center bg-gray-50">
+          <div className="h-full w-full flex items-center justify-center bg-[#0B1A45]">
             <img src={category.image} alt={category.name} className="h-16 w-16 md:h-20 md:w-20 object-contain" />
           </div>
         )}
       </div>
-      <div className="p-4 md:p-5">
-        <p className="font-semibold text-[#0B1A45] text-sm md:text-base">{category.name}</p>
+      <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/5 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4">
+        <p className="font-semibold text-white text-sm md:text-base">{category.name}</p>
       </div>
     </Link>
   )
@@ -158,7 +167,7 @@ export default function ComercioHomePage() {
               Nueva temporada 2026
             </span>
             <h2 className="font-heading text-xl font-bold leading-tight md:text-4xl">
-              Optimizá tu inventario con Stockia
+              Optimizá tu inventario con StockIA
             </h2>
             <div className="mt-3 flex flex-wrap gap-2">
               <Link
@@ -196,10 +205,40 @@ export default function ComercioHomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+            {/* Mobile: circular horizontal scroll */}
+            <div className="col-span-2 lg:col-span-4 md:hidden -mx-4 px-4 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex gap-4 w-max">
+                {categories
+                  .map(category => {
+                    const photo = categoryPhotos[category.name]
+                    return (
+                      <Link
+                        key={category.id}
+                        href={`/comercio/buscar?categoria=${encodeURIComponent(category.name)}`}
+                        className="shrink-0 flex flex-col items-center gap-2 w-20"
+                      >
+                        <div className="w-18 h-18 rounded-full overflow-hidden border-2 border-gray-200 bg-white">
+                          {photo ? (
+                            <img src={photo} alt={category.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                              <img src={category.image} alt={category.name} className="w-9 h-9 object-contain" />
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-semibold text-gray-700 text-center leading-tight">{category.name}</span>
+                      </Link>
+                    )
+                  })}
+              </div>
+            </div>
+            {/* Desktop: full-image cards */}
             {categories
               .filter(c => ['Bebidas', 'Almacén', 'Limpieza', 'Lácteos'].includes(c.name))
               .map((category) => (
-                <CategoryCard key={category.id} category={category} />
+                <div key={category.id} className="hidden md:block">
+                  <CategoryCard category={category} />
+                </div>
               ))}
           </div>
         </section>
@@ -241,7 +280,7 @@ export default function ComercioHomePage() {
           )}
         </section>
 
-        <section className="relative overflow-hidden rounded-2xl bg-[#181D25] p-4 text-white md:rounded-[2rem] md:p-8 lg:p-10">
+        <section className="relative overflow-hidden rounded-2xl bg-[#080f2b] p-4 text-white md:rounded-[2rem] md:p-8 lg:p-10">
           {/* geometric pattern overlay — estilo header de cuenta */}
           <svg className="absolute inset-0 h-full w-full opacity-[0.045]" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
             <circle cx="85%" cy="15%" r="90" fill="none" stroke="white" strokeWidth="6" />

@@ -17,7 +17,7 @@ export function StockiaLogo({ size = 40, className, variant = 'icon' }: StockiaL
     return (
       <Image
         src="/logo-white.png"
-        alt="Stockia"
+        alt="StockIA"
         width={Math.round(size * 4)}
         height={size}
         priority
@@ -30,7 +30,7 @@ export function StockiaLogo({ size = 40, className, variant = 'icon' }: StockiaL
     return (
       <Image
         src="/logo-navy.svg"
-        alt="Stockia"
+        alt="StockIA"
         width={Math.round(size * 4)}
         height={size}
         priority
@@ -43,7 +43,7 @@ export function StockiaLogo({ size = 40, className, variant = 'icon' }: StockiaL
   return (
     <Image
       src="/logo-iso.svg"
-      alt="Stockia"
+      alt="StockIA"
       width={size}
       height={size}
       priority

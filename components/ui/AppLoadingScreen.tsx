@@ -21,7 +21,7 @@ export function AppLoadingScreen() {
   return (
     <div
       aria-live="polite"
-      aria-label="Cargando Stockia"
+      aria-label="Cargando StockIA"
       className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-[#F7F7F8] transition-opacity duration-500"
       style={{ opacity: fading ? 0 : 1, pointerEvents: fading ? 'none' : 'auto' }}
     >
@@ -45,7 +45,7 @@ export function AppLoadingScreen() {
           <div className="relative h-24 w-24 flex items-center justify-center drop-shadow-xl">
             <img
               src="/logo-iso.svg"
-              alt="Stockia"
+              alt="StockIA"
               className="h-24 w-24 object-contain"
             />
           </div>
@@ -56,7 +56,7 @@ export function AppLoadingScreen() {
           className="flex flex-col items-center gap-1"
           style={{ animation: 'stockia-splash-text 0.4s ease-out 0.25s both' }}
         >
-          <span className="font-heading font-bold text-2xl text-foreground tracking-tight">Stockia</span>
+          <span className="font-heading font-bold text-2xl text-foreground tracking-tight">StockIA</span>
           <span className="text-sm text-muted-foreground font-medium">Preparando tu stock&hellip;</span>
         </div>
 

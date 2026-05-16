@@ -71,7 +71,7 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex items-center gap-3">
           <StockiaLogo size={52} />
-          <span className="font-heading text-2xl font-bold text-white">Stockia</span>
+          <span className="font-heading text-2xl font-bold text-white">StockIA</span>
         </div>
 
         <div className="relative z-10 max-w-md">
@@ -110,7 +110,7 @@ export default function LoginPage() {
             <div className="rounded-2xl p-1">
               <StockiaLogo size={96} className="rounded-xl" />
             </div>
-            <span className="font-heading text-xl font-bold text-white tracking-wide">Stockia</span>
+            <span className="font-heading text-xl font-bold text-white tracking-wide">StockIA</span>
           </div>
         </div>
 

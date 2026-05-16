@@ -61,7 +61,7 @@
   --radius: 0.75rem;
 
   /* — Sidebar oscuro navy (ambos roles) — */
-  --sidebar: #0B1A45;          /* Navy sidebar + hero headers */
+  --sidebar: #080f2b;          /* Navy sidebar + hero headers */
   --sidebar-foreground: #FFFFFF;
   --sidebar-primary: #C8FF00;  /* Lima para item activo */
   --sidebar-primary-foreground: #0B1A45;

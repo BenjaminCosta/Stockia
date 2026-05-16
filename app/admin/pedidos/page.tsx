@@ -50,7 +50,7 @@ export default function AdminPedidosPage() {
   const cancelledCount = orders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'not_delivered').length
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl">
+    <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
       <div className="mb-6">
         <h1 className="font-heading font-bold text-2xl text-gray-900">Pedidos</h1>
         <p className="text-gray-500 text-sm mt-1">{orders.length} en total</p>
@@ -88,7 +88,7 @@ export default function AdminPedidosPage() {
           </div>
 
           {/* Payment filter */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch]">
             {([
               { value: 'all', label: 'Todos los pagos' },
               { value: 'mercado_pago', label: 'Mercado Pago', icon: CreditCard },
@@ -97,7 +97,7 @@ export default function AdminPedidosPage() {
               <button
                 key={f.value}
                 onClick={() => setPaymentFilter(f.value)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-colors ${paymentFilter === f.value ? 'bg-primary text-white border-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-colors ${paymentFilter === f.value ? 'bg-primary text-white border-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
               >
                 {'icon' in f && <f.icon className="h-3.5 w-3.5" />}
                 {f.label}
@@ -120,15 +120,54 @@ export default function AdminPedidosPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {filtered.length === 0 && (
+          <div className="text-center py-12 text-gray-400 text-sm">Sin pedidos</div>
+        )}
+        {filtered.map(o => (
+          <div key={o.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-xs font-bold text-gray-400">{o.orderNumber}</span>
+                  <span className="text-gray-300">·</span>
+                  <span className="text-xs text-gray-400">
+                    {new Date(o.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                  </span>
+                </div>
+                <p className="font-semibold text-gray-900 truncate">{o.commerceName}</p>
+                <p className="text-xs text-gray-400 mt-0.5 truncate">{o.distributorName}</p>
+              </div>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${statusConfig[o.orderStatus].className}`}>
+                {statusConfig[o.orderStatus].label}
+              </span>
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+              <p className="text-base font-bold text-gray-900">{formatCurrency(o.total)}</p>
+              {o.paymentMethod === 'mercado_pago' ? (
+                <span className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-semibold bg-blue-50 px-2.5 py-1 rounded-full">
+                  <CreditCard className="h-3.5 w-3.5" /> Mercado Pago
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 font-semibold bg-amber-50 px-2.5 py-1 rounded-full">
+                  <Handshake className="h-3.5 w-3.5" /> Coordinar
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 <th className="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">N° Pedido</th>
                 <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Comercio</th>
-                <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider hidden md:table-cell">Distribuidora</th>
+                <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Distribuidora</th>
                 <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider hidden lg:table-cell">Pago</th>
                 <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Total</th>
                 <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Estado</th>
@@ -143,7 +182,7 @@ export default function AdminPedidosPage() {
                     <span className="font-mono font-semibold text-gray-700 text-xs">{o.orderNumber}</span>
                   </td>
                   <td className="px-4 py-4 font-medium text-gray-900">{o.commerceName}</td>
-                  <td className="px-4 py-4 text-gray-600 hidden md:table-cell">{o.distributorName}</td>
+                  <td className="px-4 py-4 text-gray-600">{o.distributorName}</td>
                   <td className="px-4 py-4 hidden lg:table-cell">
                     {o.paymentMethod === 'mercado_pago' ? (
                       <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">

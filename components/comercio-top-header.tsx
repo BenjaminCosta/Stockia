@@ -36,14 +36,14 @@ export function ComercioTopHeader() {
   const cartTotal = getCartTotal()
 
   return (
-    <header className="sticky top-0 z-50 bg-[#080f2b] lg:bg-[#0B1A45] text-white">
+    <header className="sticky top-0 z-50 bg-sidebar lg:bg-[#0B1A45] text-white">
 
       {/* Main header */}
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8 h-12 lg:h-16 flex items-center gap-4">
 
         {/* Logo */}
         <Link href="/comercio" className="shrink-0">
-          <StockiaLogo size={28} variant="white" className="h-7" />
+          <StockiaLogo variant="white" className="h-7 w-auto" />
         </Link>
 
         {/* Location chip — desktop */}

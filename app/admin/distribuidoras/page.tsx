@@ -36,7 +36,7 @@ export default function AdminDistribuidorasPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl">
+    <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
       <div className="mb-6">
         <h1 className="font-heading font-bold text-2xl text-gray-900">Distribuidoras</h1>
         <p className="text-gray-500 text-sm mt-1">{distributors.length} registradas</p>
@@ -53,12 +53,12 @@ export default function AdminDistribuidorasPage() {
             className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch]">
           {(['all', 'active', 'paused', 'review'] as const).map(s => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-3 py-2 text-xs font-semibold rounded-xl border transition-colors ${statusFilter === s ? 'bg-primary text-white border-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
+              className={`shrink-0 px-3 py-2 text-xs font-semibold rounded-xl border transition-colors ${statusFilter === s ? 'bg-primary text-white border-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
             >
               {s === 'all' ? 'Todas' : statusConfig[s].label}
             </button>
@@ -66,15 +66,57 @@ export default function AdminDistribuidorasPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {filtered.length === 0 && (
+          <div className="text-center py-12 text-gray-400 text-sm">Sin resultados</div>
+        )}
+        {filtered.map(d => (
+          <div key={d.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-gray-900 truncate">{d.companyName}</p>
+                <p className="text-xs text-gray-400 mt-0.5 truncate">{d.email}</p>
+                <p className="text-xs text-gray-500 mt-1">{d.city}</p>
+              </div>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${statusConfig[d.status].className}`}>
+                {statusConfig[d.status].label}
+              </span>
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+              <div className="flex gap-4 text-xs">
+                <div>
+                  <p className="text-gray-400">Pedidos</p>
+                  <p className="font-semibold text-gray-700 mt-0.5">{d.totalOrders}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Com. pendiente</p>
+                  <p className={`font-semibold mt-0.5 ${d.pendingCommission > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                    {d.pendingCommission > 0 ? formatCurrency(d.pendingCommission) : '—'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => toggleStatus(d.id, d.status)}
+                title={d.status === 'active' ? 'Pausar catálogo' : 'Reactivar catálogo'}
+                className={`h-9 w-9 rounded-xl flex items-center justify-center transition-colors ${d.status === 'active' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}
+              >
+                {d.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 <th className="text-left px-5 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Empresa</th>
                 <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider hidden lg:table-cell">Ciudad</th>
-                <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider hidden md:table-cell">Pedidos</th>
+                <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Pedidos</th>
                 <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider hidden lg:table-cell">Ventas totales</th>
                 <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Com. pendiente</th>
                 <th className="text-left px-4 py-3.5 font-semibold text-gray-500 text-xs uppercase tracking-wider">Estado</th>
@@ -91,7 +133,7 @@ export default function AdminDistribuidorasPage() {
                     </div>
                   </td>
                   <td className="px-4 py-4 text-gray-600 hidden lg:table-cell">{d.city}</td>
-                  <td className="px-4 py-4 font-medium text-gray-700 hidden md:table-cell">{d.totalOrders}</td>
+                  <td className="px-4 py-4 font-medium text-gray-700">{d.totalOrders}</td>
                   <td className="px-4 py-4 font-medium text-gray-700 hidden lg:table-cell">{formatCurrency(d.totalRevenue)}</td>
                   <td className="px-4 py-4">
                     <span className={`font-semibold ${d.pendingCommission > 0 ? 'text-amber-600' : 'text-gray-400'}`}>

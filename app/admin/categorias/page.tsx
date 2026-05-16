@@ -52,7 +52,7 @@ export default function AdminCategoriasPage() {
   const rubrics = Object.keys(grouped)
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl">
+    <div className="px-4 py-6 md:px-8 md:py-8 max-w-4xl mx-auto w-full">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-heading font-bold text-2xl text-gray-900">Categorías</h1>

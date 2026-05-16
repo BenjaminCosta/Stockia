@@ -58,7 +58,7 @@ export default function ProductosPage() {
           <AlertTriangle className="h-5 w-5 shrink-0" />
           <div className="flex-1">
             <p className="font-bold text-sm">Cuenta bloqueada por comisiones vencidas</p>
-            <p className="text-xs text-red-100 mt-0.5">No podés publicar ni activar productos. Contactá a Stockia para regularizar tu situación.</p>
+            <p className="text-xs text-red-100 mt-0.5">No podés publicar ni activar productos. Contactá a StockIA para regularizar tu situación.</p>
           </div>
         </div>
       )}

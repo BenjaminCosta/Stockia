@@ -44,7 +44,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl">
+    <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
       {/* Header */}
       <div className="mb-8">
         <h1 className="font-heading font-bold text-2xl md:text-3xl text-gray-900">Dashboard</h1>

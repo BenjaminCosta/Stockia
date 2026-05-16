@@ -1,6 +1,6 @@
 {
-  "name": "Stockia",
-  "short_name": "Stockia",
+  "name": "StockIA",
+  "short_name": "StockIA",
   "description": "Marketplace B2B para conectar distribuidoras con comercios locales.",
   "start_url": "/login",
   "display": "standalone",

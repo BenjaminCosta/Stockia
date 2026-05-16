@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 const steps = [
   {
     icon: <Truck className="h-10 w-10" />,
-    title: 'Tu distribuidora ya está en Stockia',
+    title: 'Tu distribuidora ya está en StockIA',
     description: 'Llegá a almacenes, kioscos y minimercados de toda la zona sur del Gran Buenos Aires.',
   },
   {
@@ -55,7 +55,7 @@ export default function OnboardingDistribuidoraPage() {
 
         <div className="relative z-10 flex justify-between items-start w-full">
           <div>
-            <p className="text-white/50 text-sm font-medium mb-2 uppercase tracking-widest">Stockia</p>
+            <p className="text-white/50 text-sm font-medium mb-2 uppercase tracking-widest">StockIA</p>
             <h1 className="font-heading font-bold text-3xl md:text-5xl text-white leading-tight">
               Tu portal de<br />distribución
             </h1>

@@ -2,15 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ClipboardList, Home, Search, Truck, User } from 'lucide-react'
+import { House, MoreHorizontal, ReceiptText, Search, Store } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+const MAS_PATHS = ['/comercio/mas', '/comercio/cuenta', '/comercio/carrito']
+
 const navItems = [
-  { href: '/comercio', label: 'Inicio', icon: Home, exact: true },
-  { href: '/comercio/distribuidoras', label: 'Distrib.', icon: Truck, exact: false },
-  { href: '/comercio/buscar', label: 'Buscar', icon: Search, exact: false },
-  { href: '/comercio/pedidos', label: 'Pedidos', icon: ClipboardList, exact: false },
-  { href: '/comercio/cuenta', label: 'Cuenta', icon: User, exact: false },
+  { href: '/comercio', label: 'Inicio', icon: House, exact: true, extraPaths: [] as string[] },
+  { href: '/comercio/buscar', label: 'Buscar', icon: Search, exact: false, extraPaths: [] as string[] },
+  { href: '/comercio/distribuidoras', label: 'Distrib.', icon: Store, exact: false, extraPaths: [] as string[] },
+  { href: '/comercio/pedidos', label: 'Pedidos', icon: ReceiptText, exact: false, extraPaths: [] as string[] },
+  { href: '/comercio/mas', label: 'Más', icon: MoreHorizontal, exact: false, extraPaths: MAS_PATHS },
 ]
 
 export function ComercioBottomNav() {
@@ -18,10 +20,14 @@ export function ComercioBottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-      <div className="flex bg-[#0B1A45] border-t border-white/8 rounded-t-[20px] overflow-hidden shadow-[0_-4px_20px_rgba(11,26,69,0.3)] pb-[env(safe-area-inset-bottom)]">
+      <div className="flex bg-sidebar border-t border-white/8 rounded-t-[20px] overflow-hidden shadow-[0_-4px_20px_rgba(11,26,69,0.3)] pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item) => {
-          const { href, label, icon: Icon } = item
-          const isActive = item.exact ? pathname === href : pathname === href || pathname.startsWith(href + '/')
+          const { href, label, icon: Icon, extraPaths } = item
+          const isActive = item.exact
+            ? pathname === href
+            : pathname === href ||
+              pathname.startsWith(href + '/') ||
+              extraPaths.some(p => pathname === p || pathname.startsWith(p + '/'))
           return (
             <Link
               key={href}

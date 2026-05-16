@@ -20,14 +20,14 @@ const sora = Sora({
 })
 
 export const metadata: Metadata = {
-  title: 'Stockia - Conectamos distribuidoras con comercios',
+  title: 'StockIA - Conectamos distribuidoras con comercios',
   description: 'Plataforma B2B que conecta distribuidoras con comercios locales. Pedidos fáciles, entregas rápidas.',
   generator: 'v0.app',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Stockia',
+    title: 'StockIA',
   },
   icons: {
     icon: [

@@ -21,7 +21,7 @@ const CATEGORIES: { key: Category; label: string; icon: React.ElementType; color
 ]
 
 const QUESTIONS: Record<Category, string[]> = {
-  general:  ['¿Cómo fue tu experiencia en general?', '¿Qué es lo que más te gustó de Stockia?'],
+  general:  ['¿Cómo fue tu experiencia en general?', '¿Qué es lo que más te gustó de StockIA?'],
   problema: ['¿Qué problema tuviste?', '¿En qué parte del flujo ocurrió?'],
   mejora:   ['¿Qué mejorarías?', '¿Cómo lo cambiarías?'],
   elogio:   ['¿Qué funcionó muy bien?', '¿Qué recomendarías a otros usuarios?'],
@@ -75,7 +75,7 @@ export function FeedbackModal({ onClose }: FeedbackModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-4 pb-4 shrink-0">
           <div>
-            <h2 className="font-heading font-bold text-gray-900 text-lg">Feedback a Stockia</h2>
+            <h2 className="font-heading font-bold text-gray-900 text-lg">Feedback a StockIA</h2>
             <p className="text-xs text-gray-400 mt-0.5">Tu opinión nos ayuda a mejorar la plataforma</p>
           </div>
           <button
@@ -93,7 +93,7 @@ export function FeedbackModal({ onClose }: FeedbackModalProps) {
             </div>
             <p className="font-heading font-bold text-gray-900 text-lg">¡Gracias por tu feedback!</p>
             <p className="text-sm text-gray-400 text-center max-w-xs">
-              Tu opinión es muy importante para el equipo de Stockia. Lo revisaremos pronto.
+              Tu opinión es muy importante para el equipo de StockIA. Lo revisaremos pronto.
             </p>
           </div>
         ) : (
@@ -126,7 +126,7 @@ export function FeedbackModal({ onClose }: FeedbackModalProps) {
 
             {/* Rating */}
             <div className="bg-gray-50 rounded-2xl p-4 text-center">
-              <p className="text-sm font-semibold text-gray-700 mb-3">¿Cómo fue tu experiencia en Stockia?</p>
+              <p className="text-sm font-semibold text-gray-700 mb-3">¿Cómo fue tu experiencia en StockIA?</p>
               <StarPicker value={rating} onChange={setRating} size="lg" className="justify-center" />
               <p className="text-xs text-gray-400 mt-2">
                 {rating === 0 ? 'Seleccioná una puntuación' :

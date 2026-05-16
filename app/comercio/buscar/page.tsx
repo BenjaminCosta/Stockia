@@ -275,10 +275,10 @@ export default function BuscarPage() {
           <section className="flex-1 min-w-0">
             {isLoading ? (
               <>
-                <div className="flex flex-col gap-3 lg:hidden">
-                  {[...Array(4)].map((_, i) => <ProductSkeleton key={i} view="list" />)}
+                <div className="grid grid-cols-2 gap-3 lg:hidden px-4">
+                  {[...Array(4)].map((_, i) => <ProductSkeleton key={i} view="grid" />)}
                 </div>
-                <div className="hidden lg:grid grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="hidden lg:grid grid-cols-3 gap-4">
                   {[...Array(6)].map((_, i) => <ProductSkeleton key={i} view="grid" />)}
                 </div>
               </>
@@ -302,8 +302,8 @@ export default function BuscarPage() {
                   {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
 
-                {/* Mobile — list */}
-                <div className="flex flex-col gap-3 lg:hidden">
+                {/* Mobile — 2-col grid */}
+                <div className="grid grid-cols-2 gap-3 lg:hidden px-4">
                   {filteredProducts.map((product: Product) => {
                     const dist = distributors.find(d => d.id === product.distribuidoraId)
                     return (
@@ -316,14 +316,14 @@ export default function BuscarPage() {
                         onQtyChange={v => setQty(product.id, v)}
                         onAdd={() => handleAdd(product)}
                         justAdded={!!justAdded[product.id]}
-                        view="list"
+                        view="grid"
                       />
                     )
                   })}
                 </div>
 
                 {/* Desktop — grid */}
-                <div className="hidden lg:grid grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="hidden lg:grid grid-cols-3 gap-4">
                   {filteredProducts.map((product: Product) => {
                     const dist = distributors.find(d => d.id === product.distribuidoraId)
                     return (

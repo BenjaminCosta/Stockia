@@ -7,7 +7,7 @@ import { StockiaLogo } from '@/components/stockia-logo'
 const footerCols = [
   { title: 'Comprar', links: ['Distribuidores', 'Categorías', 'Ofertas', 'Mis pedidos'] },
   { title: 'Soporte', links: ['Centro de ayuda', 'Contacto', 'Términos', 'Privacidad'] },
-  { title: 'Stockia', links: ['Para distribuidoras', 'Cómo funciona', 'Empresa', 'Blog'] },
+  { title: 'StockIA', links: ['Para distribuidoras', 'Cómo funciona', 'Empresa', 'Blog'] },
 ]
 
 const footerLinks: Record<string, string> = {
@@ -83,7 +83,7 @@ export function ComercioFooter() {
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="max-w-[1400px] mx-auto px-8 py-4 flex items-center justify-between text-xs text-white/35">
-          <span>© 2026 Stockia. Todos los derechos reservados.</span>
+          <span>© 2026 StockIA. Todos los derechos reservados.</span>
           <span>Hecho en Argentina 🇦🇷</span>
         </div>
       </div>

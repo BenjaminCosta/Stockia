@@ -190,7 +190,7 @@ export default function ResenasDistribuidoraPage() {
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div>
                         <p className="font-semibold text-gray-900">{h.commerceName}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">En Stockia desde {joined} · Último pedido {formatRelativeDate(h.lastOrderAt)}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">En StockIA desde {joined} · Último pedido {formatRelativeDate(h.lastOrderAt)}</p>
                       </div>
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${risk.className}`}>
                         {risk.label}

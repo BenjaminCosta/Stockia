@@ -2,15 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sun, ClipboardList, Package, Star, User } from 'lucide-react'
+import { ChartNoAxesColumnIncreasing, House, MoreHorizontal, Package, ReceiptText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+const MAS_PATHS = ['/distribuidora/mas', '/distribuidora/zonas', '/distribuidora/resenas', '/distribuidora/perfil']
+
 const navItems = [
-  { href: '/distribuidora', label: 'Hoy', icon: Sun, exact: true },
-  { href: '/distribuidora/pedidos', label: 'Pedidos', icon: ClipboardList, exact: false },
-  { href: '/distribuidora/productos', label: 'Productos', icon: Package, exact: false },
-  { href: '/distribuidora/resenas', label: 'Reseñas', icon: Star, exact: false },
-  { href: '/distribuidora/perfil', label: 'Cuenta', icon: User, exact: false },
+  { href: '/distribuidora', label: 'Inicio', icon: House, exact: true, extraPaths: [] as string[] },
+  { href: '/distribuidora/pedidos', label: 'Pedidos', icon: ReceiptText, exact: false, extraPaths: [] as string[] },
+  { href: '/distribuidora/productos', label: 'Productos', icon: Package, exact: false, extraPaths: [] as string[] },
+  { href: '/distribuidora/ventas', label: 'Ventas', icon: ChartNoAxesColumnIncreasing, exact: false, extraPaths: [] as string[] },
+  { href: '/distribuidora/mas', label: 'Más', icon: MoreHorizontal, exact: false, extraPaths: MAS_PATHS },
 ]
 
 export function DistribuidoraBottomNav() {
@@ -18,10 +20,14 @@ export function DistribuidoraBottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-      <div className="flex bg-[#0B1A45] border-t border-white/8 rounded-t-[20px] overflow-hidden shadow-[0_-4px_20px_rgba(11,26,69,0.3)] pb-[env(safe-area-inset-bottom)]">
+      <div className="flex bg-sidebar border-t border-white/8 rounded-t-[20px] overflow-hidden shadow-[0_-4px_20px_rgba(11,26,69,0.3)] pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item) => {
-          const { href, label, icon: Icon } = item
-          const isActive = item.exact ? pathname === href : pathname === href || pathname.startsWith(href + '/')
+          const { href, label, icon: Icon, extraPaths } = item
+          const isActive = item.exact
+            ? pathname === href
+            : pathname === href ||
+              pathname.startsWith(href + '/') ||
+              extraPaths.some(p => pathname === p || pathname.startsWith(p + '/'))
           return (
             <Link
               key={href}
