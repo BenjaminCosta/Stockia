@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, use } from 'react'
+import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
 import {
   Minus, Plus, ShoppingCart,
@@ -16,6 +16,8 @@ function ProductoDetail({ id }: { id: string }) {
   const { addToCart, cart } = useApp()
   const [qty, setQty] = useState(1)
   const [isAdded, setIsAdded] = useState(false)
+  const [qtyInput, setQtyInput] = useState('1')
+  useEffect(() => { setQtyInput(String(qty)) }, [qty])
 
   const { data: products, loading } = useProducts()
   const product = products.find(p => p.id === id)
@@ -53,6 +55,11 @@ function ProductoDetail({ id }: { id: string }) {
     addToCart(product, distribuidora.companyName, qty)
     setIsAdded(true)
     setTimeout(() => setIsAdded(false), 1500)
+  }
+
+  const commitQty = (raw: string) => {
+    const n = parseInt(raw, 10)
+    if (!isNaN(n) && n >= 1) setQty(Math.min(product.stock || 999, n))
   }
 
   const inCart = cart?.items.find(item => item.product.id === id)
@@ -159,7 +166,7 @@ function ProductoDetail({ id }: { id: string }) {
           <div className="md:col-span-4 space-y-6">
 
             {/* Agregar al pedido (desktop only) */}
-            <div className="hidden md:block bg-white rounded-3xl shadow-xl border border-gray-200 p-6 sticky top-8">
+            <div className="hidden md:block bg-white rounded-3xl shadow-xl border border-gray-200 p-6">
               <h2 className="font-heading font-bold text-xl text-foreground mb-6">Agregar al pedido</h2>
 
               <div className="mb-6">
@@ -171,9 +178,17 @@ function ProductoDetail({ id }: { id: string }) {
                   >
                     <Minus className="h-5 w-5" />
                   </button>
-                  <span className="flex-1 text-center font-bold text-lg bg-white h-full flex items-center justify-center border-x border-gray-200">
-                    {qty}
-                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={qtyInput}
+                    onChange={e => setQtyInput(e.target.value.replace(/[^0-9]/g, ''))}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => commitQty(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+                    className="flex-1 text-center font-bold text-lg bg-white h-full border-x border-gray-200 outline-none focus:bg-[#F7F8FA] transition-colors tabular-nums"
+                  />
                   <button
                     onClick={() => setQty(q => Math.min(product.stock, q + 1))}
                     disabled={qty >= product.stock}
@@ -256,9 +271,17 @@ function ProductoDetail({ id }: { id: string }) {
             >
               <Minus className="h-5 w-5" />
             </button>
-            <span className="w-10 text-center font-bold text-lg bg-white h-full flex items-center justify-center border-x border-gray-200">
-              {qty}
-            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={qtyInput}
+              onChange={e => setQtyInput(e.target.value.replace(/[^0-9]/g, ''))}
+              onFocus={e => e.target.select()}
+              onBlur={e => commitQty(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+              className="w-10 text-center font-bold text-lg bg-white h-full border-x border-gray-200 outline-none focus:bg-[#F7F8FA] transition-colors tabular-nums"
+            />
             <button
               onClick={() => setQty(q => Math.min(product.stock, q + 1))}
               disabled={qty >= product.stock}

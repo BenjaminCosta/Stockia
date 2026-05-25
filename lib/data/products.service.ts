@@ -24,6 +24,7 @@ export interface FirestoreProduct {
   unit?: string
   imageUrl?: string
   status: 'active' | 'paused' | 'out_of_stock'
+  isOffer?: boolean
   createdAt: unknown
   updatedAt: unknown
 }
@@ -43,6 +44,7 @@ function toProduct(doc: FirestoreProduct & { id: string }): Product {
     active: doc.status === 'active',
     rating: 0,
     reviewCount: 0,
+    isOffer: doc.isOffer ?? false,
   }
 }
 

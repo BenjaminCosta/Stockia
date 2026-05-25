@@ -1,19 +1,17 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Package, Check, Minus, Plus, ShoppingCart, TrendingUp, Tag, MapPin } from 'lucide-react'
+import { Package, Check, Minus, Plus, ShoppingCart, TrendingUp, Tag, MapPin, Heart } from 'lucide-react'
 import { categories, formatCurrency } from '@/lib/mock-data'
 import { Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { useApp } from '@/lib/app-context'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function isBestSeller(p: Product) {
   return p.rating >= 4.8 && p.reviewCount >= 100
-}
-
-function isOffer(p: Product) {
-  return parseInt(p.id.replace(/\D/g, ''), 10) % 4 === 0
 }
 
 // ── Stepper ───────────────────────────────────────────────────────────────────
@@ -27,6 +25,23 @@ export function Stepper({
   onChange: (v: number) => void
   disabled?: boolean
 }) {
+  const [inputVal, setInputVal] = useState(String(qty))
+
+  // Sync when qty changes from outside (e.g. +/- buttons)
+  useEffect(() => {
+    setInputVal(String(qty))
+  }, [qty])
+
+  const commit = (raw: string) => {
+    const n = parseInt(raw, 10)
+    if (!isNaN(n) && n >= 1) {
+      onChange(n)
+      setInputVal(String(n))
+    } else {
+      setInputVal(String(qty)) // revert to last valid
+    }
+  }
+
   return (
     <div className="flex items-center rounded-xl border border-[#DFE1E8] overflow-hidden">
       <button
@@ -36,7 +51,18 @@ export function Stepper({
       >
         <Minus className="h-3.5 w-3.5" />
       </button>
-      <span className="w-8 text-center text-sm font-bold text-[#0B1A45] tabular-nums">{qty}</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={inputVal}
+        disabled={disabled}
+        onChange={e => setInputVal(e.target.value.replace(/[^0-9]/g, ''))}
+        onFocus={e => e.target.select()}
+        onBlur={e => commit(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+        className="w-10 text-center text-sm font-bold text-[#0B1A45] tabular-nums bg-transparent border-none outline-none focus:bg-[#F7F8FA] transition-colors disabled:opacity-30"
+      />
       <button
         onClick={() => onChange(qty + 1)}
         disabled={disabled}
@@ -72,9 +98,20 @@ export function ProductCard({
   view,
 }: ProductCardProps) {
   const bestSeller = isBestSeller(product)
-  const offer = isOffer(product)
+  const offer = product.isOffer === true
   const outOfStock = product.stock === 0
   const catObj = categories.find(c => c.name === product.category)
+  const { toggleWishlist, isInWishlist } = useApp()
+  const inWishlist = isInWishlist(product.id)
+  const [popping, setPopping] = useState(false)
+
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    toggleWishlist(product)
+    setPopping(true)
+    setTimeout(() => setPopping(false), 500)
+  }
 
   const productImg = (sizeClass: string, rounded = 'rounded-xl') => (
     <div className={cn('flex items-center justify-center bg-white overflow-hidden', rounded, sizeClass)}>
@@ -91,7 +128,8 @@ export function ProductCard({
     return (
       <div
         className={cn(
-          'bg-white rounded-2xl border border-[#DFE1E8] p-3 flex items-center gap-3 transition-all',
+          'bg-white rounded-2xl border border-[#DFE1E8] p-3 flex items-center gap-3',
+          'transition-shadow duration-200 hover:shadow-[0_4px_16px_rgba(11,26,69,0.08)] hover:border-[#DFE1E8]',
           justAdded && 'ring-2 ring-[#C8FF00]/60',
         )}
       >
@@ -106,11 +144,29 @@ export function ProductCard({
                 {product.name}
               </h3>
             </Link>
-            {bestSeller && (
-              <span className="shrink-0 flex items-center gap-0.5 bg-[#F1FFD1] text-[#4A662E] text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                <TrendingUp className="h-2.5 w-2.5" /> Top
-              </span>
-            )}
+            <div className="flex items-center gap-1 shrink-0">
+              {bestSeller && (
+                <span className="flex items-center gap-0.5 bg-[#F1FFD1] text-[#4A662E] text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                  <TrendingUp className="h-2.5 w-2.5" /> Top
+                </span>
+              )}
+              <button
+                onClick={handleWishlistToggle}
+                aria-label={inWishlist ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                className={cn(
+                  'h-7 w-7 rounded-full flex items-center justify-center transition-colors hover:bg-[#F1FFD1]',
+                  popping && 'animate-wishlist-pop'
+                )}
+              >
+                <Heart
+                  size={14}
+                  className={cn(
+                    'transition-colors duration-150',
+                    inWishlist ? 'fill-[#C8FF00] stroke-[#C8FF00]' : 'text-[#7A839C]'
+                  )}
+                />
+              </button>
+            </div>
           </div>
           <p className="text-[11px] text-[#7A839C] mb-1.5">
             {product.category}
@@ -125,10 +181,11 @@ export function ProductCard({
             onClick={onAdd}
             disabled={outOfStock}
             className={cn(
-              'h-8 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap',
+              'h-8 px-3 rounded-xl text-xs font-bold flex items-center gap-1 whitespace-nowrap',
+              'transition-[transform,background-color] duration-150',
               justAdded
                 ? 'bg-[rgba(137,179,23,0.15)] text-[#4A662E]'
-                : 'bg-[#0B1A45] text-white hover:bg-[#0B1A45]/90 active:scale-[0.97]',
+                : 'bg-[#0B1A45] text-white hover:bg-[#0B1A45]/90 active:scale-[0.97] active:bg-[#0B1A45]',
               outOfStock && 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400',
             )}
           >
@@ -149,7 +206,11 @@ export function ProductCard({
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl flex flex-col overflow-hidden transition-all duration-200 shadow-[0_2px_12px_rgba(11,26,69,0.06)] hover:shadow-[0_8px_24px_rgba(11,26,69,0.10)] hover:-translate-y-0.5',
+        'bg-white rounded-2xl flex flex-col overflow-hidden',
+        'shadow-[0_1px_3px_rgba(11,26,69,0.06),0_4px_12px_rgba(11,26,69,0.05)]',
+        'hover:shadow-[0_4px_8px_rgba(11,26,69,0.06),0_12px_28px_rgba(11,26,69,0.10)]',
+        'hover:-translate-y-0.5',
+        'transition-[transform,box-shadow] duration-200',
         justAdded && 'ring-2 ring-[#C8FF00]/60',
       )}
     >
@@ -168,6 +229,25 @@ export function ProductCard({
             )}
           </div>
         )}
+        {/* Wishlist toggle — grid view */}
+        <button
+          onClick={handleWishlistToggle}
+          aria-label={inWishlist ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+          className={cn(
+            'absolute top-2 right-2 z-10 h-7 w-7 rounded-full flex items-center justify-center',
+            'bg-white/10 backdrop-blur-sm border border-white/20',
+            'transition-colors hover:bg-white/20',
+            popping && 'animate-wishlist-pop'
+          )}
+        >
+          <Heart
+            size={13}
+            className={cn(
+              'transition-colors duration-150',
+              inWishlist ? 'fill-[#C8FF00] stroke-[#C8FF00]' : 'text-[#7A839C]'
+            )}
+          />
+        </button>
         {productImg('aspect-square w-full', 'rounded-none')}
       </Link>
 
@@ -216,10 +296,11 @@ export function ProductCard({
               onClick={onAdd}
               disabled={outOfStock}
               className={cn(
-                'flex-1 h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5',
+                'flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5',
+                'transition-[transform,background-color] duration-150',
                 justAdded
                   ? 'bg-[rgba(137,179,23,0.15)] text-[#4A662E]'
-                  : 'bg-[#0B1A45] text-white hover:bg-[#0B1A45]/90 active:scale-[0.98]',
+                  : 'bg-[#0B1A45] text-white hover:bg-[#0B1A45]/90 active:scale-[0.97] active:bg-[#0B1A45]',
                 outOfStock && 'bg-gray-100 text-gray-400 cursor-not-allowed',
               )}
             >

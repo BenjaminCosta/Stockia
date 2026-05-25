@@ -53,31 +53,31 @@ export default function DistribuidoraDashboardPage() {
       <div className="px-4 md:px-8 -mt-8 md:-mt-12 relative z-10 max-w-4xl mx-auto w-full pb-8 md:pb-12">
         {/* Main KPI card */}
         <div
-          className="bg-white rounded-2xl md:rounded-3xl shadow-lg border border-gray-100 p-4 md:p-6 mb-4 md:mb-6 animate-fade-up"
+          className="bg-white rounded-2xl md:rounded-3xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.05),0_6px_20px_rgba(11,26,69,0.07)] p-4 md:p-6 mb-4 md:mb-6 animate-fade-up"
           style={{ animationDelay: '0ms' }}
         >
           <div className="flex justify-between items-start mb-4 md:mb-6">
             <div>
-              <p className="text-[10px] md:text-sm font-bold text-gray-500 uppercase tracking-wider mb-0.5">Ventas de hoy</p>
+              <p className="text-[10px] md:text-xs font-bold text-[#7A839C] uppercase tracking-widest mb-1">Ventas de hoy</p>
               <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground">{formatCurrency(kpis.ventasHoy)}</h2>
             </div>
-            <div className="bg-green-50 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-fade-in" style={{ animationDelay: '200ms' }}>
+            <div className="bg-[#F1FFD1] text-[#4A662E] px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 animate-fade-in border border-[#89B317]/20" style={{ animationDelay: '200ms' }}>
               <TrendingUp className="h-3 w-3" /> +12%
             </div>
           </div>
 
-          <div className="grid grid-cols-3 md:grid-cols-3 gap-3 md:gap-4 pt-4 md:pt-6 border-t border-gray-100">
+          <div className="grid grid-cols-3 gap-3 md:gap-4 pt-4 md:pt-6 border-t border-[#DFE1E8]/60">
             {[
               { icon: Clock, label: 'Pendientes', value: String(kpis.pendientes), color: '' },
               { icon: Package, label: 'Pedidos hoy', value: String(kpis.pedidosHoy), color: '' },
-              { icon: CheckCircle, label: 'Stock OK', value: `${kpis.stockOk}%`, color: 'text-green-600' },
+              { icon: CheckCircle, label: 'Stock OK', value: `${kpis.stockOk}%`, color: 'text-[#89B317]' },
             ].map(({ icon: Icon, label, value, color }, i) => (
               <div
                 key={label}
                 className="animate-fade-up"
                 style={{ animationDelay: `${100 + i * 80}ms` }}
               >
-                <p className="text-[10px] md:text-xs text-gray-500 mb-0.5 font-medium flex items-center gap-1">
+                <p className="text-[10px] md:text-xs text-[#7A839C] mb-0.5 font-medium flex items-center gap-1">
                   <Icon className="h-3 w-3" /> {label}
                 </p>
                 <p className={`font-bold text-lg md:text-xl ${color || 'text-foreground'}`}>{value}</p>
@@ -89,7 +89,7 @@ export default function DistribuidoraDashboardPage() {
         {/* Alert + Action cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
           <div
-            className="bg-amber-50 border border-amber-200 rounded-xl md:rounded-2xl p-4 flex gap-3 items-start animate-fade-up"
+            className="bg-amber-50 border border-amber-200/70 rounded-xl md:rounded-2xl p-4 flex gap-3 items-start animate-fade-up shadow-[0_1px_3px_rgba(245,158,11,0.08)]"
             style={{ animationDelay: '140ms' }}
           >
             <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
@@ -106,7 +106,7 @@ export default function DistribuidoraDashboardPage() {
           </div>
           <Link href="/distribuidora/productos">
             <div
-              className="bg-white border border-gray-200 rounded-xl md:rounded-2xl p-4 flex gap-3 items-center justify-between cursor-pointer hover:border-primary/30 hover:shadow-sm transition-all group h-full animate-fade-up"
+              className="bg-white border border-[#DFE1E8] rounded-xl md:rounded-2xl p-4 flex gap-3 items-center justify-between cursor-pointer hover:border-primary/20 hover:shadow-[0_2px_8px_rgba(11,26,69,0.07)] transition-[border-color,box-shadow] duration-200 group h-full animate-fade-up"
               style={{ animationDelay: '200ms' }}
             >
               <div className="flex gap-3 items-center">
@@ -140,7 +140,7 @@ export default function DistribuidoraDashboardPage() {
               recentOrders.map((order: any, i: number) => (
                 <Link key={order.id} href={`/distribuidora/pedidos/${order.id}`}>
                   <div
-                    className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-primary/20 hover:shadow-md transition-all cursor-pointer group animate-fade-up"
+                    className="bg-white rounded-xl md:rounded-2xl border border-[#DFE1E8] shadow-[0_1px_3px_rgba(11,26,69,0.04)] p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-[#0B1A45]/15 hover:shadow-[0_4px_14px_rgba(11,26,69,0.08)] transition-[border-color,box-shadow] duration-200 cursor-pointer group animate-fade-up"
                     style={{ animationDelay: `${260 + i * 60}ms` }}
                   >
                     <div className="flex-1">

@@ -7,7 +7,8 @@ import { COLLECTIONS } from '@/lib/firebase/collections'
 import { getDistributorCards, getDistributorById as fetchDistributor } from '@/lib/data/distributors.service'
 import { getAllProducts, getProductsByDistributor } from '@/lib/data/products.service'
 import { getOrdersByCommerce, getOrdersByDistributor, getOrderById } from '@/lib/data/orders.service'
-import type { DistributorCard, Product, Order, Distribuidora, OrderStatus } from '@/lib/types'
+import { getCategories } from '@/lib/data/categories.service'
+import type { DistributorCard, Product, Order, Distribuidora, OrderStatus, Category } from '@/lib/types'
 
 // ─── Status map: Firestore orderStatus → local OrderStatus ────────────────────
 function toLocalStatus(s: string): OrderStatus {
@@ -65,6 +66,14 @@ export function useProducts(distributorId?: string) {
   return { data: data ?? [], loading }
 }
 
+export function useCategories() {
+  const { data, loading } = useAsyncData<Category[]>(
+    () => getCategories(),
+    []
+  )
+  return { data: data ?? [], loading }
+}
+
 // ─── Real-time order hooks using Firestore onSnapshot ────────────────────────
 
 function useOrdersRealtime(field: 'commerceId' | 'distributorId', userId: string) {
@@ -103,15 +112,15 @@ function useOrdersRealtime(field: 'commerceId' | 'distributorId', userId: string
               subtotal: raw.subtotal ?? 0,
               total: raw.total ?? 0,
               status: toLocalStatus(raw.orderStatus ?? 'pending_confirmation'),
-              createdAt: raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
-              updatedAt: raw.updatedAt ? String(raw.updatedAt) : new Date().toISOString(),
+              createdAt: tsToISO(raw.createdAt),
+              updatedAt: tsToISO(raw.updatedAt),
               zone: raw.zone ?? '',
               paymentMethod: raw.paymentMethod,
               firestoreStatus: raw.orderStatus ?? 'pending_confirmation',
               cancellationReason: raw.cancellationReason,
               commissionGenerated: raw.commissionGenerated ?? false,
               commissionAmount: raw.commissionAmount,
-              deliveredAt: raw.deliveredAt ? String(raw.deliveredAt) : undefined,
+              deliveredAt: raw.deliveredAt ? tsToISO(raw.deliveredAt) : undefined,
             }
           })
           setData(orders)
@@ -133,6 +142,17 @@ function useOrdersRealtime(field: 'commerceId' | 'distributorId', userId: string
 
   return { data, loading }
 }
+
+/** Safely converts a Firestore Timestamp, Date, or string to an ISO string. */
+function tsToISO(val: unknown): string {
+  if (!val) return new Date().toISOString()
+  if (typeof (val as any).toDate === 'function') return (val as any).toDate().toISOString()
+  if (val instanceof Date) return val.toISOString()
+  const d = new Date(String(val))
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString()
+}
+
+
 
 export function useComercioOrders(comercioId: string) {
   return useOrdersRealtime('commerceId', comercioId)
@@ -167,15 +187,15 @@ export function useOrder(id: string) {
             subtotal: raw.subtotal ?? 0,
             total: raw.total ?? 0,
             status: toLocalStatus(raw.orderStatus ?? 'pending_confirmation'),
-            createdAt: raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
-            updatedAt: raw.updatedAt ? String(raw.updatedAt) : new Date().toISOString(),
+            createdAt: raw.createdAt ? tsToISO(raw.createdAt) : new Date().toISOString(),
+            updatedAt: raw.updatedAt ? tsToISO(raw.updatedAt) : new Date().toISOString(),
             zone: raw.zone ?? '',
             paymentMethod: raw.paymentMethod,
             firestoreStatus: raw.orderStatus ?? 'pending_confirmation',
             cancellationReason: raw.cancellationReason,
             commissionGenerated: raw.commissionGenerated ?? false,
             commissionAmount: raw.commissionAmount,
-            deliveredAt: raw.deliveredAt ? String(raw.deliveredAt) : undefined,
+            deliveredAt: raw.deliveredAt ? tsToISO(raw.deliveredAt) : undefined,
           })
           setLoading(false)
         },

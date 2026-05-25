@@ -49,6 +49,18 @@ const ORDER_STATUS_MAP: Record<string, OrderStatus> = {
   entregado: 'delivered',
 }
 
+/** Safely converts a Firestore Timestamp, Date, or string to an ISO date string. */
+function toISOString(val: unknown): string {
+  if (!val) return new Date().toISOString()
+  // Firestore Timestamp objects expose .toDate()
+  if (typeof (val as any).toDate === 'function') {
+    return (val as any).toDate().toISOString()
+  }
+  if (val instanceof Date) return val.toISOString()
+  const d = new Date(String(val))
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString()
+}
+
 function toOrder(doc: FirestoreOrder & { id: string }): Order {
   return {
     id: doc.id,
@@ -67,8 +79,8 @@ function toOrder(doc: FirestoreOrder & { id: string }): Order {
       : doc.orderStatus === 'confirmed'
       ? 'pagado'
       : 'pendiente') as Order['status'],
-    createdAt: String(doc.createdAt),
-    updatedAt: String(doc.updatedAt),
+    createdAt: toISOString(doc.createdAt),
+    updatedAt: toISOString(doc.updatedAt),
     zone: '',
   }
 }

@@ -85,19 +85,22 @@ export function TopLoadingBar({ className }: TopLoadingBarProps) {
       aria-hidden={!isLoading}
       aria-busy={isLoading}
       className={cn(
-        'pointer-events-none fixed left-0 right-0 top-0 z-[200] h-[3px] overflow-hidden',
+        'pointer-events-none fixed left-0 right-0 top-0 z-200 h-0.75 overflow-hidden',
         className
       )}
     >
       <div
         className={cn(
-          'h-full origin-left rounded-r-full transition-all duration-300 ease-out',
+          'h-full origin-left rounded-r-full',
           'bg-[#C8FF00]',
-          isLoading ? 'opacity-100' : 'opacity-0'
+          isLoading ? 'opacity-100' : 'opacity-0',
+          'transition-[transform,opacity]',
+          isLoading ? 'duration-300' : 'duration-200',
         )}
         style={{
           transform: `scaleX(${progress / 100})`,
-          boxShadow: '0 0 10px 2px rgba(200,255,0,0.6)',
+          transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)',
+          boxShadow: '0 0 12px 2px rgba(200,255,0,0.55)',
         }}
       />
     </div>

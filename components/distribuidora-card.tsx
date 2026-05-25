@@ -34,12 +34,16 @@ export function DistribuidoraCard({
 
   return (
     <Link href={`/comercio/distribuidora/${distributor.id}`} className="group block">
-      <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md md:rounded-3xl md:shadow-[0_12px_38px_rgba(24,29,37,0.07)] md:hover:shadow-[0_20px_48px_rgba(24,29,37,0.12)]">
+      <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white md:rounded-3xl shadow-[0_1px_3px_rgba(11,26,69,0.05),0_4px_14px_rgba(11,26,69,0.06)] hover:shadow-[0_4px_8px_rgba(11,26,69,0.06),0_16px_40px_rgba(11,26,69,0.11)] hover:-translate-y-0.5 hover:border-[#DFE1E8] transition-[transform,box-shadow,border-color] duration-200">
         {/* Cover gradient */}
         <div className={cn('relative h-16 md:h-24 overflow-hidden bg-gradient-to-br', cover)}>
-          <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(135deg,rgba(255,255,255,.18)_1px,transparent_1px),linear-gradient(45deg,rgba(255,255,255,.12)_1px,transparent_1px)] [background-size:22px_22px,34px_34px]" />
+          {/* Layered texture: fine grid + diagonal lines */}
+          <div className="absolute inset-0 opacity-[0.18] bg-[linear-gradient(135deg,rgba(255,255,255,.22)_1px,transparent_1px),linear-gradient(45deg,rgba(255,255,255,.14)_1px,transparent_1px)] bg-size-[18px_18px,28px_28px]" />
+          {/* Radial glow top-left */}
+          <div className="absolute -left-8 -top-8 h-24 w-24 rounded-full bg-white/8 blur-xl" />
+          {/* Decorative circle top-right */}
           <div className="absolute -right-6 -top-8 h-20 w-20 rounded-full bg-white/10 blur-sm md:-right-8 md:-top-10 md:h-28 md:w-28" />
-          <div className="absolute bottom-2 right-4 flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-md md:bottom-4 md:right-5 md:px-3 md:py-1 md:text-[11px]">
+          <div className="absolute bottom-2 right-4 flex items-center gap-1.5 rounded-full bg-black/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm md:bottom-4 md:right-5 md:px-3 md:py-1 md:text-[11px]">
             <Truck className="h-3 w-3 md:h-3.5 md:w-3.5" />
             {badge}
           </div>
@@ -91,7 +95,7 @@ export function DistribuidoraCard({
           </div>
 
           {/* Footer stats */}
-          <div className={cn('mt-2 grid gap-1 rounded-lg bg-gray-50 p-2 text-[11px] md:mt-5 md:gap-2 md:rounded-2xl md:p-3 md:text-sm', gridCols)}>
+          <div className={cn('mt-2 grid gap-1 rounded-xl bg-[#F7F8FA] border border-[#DFE1E8]/60 p-2 text-[11px] md:mt-5 md:gap-2 md:rounded-2xl md:p-3 md:text-sm', gridCols)}>
             <div>
               <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground md:text-[10px]">Mínimo</p>
               <p className="mt-0.5 font-semibold text-foreground">{formatCurrency(distributor.minOrder)}</p>

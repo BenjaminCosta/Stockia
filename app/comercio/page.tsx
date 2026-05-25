@@ -4,20 +4,15 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { SearchInput } from '@/components/ui/SearchInput'
 import {
-  ArrowRight,
   ChevronRight,
-  Clock,
   MapPin,
   PackageCheck,
   ShoppingCart,
-  Star,
-  Truck,
-  Zap,
 } from 'lucide-react'
 import { DistributorCardSkeleton } from '@/components/ui/SkeletonCard'
 import { useApp } from '@/lib/app-context'
-import { categories, formatCurrency } from '@/lib/mock-data'
-import { useDistributors, useProducts } from '@/hooks/use-data'
+import { formatCurrency } from '@/lib/mock-data'
+import { useDistributors, useProducts, useCategories } from '@/hooks/use-data'
 import { Category, Comercio, Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { DistribuidoraCard } from '@/components/distribuidora-card'
@@ -26,22 +21,18 @@ const bannerImage =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuD5AyXfk8ajEi26pq48tlS5ch4s6KleLvBpkMakL1s-oa5bQ7Z1FDjB6tw3mmY5OzVH153BMmYuf7viMCuUJPOwpJX5u2_arVtIHwLb3TFVvTSfeyQw8901VqZg4xPG2znYiyo2V4ZadHAjcNaRJrFcNGj2wGDH6ulcZ7-3c0jjHZ-_sheGCoH_CfgECZ2TLcM2DL5Cg9ERywVrxKyLsYBkZDrCV4dM2Qphw2hinMpGymIsoz0VM2rFuKolkzsOq-kHikNxmaOMKzif'
 
 const categoryPhotos: Record<string, string> = {
-  'Bebidas':           '/assets/categories/bebidas.jpg',
-  'Almacén':           '/assets/categories/almacen.jpg',
-  'Limpieza':          '/assets/categories/limpieza.jpg',
-  'Lácteos':           '/assets/categories/lacteos.jpg',
-  'Panadería':         '/assets/categories/panaderia.jpg',
-  'Snacks':            '/assets/categories/snacks.jpg',
-  'Fiambres':          '/assets/categories/fiambres.jpg',
-  'Congelados':        '/assets/categories/congelados.jpg',
-  'Golosinas y Kiosco':'/assets/categories/golosinas.jpg',
-  'Perfumería':        '/assets/categories/perfumeria.jpg',
-  'Mascotas':          '/assets/categories/mascotas.jpg',
-  'Otros':             '/assets/categories/otros.jpg',
-}
-
-function getCategoryImage(product: Product) {
-  return categories.find((category) => category.name === product.category)?.image || '/placeholder.svg'
+  'Bebidas':            '/assets/categories/bebidas.jpg',
+  'Almacén':            '/assets/categories/almacen.jpg',
+  'Limpieza':           '/assets/categories/limpieza.jpg',
+  'Lácteos':            '/assets/categories/lacteos.jpg',
+  'Panadería':          '/assets/categories/panaderia.jpg',
+  'Snacks':             '/assets/categories/snacks.jpg',
+  'Fiambres':           '/assets/categories/fiambres.jpg',
+  'Congelados':         '/assets/categories/congelados.jpg',
+  'Golosinas y Kiosco': '/assets/categories/golosinas.jpg',
+  'Perfumería':         '/assets/categories/perfumeria.jpg',
+  'Mascotas':           '/assets/categories/mascotas.jpg',
+  'Otros':              '/assets/categories/otros.jpg',
 }
 
 function CategoryCard({ category }: { category: Category }) {
@@ -73,7 +64,7 @@ function CategoryCard({ category }: { category: Category }) {
   )
 }
 
-function ReorderProductCard({ product, index }: { product: Product; index: number }) {
+function ReorderProductCard({ product, index, categoryImage }: { product: Product; index: number; categoryImage: string }) {
   return (
     <article
       className={cn(
@@ -83,7 +74,7 @@ function ReorderProductCard({ product, index }: { product: Product; index: numbe
     >
       <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-50 p-3">
         <img
-          src={getCategoryImage(product)}
+          src={categoryImage}
           alt={product.category}
           className="h-full w-full object-contain"
         />
@@ -115,6 +106,7 @@ export default function ComercioHomePage() {
 
   const { data: distributors, loading: isLoading } = useDistributors(currentLocation ?? undefined)
   const { data: products } = useProducts()
+  const { data: allCategories } = useCategories()
 
   const filteredDistributors = distributors.filter((distributor) => {
     const distributorProducts = products.filter((product: Product) => product.distribuidoraId === distributor.id)
@@ -134,13 +126,13 @@ export default function ComercioHomePage() {
       <section className="mx-auto w-full max-w-[1400px] px-4 py-3 md:px-8 md:py-8">
         <div className="mb-3 md:mb-6">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground">Buen día,</p>
-            <h1 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-4xl">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Buen día</p>
+            <h1 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-4xl mt-0.5">
               {storeName}
             </h1>
             {currentLocation && (
-              <div className="mt-1 flex items-center text-xs font-medium text-muted-foreground">
-                <MapPin className="mr-1 h-3.5 w-3.5 text-primary" />
+              <div className="mt-1.5 flex items-center text-xs font-medium text-muted-foreground">
+                <MapPin className="mr-1 h-3 w-3 text-primary" />
                 <span>{currentLocation.city}, {currentLocation.zone}</span>
               </div>
             )}
@@ -156,7 +148,7 @@ export default function ComercioHomePage() {
         </div>
 
         <section
-          className="relative mb-5 flex min-h-[152px] overflow-hidden rounded-2xl bg-cover bg-center shadow-[0_20px_60px_rgba(24,29,37,0.14)] md:mb-12 md:min-h-[210px] md:rounded-[2rem]"
+          className="relative mb-5 flex min-h-[152px] overflow-hidden rounded-2xl bg-cover bg-center shadow-[0_20px_60px_rgba(24,29,37,0.14)] md:mb-12 md:min-h-[210px] md:rounded-4xl"
           style={{
             backgroundImage: `linear-gradient(90deg, rgba(11,26,69,0.90) 0%, rgba(11,26,69,0.55) 46%, rgba(24,29,37,0.12) 100%), url(${bannerImage})`,
           }}
@@ -204,46 +196,67 @@ export default function ComercioHomePage() {
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
-            {/* Mobile: circular horizontal scroll */}
-            <div className="col-span-2 lg:col-span-4 md:hidden -mx-4 px-4 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <div className="flex gap-4 w-max">
-                {categories
-                  .map(category => {
-                    const photo = categoryPhotos[category.name]
-                    return (
-                      <Link
-                        key={category.id}
-                        href={`/comercio/buscar?categoria=${encodeURIComponent(category.name)}`}
-                        className="shrink-0 flex flex-col items-center gap-2 w-20"
-                      >
-                        <div className="w-18 h-18 rounded-full overflow-hidden border-2 border-gray-200 bg-white">
-                          {photo ? (
-                            <img src={photo} alt={category.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                              <img src={category.image} alt={category.name} className="w-9 h-9 object-contain" />
-                            </div>
-                          )}
+          {/* Mobile: círculos con scroll horizontal */}
+          <div className="md:hidden -mx-4 px-4 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="flex gap-4 w-max">
+              {allCategories.map(category => {
+                const photo = categoryPhotos[category.name]
+                return (
+                  <Link
+                    key={category.id}
+                    href={`/comercio/buscar?categoria=${encodeURIComponent(category.name)}`}
+                    className="shrink-0 flex flex-col items-center gap-1.5 w-18 active:opacity-70 transition-opacity duration-100"
+                  >
+                    <div className="w-14.5 h-14.5 rounded-full overflow-hidden border border-[#DFE1E8] bg-white shadow-[0_1px_4px_rgba(11,26,69,0.06)]">
+                      {photo ? (
+                        <img src={photo} alt={category.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-[#F7F8FA]">
+                          <img src={category.image} alt={category.name} className="w-8 h-8 object-contain" />
                         </div>
-                        <span className="text-[11px] font-semibold text-gray-700 text-center leading-tight">{category.name}</span>
-                      </Link>
-                    )
-                  })}
-              </div>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-semibold text-[#374151] text-center leading-tight">{category.name}</span>
+                  </Link>
+                )
+              })}
             </div>
-            {/* Desktop: full-image cards */}
-            {categories
-              .filter(c => ['Bebidas', 'Almacén', 'Limpieza', 'Lácteos'].includes(c.name))
-              .map((category) => (
-                <div key={category.id} className="hidden md:block">
-                  <CategoryCard category={category} />
-                </div>
-              ))}
+          </div>
+
+          {/* Desktop: carousel de cards con imagen completa */}
+          <div className="hidden md:block -mx-8 px-8 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="flex gap-4 w-max">
+              {allCategories.map(category => {
+                const photo = categoryPhotos[category.name]
+                return (
+                  <Link
+                    key={category.id}
+                    href={`/comercio/buscar?categoria=${encodeURIComponent(category.name)}`}
+                    className="group relative shrink-0 w-72 h-56 rounded-2xl overflow-hidden shadow-sm cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_15px_35px_rgba(11,26,69,0.12)]"
+                  >
+                    {photo ? (
+                      <img
+                        src={photo}
+                        alt={category.name}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-[#0B1A45]">
+                        <img src={category.image} alt={category.name} className="h-16 w-16 object-contain" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/5 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="font-semibold text-white text-sm leading-tight">{category.name}</p>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
         </section>
 
-        <section className="mb-5 rounded-2xl bg-white/70 p-3 shadow-sm ring-1 ring-gray-200/70 md:mb-12 md:rounded-[2rem] md:p-6 md:shadow-[0_16px_50px_rgba(24,29,37,0.05)]">
+        <section className="mb-5 rounded-2xl bg-white border border-[#DFE1E8]/80 p-3 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_6px_20px_rgba(11,26,69,0.05)] md:mb-12 md:rounded-4xl md:p-6">
           <div className="mb-3 flex items-end justify-between gap-4 md:mb-6">
             <div>
               <h2 className="font-heading text-base font-bold text-foreground md:text-2xl">
@@ -280,17 +293,19 @@ export default function ComercioHomePage() {
           )}
         </section>
 
-        <section className="relative overflow-hidden rounded-2xl bg-[#080f2b] p-4 text-white md:rounded-[2rem] md:p-8 lg:p-10">
-          {/* geometric pattern overlay — estilo header de cuenta */}
-          <svg className="absolute inset-0 h-full w-full opacity-[0.045]" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-            <circle cx="85%" cy="15%" r="90" fill="none" stroke="white" strokeWidth="6" />
-            <circle cx="15%" cy="80%" r="60" fill="none" stroke="white" strokeWidth="4" />
-            <rect x="70%" y="55%" width="80" height="80" fill="none" stroke="white" strokeWidth="5" transform="rotate(20 80 60)" />
-            <line x1="0" y1="100%" x2="100%" y2="0" stroke="white" strokeWidth="1" />
-            <line x1="0" y1="70%" x2="60%" y2="0" stroke="white" strokeWidth="0.8" />
+        <section className="relative overflow-hidden rounded-2xl bg-[#080f2b] p-4 text-white md:rounded-4xl md:p-8 lg:p-10">
+          {/* Radial glows */}
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#0B1A45]/80 blur-3xl pointer-events-none" />
+          <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-[#C8FF00]/4 blur-2xl pointer-events-none" />
+          {/* Geometric overlay */}
+          <svg className="absolute inset-0 h-full w-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <circle cx="88%" cy="12%" r="28%" fill="none" stroke="white" strokeWidth="28" />
+            <circle cx="10%" cy="85%" r="18%" fill="none" stroke="white" strokeWidth="18" />
+            <line x1="0" y1="100%" x2="100%" y2="0" stroke="white" strokeWidth="0.7" />
+            <line x1="0" y1="65%" x2="65%" y2="0" stroke="white" strokeWidth="0.5" />
+            <circle cx="30%" cy="20%" r="1.5" fill="white" opacity="0.6" />
+            <circle cx="55%" cy="70%" r="1" fill="white" opacity="0.4" />
           </svg>
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-          <div className="absolute bottom-0 left-1/4 h-40 w-40 rounded-full bg-white/5 blur-2xl" />
           <div className="relative z-10 grid gap-5 lg:grid-cols-[0.9fr_1.6fr] lg:items-center md:gap-6">
             <div>
               <h2 className="font-heading text-lg font-bold leading-tight md:text-3xl">
@@ -301,7 +316,7 @@ export default function ComercioHomePage() {
               </p>
               <Link
                 href="/comercio/pedidos"
-                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-lima px-4 py-2 text-xs font-bold text-primary transition-colors hover:bg-lima/90 md:mt-5 md:px-5 md:py-2.5 md:text-sm"
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-lima px-4 py-2 text-xs font-bold text-primary md:mt-5 md:px-5 md:py-2.5 md:text-sm hover:bg-lima/90 active:scale-[0.97] transition-[transform,background-color] duration-150"
               >
                 Ver historial completo
                 <PackageCheck className="h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -310,7 +325,12 @@ export default function ComercioHomePage() {
 
             <div className="hidden gap-3 md:grid md:grid-cols-3">
               {lowStockProducts.map((product, index) => (
-                <ReorderProductCard key={product.id} product={product} index={index} />
+                <ReorderProductCard
+                  key={product.id}
+                  product={product}
+                  index={index}
+                  categoryImage={allCategories.find(c => c.name === product.category)?.image ?? '/placeholder.svg'}
+                />
               ))}
             </div>
           </div>

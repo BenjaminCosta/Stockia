@@ -19,11 +19,11 @@
 
   /* — Colores de superficie — */
   --background: #F7F8FA;       /* Fondo base */
-  --foreground: #0B1A45;       /* Texto principal navy */
+  --foreground: #080f2b;       /* Texto principal navy */
   --card: #FFFFFF;             /* Cards */
-  --card-foreground: #0B1A45;
+  --card-foreground: #080f2b;
   --popover: #FFFFFF;
-  --popover-foreground: #0B1A45;
+  --popover-foreground: #080f2b;
 
   /* — Color primario — */
   --primary: #0B1A45;          /* Navy Stockia */
@@ -77,6 +77,12 @@
   --warning-foreground: #0B1A45;
   --info: #3B82F6;
   --info-foreground: #FFFFFF;
+
+  /* — Custom easing curves — */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @theme inline {
@@ -147,6 +153,17 @@
   100% {
     transform: translateX(100%);
   }
+}
+
+@keyframes wishlist-pop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.55); }
+  70%  { transform: scale(0.88); }
+  100% { transform: scale(1); }
+}
+
+.animate-wishlist-pop {
+  animation: wishlist-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes stockia-dot {
@@ -312,5 +329,76 @@
 @supports (padding: env(safe-area-inset-bottom)) {
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ─── Premium surface utilities ─────────────────────────────────── */
+
+/* Subtle dot-mesh background — use on page bg or section wrappers */
+.bg-mesh {
+  background-image: radial-gradient(circle, rgba(11,26,69,0.055) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Glass panel — light surface (headers, filters, modals) */
+.glass-light {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,0.6);
+}
+
+/* Glass panel — dark surface (nav, sidebar overlays) */
+.glass-dark {
+  background: rgba(8,15,43,0.82);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Premium card shadow — layered for depth */
+.shadow-card {
+  box-shadow:
+    0 1px 2px rgba(11,26,69,0.04),
+    0 4px 12px rgba(11,26,69,0.06),
+    0 0 0 1px rgba(11,26,69,0.04);
+}
+
+.shadow-card-hover {
+  box-shadow:
+    0 2px 4px rgba(11,26,69,0.05),
+    0 8px 24px rgba(11,26,69,0.10),
+    0 0 0 1px rgba(11,26,69,0.06);
+}
+
+/* Thin loading bar utility */
+@keyframes loading-bar {
+  0%   { transform: scaleX(0); transform-origin: left; }
+  60%  { transform: scaleX(0.85); transform-origin: left; }
+  100% { transform: scaleX(1); transform-origin: left; }
+}
+
+@utility animate-loading-bar {
+  animation: loading-bar 1.8s var(--ease-out) forwards;
+}
+
+/* prefers-reduced-motion: disable all non-essential motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Gate hover transforms to pointer devices only (no false hover on touch tap) */
+@media (hover: none) {
+  .hover\:-translate-y-0\.5:hover,
+  .hover\:scale-105:hover,
+  .hover\:shadow-md:hover {
+    transform: none;
+    box-shadow: none;
   }
 }

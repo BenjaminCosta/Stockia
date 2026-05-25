@@ -24,20 +24,22 @@ export default function DistribuidorasPage() {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
-      <section className="mx-auto w-full max-w-7xl px-4 py-3 md:px-8 md:py-8">
-        <div className="mb-4 rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-sm md:mb-6 md:rounded-[2rem] md:p-5 md:shadow-[0_16px_44px_rgba(24,29,37,0.05)]">
-          <div className="mb-2 md:mb-3">
-            <div>
-              <h1 className="font-heading font-bold text-lg md:text-2xl text-foreground">Distribuidoras</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">Encontrá proveedores disponibles cerca de tu comercio.</p>
-            </div>
-          </div>
+      <section className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8 md:py-8">
+        <header className="mb-5 md:mb-6">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Proveedores
+          </p>
+          <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">
+            Distribuidoras
+          </h1>
+        </header>
 
+        <div className="mb-4 rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-sm md:mb-6 md:p-4 lg:hidden">
           <SearchInput
             placeholder="Buscar distribuidoras..."
             value={searchQuery}
             onChange={setSearchQuery}
-            className="max-w-2xl mt-2 md:mt-3"
+            className="max-w-2xl"
           />
 
           {/* Category pills */}

@@ -1,145 +1,93 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Package, Check, Minus, Plus, ShoppingCart, Trash2, ChevronRight } from 'lucide-react'
+import { Package, ShoppingCart, ChevronRight, X } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { categories, formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/mock-data'
 import { useApp } from '@/lib/app-context'
-import { useProducts, useDistributors } from '@/hooks/use-data'
+import { useProducts, useDistributors, useCategories } from '@/hooks/use-data'
 import { Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { ProductCard } from '@/components/product-card'
+// ── Floating Cart Bar ────────────────────────────────────────────────────────
 
-// Only these 4 categories are shown in the filter pills
-const VISIBLE_CATEGORIES = ['Bebidas', 'Almacén', 'Limpieza', 'Lácteos']
-
-// ── Cart Sidebar ──────────────────────────────────────────────────────────────
-
-function CartSidebar() {
-  const { cart, getCartTotal, removeFromCart, updateCartItemQuantity } = useApp()
+function FloatingCartBar() {
+  const { cart, getCartTotal, removeFromCart } = useApp()
   const { data: distributors } = useDistributors()
   const total = getCartTotal()
-  const dist = distributors.find(d => d.id === cart?.distribuidoraId)
 
-  if (!cart || cart.items.length === 0) {
-    return (
-      <div className="bg-white rounded-2xl border border-[#DFE1E8] p-8 flex flex-col items-center gap-3 text-center">
-        <div className="h-14 w-14 rounded-2xl bg-[#F7F8FA] flex items-center justify-center">
-          <ShoppingCart className="h-6 w-6 text-gray-300" />
-        </div>
-        <p className="font-semibold text-[#0B1A45] text-sm">Tu carrito está vacío</p>
-        <p className="text-xs text-[#7A839C]">Agregá productos para armar tu pedido</p>
-      </div>
-    )
-  }
+  if (!cart || cart.items.length === 0) return null
 
+  const itemCount = cart.items.reduce((s, i) => s + i.quantity, 0)
+  const dist = distributors.find(d => d.id === cart.distribuidoraId)
   const minOrder = dist?.minOrder ?? 0
   const remaining = Math.max(0, minOrder - total)
-  const progress = minOrder > 0 ? Math.min(100, (total / minOrder) * 100) : 100
 
   return (
-    <div className="bg-white rounded-2xl border border-[#DFE1E8] overflow-hidden shadow-sm">
-      <div className="px-5 py-4 bg-[#0B1A45]">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-white font-bold text-sm">Carrito de compras</p>
-            <p className="text-white/50 text-xs mt-0.5 truncate max-w-[140px]">{cart.distribuidoraName}</p>
-          </div>
-          <span className="bg-[#C8FF00] text-[#0B1A45] text-xs font-bold px-2.5 py-1 rounded-full shrink-0">
-            {cart.items.reduce((s, i) => s + i.quantity, 0)} ítems
-          </span>
-        </div>
-      </div>
+    <div className="fixed bottom-16 lg:bottom-6 left-0 right-0 z-40 px-4 lg:px-8 pointer-events-none">
+      <div className="max-w-350 mx-auto pointer-events-auto">
+        <div className="bg-[#0B1A45] rounded-2xl shadow-[0_8px_32px_rgba(11,26,69,0.32)] border border-white/10 overflow-hidden">
 
-      {minOrder > 0 && (
-        <div className={cn('px-4 py-3 border-b', remaining > 0 ? 'bg-amber-50 border-amber-100' : 'bg-[rgba(137,179,23,0.06)] border-[#89B317]/15')}>
-          {remaining > 0 ? (
-            <>
-              <p className="text-xs text-amber-700 font-medium">
-                Te faltan <span className="font-bold">{formatCurrency(remaining)}</span> para el mínimo
-              </p>
-              <div className="mt-1.5 h-1.5 bg-amber-200 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-400 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-              </div>
-            </>
-          ) : (
-            <p className="text-xs text-[#4A662E] font-semibold flex items-center gap-1">
-              <Check className="h-3 w-3" /> Mínimo alcanzado
-            </p>
-          )}
-        </div>
-      )}
-
-      <div className="max-h-72 overflow-y-auto divide-y divide-[#F7F8FA]">
-        {cart.items.map(({ product, quantity }) => {
-          const catObj = categories.find(c => c.name === product.category)
-          return (
-            <div key={product.id} className="px-4 py-3 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[#F7F8FA] flex items-center justify-center shrink-0">
-                {catObj ? (
-                  <img src={catObj.image} alt="" className="h-7 w-7 object-contain" />
-                ) : (
-                  <Package className="h-4 w-4 text-gray-300" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-[#0B1A45] line-clamp-1">{product.name}</p>
-                <p className="text-[11px] text-[#7A839C]">{formatCurrency(product.price)} × {quantity}</p>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <div className="flex items-center rounded-lg border border-[#DFE1E8] overflow-hidden">
-                  <button
-                    onClick={() => updateCartItemQuantity(product.id, quantity - 1)}
-                    className="h-6 w-6 flex items-center justify-center text-[#0B1A45] hover:bg-[#F7F8FA]"
-                  >
-                    <Minus className="h-2.5 w-2.5" />
-                  </button>
-                  <span className="w-6 text-center text-xs font-bold text-[#0B1A45]">{quantity}</span>
-                  <button
-                    onClick={() => updateCartItemQuantity(product.id, quantity + 1)}
-                    className="h-6 w-6 flex items-center justify-center text-[#0B1A45] hover:bg-[#F7F8FA]"
-                  >
-                    <Plus className="h-2.5 w-2.5" />
-                  </button>
-                </div>
+          {/* Items row — scrollable chips with remove */}
+          <div className="px-3 pt-2.5 pb-1.5 flex gap-1.5 overflow-x-auto scrollbar-hide">
+            {cart.items.map(({ product, quantity }) => (
+              <div
+                key={product.id}
+                className="flex-none flex items-center gap-1.5 bg-white/8 hover:bg-white/12 rounded-full pl-2.5 pr-1.5 py-1 transition-colors"
+              >
+                <span className="text-white text-[11px] font-medium whitespace-nowrap max-w-28 truncate">
+                  {quantity > 1 && (
+                    <span className="text-[#C8FF00] font-bold mr-1">{quantity}×</span>
+                  )}
+                  {product.name}
+                </span>
                 <button
                   onClick={() => removeFromCart(product.id)}
-                  className="h-6 w-6 flex items-center justify-center text-gray-300 hover:text-red-400 transition"
+                  aria-label={`Quitar ${product.name}`}
+                  className="h-4 w-4 rounded-full bg-white/15 hover:bg-red-500/70 flex items-center justify-center text-white/60 hover:text-white transition-all flex-none"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <X className="h-2.5 w-2.5" />
                 </button>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            ))}
+          </div>
 
-      <div className="p-4 border-t border-[#DFE1E8] bg-[#FAFAFA]">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-sm text-[#7A839C]">Subtotal</span>
-          <span className="font-bold text-[#0B1A45] text-base">{formatCurrency(total)}</span>
+          {/* Main action row */}
+          <div className="px-4 pb-3 flex items-center gap-3 lg:gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="bg-[#C8FF00] text-[#0B1A45] text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0 leading-tight">
+                  {itemCount} {itemCount === 1 ? 'ítem' : 'ítems'}
+                </span>
+                {cart.distribuidoraName && (
+                  <span className="text-white/50 text-xs truncate hidden sm:block">
+                    {cart.distribuidoraName}
+                  </span>
+                )}
+              </div>
+              {remaining > 0 ? (
+                <p className="text-amber-300 text-[11px] font-medium mt-0.5">
+                  Faltan {formatCurrency(remaining)} para el mínimo
+                </p>
+              ) : minOrder > 0 ? (
+                <p className="text-[#C8FF00] text-[11px] font-semibold mt-0.5">✓ Mínimo alcanzado</p>
+              ) : null}
+            </div>
+
+            <span className="text-white font-bold text-base shrink-0">
+              {formatCurrency(total)}
+            </span>
+
+            <Link
+              href="/comercio/carrito"
+              className="shrink-0 h-9 px-4 rounded-xl bg-[#C8FF00] text-[#0B1A45] font-bold text-sm flex items-center gap-1.5 hover:bg-[#d4ff1a] active:scale-[0.97] transition-all duration-150"
+            >
+              Ver carrito <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
-        {minOrder > 0 && (
-          <p className="text-[11px] text-[#7A839C] mb-3">Pedido mínimo: {formatCurrency(minOrder)}</p>
-        )}
-        <Link
-          href="/comercio/carrito"
-          className={cn(
-            'flex items-center justify-center gap-2 w-full h-11 rounded-xl font-bold text-sm transition-all',
-            remaining === 0
-              ? 'bg-[#0B1A45] text-white hover:bg-[#0B1A45]/90'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed pointer-events-none',
-          )}
-        >
-          {remaining === 0 ? (
-            <>
-              Continuar pedido <ChevronRight className="h-4 w-4" />
-            </>
-          ) : (
-            `Faltan ${formatCurrency(remaining)}`
-          )}
-        </Link>
       </div>
     </div>
   )
@@ -180,24 +128,37 @@ function ProductSkeleton({ view }: { view: 'grid' | 'list' }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BuscarPage() {
-  const [searchQuery, setSearchQuery]           = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [quantities, setQuantities]             = useState<Record<string, number>>({})
-  const [justAdded, setJustAdded]               = useState<Record<string, boolean>>({})
-  const { addToCart, getCartItemCount } = useApp()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const selectedCategory = searchParams.get('categoria')
+  const ofertaFilter = searchParams.get('oferta') === '1'
+
+  const [searchQuery, setSearchQuery] = useState('')
+  const [quantities, setQuantities]   = useState<Record<string, number>>({})
+  const [justAdded, setJustAdded]     = useState<Record<string, boolean>>({})
+  const { addToCart, getCartItemCount, cart } = useApp()
   const cartItemCount = getCartItemCount()
   const { data: products, loading: isLoading } = useProducts()
   const { data: distributors } = useDistributors()
+  const { data: allCategories } = useCategories()
 
-  const visibleCategories = categories.filter(c => VISIBLE_CATEGORIES.includes(c.name))
+  const handleCategoryClick = (name: string | null) => {
+    if (name) {
+      router.replace(`/comercio/buscar?categoria=${encodeURIComponent(name)}`)
+    } else {
+      router.replace('/comercio/buscar')
+    }
+  }
 
   const activeProducts = products.filter((p: Product) => p.active)
   const filteredProducts = activeProducts.filter((p: Product) => {
     const q = searchQuery.toLowerCase()
     const matchesSearch = p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
     const matchesCategory = !selectedCategory || p.category === selectedCategory
-    return matchesSearch && matchesCategory
+    const matchesOffer = !ofertaFilter || p.isOffer === true
+    return matchesSearch && matchesCategory && matchesOffer
   })
+  const pageTitle = ofertaFilter ? 'Ofertas' : selectedCategory ? `Productos de ${selectedCategory}` : 'Buscar productos'
 
   const getQty = (id: string) => quantities[id] ?? 1
   const setQty = (id: string, v: number) => setQuantities(prev => ({ ...prev, [id]: v }))
@@ -209,14 +170,16 @@ export default function BuscarPage() {
     addToCart(product, dist.companyName, qty)
     setJustAdded(prev => ({ ...prev, [product.id]: true }))
     setTimeout(() => setJustAdded(prev => ({ ...prev, [product.id]: false })), 2000)
-  }, [addToCart, quantities])
+  }, [addToCart, quantities, distributors])
+
+  const hasCartItems = !!(cart && cart.items.length > 0)
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F7F8FA]">
 
       {/* Sticky sub-header */}
-      <div className="sticky top-16 z-30 bg-white border-b border-[#DFE1E8] shadow-[0_1px_4px_rgba(11,26,69,0.05)]">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3">
+      <div className="sticky top-12 z-30 bg-white border-b border-[#DFE1E8] shadow-[0_1px_4px_rgba(11,26,69,0.05)] lg:hidden">
+        <div className="max-w-350 mx-auto px-4 md:px-8 py-3">
           <div className="flex items-center gap-3">
             <SearchInput
               placeholder="Buscar productos, marcas o categorías..."
@@ -237,10 +200,10 @@ export default function BuscarPage() {
             </Link>
           </div>
 
-          {/* Category pills — only 4 */}
+          {/* Category pills — all visible categories */}
           <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
             <button
-              onClick={() => setSelectedCategory(null)}
+              onClick={() => handleCategoryClick(null)}
               className={cn(
                 'shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border',
                 selectedCategory === null
@@ -250,10 +213,10 @@ export default function BuscarPage() {
             >
               Todos
             </button>
-            {visibleCategories.map(cat => (
+            {allCategories.map(cat => (
               <button
                 key={cat.id}
-                onClick={() => setSelectedCategory(cat.name)}
+                onClick={() => handleCategoryClick(cat.name)}
                 className={cn(
                   'shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border',
                   selectedCategory === cat.name
@@ -269,10 +232,29 @@ export default function BuscarPage() {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 max-w-[1400px] mx-auto px-4 md:px-8 py-6 w-full">
-        <div className="flex gap-6 items-start">
+      <main className={cn('flex-1 max-w-350 mx-auto px-4 md:px-8 py-6 w-full', hasCartItems && 'pb-32 lg:pb-28')}>
+        <header className="mb-5 md:mb-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {selectedCategory ? 'Categoría' : 'Catálogo'}
+              </p>
+              <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">
+                {pageTitle}
+              </h1>
+            </div>
+            {selectedCategory && (
+              <Link
+                href="/comercio/buscar"
+                className="w-fit rounded-full border border-[#DFE1E8] bg-white px-3 py-1.5 text-xs font-bold text-[#0B1A45] shadow-sm transition-colors hover:border-[#0B1A45]/25 hover:bg-[#F7F8FA] active:scale-[0.97]"
+              >
+                Ver todo el catálogo
+              </Link>
+            )}
+          </div>
+        </header>
 
-          <section className="flex-1 min-w-0">
+        <section className="flex-1 min-w-0">
             {isLoading ? (
               <>
                 <div className="grid grid-cols-2 gap-3 lg:hidden px-4">
@@ -290,7 +272,7 @@ export default function BuscarPage() {
                 <p className="font-bold text-[#0B1A45]">Sin resultados</p>
                 <p className="text-sm text-[#7A839C]">Probá con otro término o categoría</p>
                 <button
-                  onClick={() => { setSearchQuery(''); setSelectedCategory(null) }}
+                  onClick={() => { setSearchQuery(''); handleCategoryClick(null) }}
                   className="text-[#0B1A45] text-sm font-semibold underline mt-1"
                 >
                   Limpiar filtros
@@ -323,7 +305,7 @@ export default function BuscarPage() {
                 </div>
 
                 {/* Desktop — grid */}
-                <div className="hidden lg:grid grid-cols-3 gap-4">
+                <div className="hidden lg:grid grid-cols-4 gap-3">
                   {filteredProducts.map((product: Product) => {
                     const dist = distributors.find(d => d.id === product.distribuidoraId)
                     return (
@@ -343,14 +325,10 @@ export default function BuscarPage() {
                 </div>
               </>
             )}
-          </section>
-
-          {/* Sticky cart sidebar — desktop only */}
-          <aside className="hidden lg:block w-80 shrink-0 sticky top-48">
-            <CartSidebar />
-          </aside>
-        </div>
+        </section>
       </main>
+
+      <FloatingCartBar />
     </div>
   )
 }

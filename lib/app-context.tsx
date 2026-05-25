@@ -35,6 +35,15 @@ interface AppContextType {
   clearCart: () => void
   getCartTotal: () => number
   getCartItemCount: () => number
+
+  // Wishlist state
+  wishlist: Product[]
+
+  // Wishlist actions
+  addToWishlist: (product: Product) => void
+  removeFromWishlist: (productId: string) => void
+  toggleWishlist: (product: Product) => void
+  isInWishlist: (productId: string) => boolean
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -103,6 +112,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<Comercio | Distribuidora | null>(null)
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
   const [cart, setCart] = useState<Cart | null>(null)
+  const [wishlist, setWishlist] = useState<Product[]>([])
+
+  // Hydrate wishlist from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('stockia_wishlist')
+      if (stored) setWishlist(JSON.parse(stored))
+    } catch {}
+  }, [])
+
+  // Persist wishlist to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem('stockia_wishlist', JSON.stringify(wishlist))
+    } catch {}
+  }, [wishlist])
 
   // Restore session from Firebase Auth on mount
   useEffect(() => {
@@ -150,12 +175,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string): Promise<UserRole> => {
     const credential = await signInWithEmailAndPassword(auth, email, password)
-    // onAuthStateChanged will update the state; fetch role here just for immediate redirect
+    // Fetch role so we can redirect immediately after
     const userDoc = await getUserById(credential.user.uid)
     const role: UserRole =
       userDoc?.role === 'comercio' || userDoc?.role === 'distribuidora'
         ? userDoc.role
         : 'comercio'
+    // Set session cookie NOW — before router.push() — so the middleware finds it
+    // when the navigation request arrives. onAuthStateChanged will also set it later (no-op).
+    setSessionCookie(userDoc?.role === 'admin' ? 'admin' : role)
     return role
   }, [])
 
@@ -228,6 +256,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCart(null)
   }, [])
 
+  const addToWishlist = useCallback((product: Product) => {
+    setWishlist(prev => prev.some(p => p.id === product.id) ? prev : [...prev, product])
+  }, [])
+
+  const removeFromWishlist = useCallback((productId: string) => {
+    setWishlist(prev => prev.filter(p => p.id !== productId))
+  }, [])
+
+  const toggleWishlist = useCallback((product: Product) => {
+    setWishlist(prev =>
+      prev.some(p => p.id === product.id)
+        ? prev.filter(p => p.id !== product.id)
+        : [...prev, product]
+    )
+  }, [])
+
+  const isInWishlist = useCallback((productId: string) => {
+    return wishlist.some(p => p.id === productId)
+  }, [wishlist])
+
   const getCartTotal = useCallback(() => {
     if (!cart) return 0
     return cart.items.reduce(
@@ -258,6 +306,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         clearCart,
         getCartTotal,
         getCartItemCount,
+        wishlist,
+        addToWishlist,
+        removeFromWishlist,
+        toggleWishlist,
+        isInWishlist,
       }}
     >
       {children}

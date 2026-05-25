@@ -50,6 +50,7 @@ function EditProductoContent({ id }: { id: string }) {
   const [stock, setStock] = useState(product?.stock?.toString() || '')
   const [description, setDescription] = useState(product?.description || '')
   const [active, setActive] = useState(product?.active ?? true)
+  const [isOffer, setIsOffer] = useState(product?.isOffer ?? false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,6 +63,7 @@ function EditProductoContent({ id }: { id: string }) {
         stock: parseInt(stock, 10) || 0,
         description,
         status: active ? 'active' : 'paused',
+        isOffer,
       })
     } catch (err) {
       console.error('[edit-producto] updateProduct failed', err)
@@ -128,11 +130,18 @@ function EditProductoContent({ id }: { id: string }) {
               <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
                 <div>
                   <p className="font-medium text-foreground">Producto activo</p>
-                  <p className="text-sm text-muted-foreground">
-                    Visible para los comercios
-                  </p>
+                  <p className="text-sm text-muted-foreground">Visible para los comercios</p>
                 </div>
                 <Switch checked={active} onCheckedChange={setActive} />
+              </div>
+
+              {/* Offer toggle */}
+              <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
+                <div>
+                  <p className="font-medium text-foreground">En oferta</p>
+                  <p className="text-sm text-muted-foreground">Aparece destacado en la sección Ofertas</p>
+                </div>
+                <Switch checked={isOffer} onCheckedChange={setIsOffer} />
               </div>
 
               {/* Name */}

@@ -32,37 +32,38 @@ function PedidosContent() {
   const restOrders = featuredOrder ? filtered.slice(1) : filtered
 
   return (
-    <div className="flex flex-col min-h-screen pb-20 md:pb-8">
-      {/* Page header */}
-      <header className="sticky top-0 z-20 bg-white border-b border-border px-4 md:px-8 pt-3 md:pt-6 pb-3 md:pb-4">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="font-heading font-bold text-xl md:text-2xl text-foreground">Mis pedidos</h1>
-          <p className="text-xs md:text-sm text-muted-foreground mt-0.5">{activeOrders.length} pedido{activeOrders.length !== 1 ? 's' : ''} activo{activeOrders.length !== 1 ? 's' : ''}</p>
-        </div>
-      </header>
+    <div className="flex flex-col min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-20 md:pb-8">
+      <main className="flex-1 px-4 py-6 md:px-8 md:py-8 max-w-5xl mx-auto w-full">
+        <header className="mb-5 md:mb-6">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Pedidos
+          </p>
+          <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">
+            Mis pedidos
+          </h1>
+        </header>
 
-      <main className="flex-1 px-4 md:px-8 pt-4 max-w-5xl mx-auto w-full">
         {/* Success banner */}
         {showSuccess && (
-          <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
+          <div className="mb-4 p-4 bg-[#F1FFD1] border border-[#89B317]/25 rounded-2xl flex items-center gap-3 shadow-[0_1px_4px_rgba(137,179,23,0.08)]">
+            <CheckCircle className="h-5 w-5 text-[#4A662E] shrink-0" />
             <div>
-              <p className="font-bold text-emerald-800 text-sm">Pedido confirmado</p>
-              <p className="text-xs text-emerald-700">Tu pedido fue enviado a la distribuidora</p>
+              <p className="font-bold text-[#2d4410] text-sm">Pedido confirmado</p>
+              <p className="text-xs text-[#4A662E]">Tu pedido fue enviado a la distribuidora</p>
             </div>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-sm border border-border p-1.5 flex gap-1 mb-6">
+        <div className="bg-[#F7F8FA] rounded-2xl border border-[#DFE1E8]/80 p-1 flex gap-1 mb-6">
           {(['Activos', 'Historial'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ${
                 activeTab === tab
                   ? 'bg-[#0B1A45] text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  : 'text-[#7A839C] hover:text-foreground'
               }`}
             >
               {tab}{tab === 'Activos' && activeOrders.length > 0 && (
@@ -89,9 +90,15 @@ function PedidosContent() {
             {/* Featured most-recent active order */}
             {featuredOrder && (
               <Link href={`/comercio/pedidos/${featuredOrder.id}`}>
-                <div className="bg-[#0B1A45] rounded-2xl md:rounded-3xl p-4 md:p-6 relative overflow-hidden cursor-pointer group">
-                  <svg className="absolute right-0 top-0 h-full opacity-[0.05]" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="100%" cy="0" r="50%" fill="none" stroke="white" strokeWidth="30" />
+                <div className="bg-[#080f2b] rounded-2xl md:rounded-3xl p-4 md:p-6 relative overflow-hidden cursor-pointer group transition-opacity duration-150 active:opacity-90">
+                  {/* Radial glow */}
+                  <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[#0B1A45]/60 blur-2xl pointer-events-none" />
+                  {/* Geometric overlay */}
+                  <svg className="absolute inset-0 h-full w-full opacity-[0.045]" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+                    <circle cx="92%" cy="-5%" r="38%" fill="none" stroke="white" strokeWidth="30" />
+                    <line x1="0" y1="100%" x2="100%" y2="0" stroke="white" strokeWidth="0.6" />
+                    <circle cx="20%" cy="80%" r="1.5" fill="white" opacity="0.5" />
+                    <circle cx="50%" cy="30%" r="1" fill="white" opacity="0.3" />
                   </svg>
                   <div className="relative z-10">
                     <div className="flex justify-between items-start mb-3 md:mb-4">
@@ -111,7 +118,7 @@ function PedidosContent() {
                       <p className="text-white/50 text-xs font-medium">{featuredOrder.items.length} productos · {new Date(featuredOrder.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}</p>
                       <div className="flex items-center gap-2">
                         <span className="font-heading font-bold text-xl md:text-2xl text-white">{formatCurrency(featuredOrder.total)}</span>
-                        <div className="h-7 w-7 md:h-8 md:w-8 bg-[#C8FF00] rounded-lg md:rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <div className="h-7 w-7 md:h-8 md:w-8 bg-[#C8FF00] rounded-lg md:rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform duration-150">
                           <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#0B1A45]" />
                         </div>
                       </div>
@@ -124,7 +131,7 @@ function PedidosContent() {
             {/* Rest of orders */}
             {restOrders.map(order => (
               <Link key={order.id} href={`/comercio/pedidos/${order.id}`}>
-                <div className="bg-white rounded-xl md:rounded-2xl p-4 shadow-sm border border-border hover:shadow-md hover:border-primary/15 transition-all cursor-pointer flex items-center gap-3 group">
+                <div className="bg-white rounded-xl md:rounded-2xl p-4 border border-[#DFE1E8] shadow-[0_1px_3px_rgba(11,26,69,0.04)] hover:shadow-[0_4px_14px_rgba(11,26,69,0.08)] hover:border-[#0B1A45]/12 transition-[border-color,box-shadow] duration-200 cursor-pointer flex items-center gap-3 group">
                   <InitialsAvatar
                     initials={order.distribuidoraName.split(' ').map((w: string) => w[0]).join('').slice(0, 2)}
                     size="lg"

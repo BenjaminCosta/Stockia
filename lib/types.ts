@@ -60,6 +60,7 @@ export interface Product {
   active: boolean
   rating: number
   reviewCount: number
+  isOffer?: boolean
 }
 
 // Category type

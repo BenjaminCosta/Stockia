@@ -19,3 +19,6 @@ node_modules
 /StockiA_full set_final/
 
 contras.md
+
+# Local editor settings
+.vscode/

@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
+import { Switch } from '@/components/ui/switch'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -32,6 +33,7 @@ export default function NuevoProductoPage() {
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('')
   const [description, setDescription] = useState('')
+  const [isOffer, setIsOffer] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,6 +48,7 @@ export default function NuevoProductoPage() {
         price: parseFloat(price) || 0,
         stock: parseInt(stock, 10) || 0,
         status: 'active',
+        isOffer,
       })
     } catch (err) {
       console.error('[nuevo-producto] createProduct failed', err)
@@ -87,6 +90,15 @@ export default function NuevoProductoPage() {
                     PNG, JPG hasta 5MB
                   </p>
                 </div>
+              </div>
+
+              {/* Offer toggle */}
+              <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
+                <div>
+                  <p className="font-medium text-foreground">En oferta</p>
+                  <p className="text-sm text-muted-foreground">Aparece destacado en la sección Ofertas</p>
+                </div>
+                <Switch checked={isOffer} onCheckedChange={setIsOffer} />
               </div>
 
               {/* Name */}

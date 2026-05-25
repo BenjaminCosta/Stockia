@@ -1,38 +1,55 @@
-import Link from 'next/link'
-import { ChevronRight, CircleUserRound, Grid2X2, ReceiptText, ShieldCheck, ShoppingCart } from 'lucide-react'
+'use client'
 
-const moreItems = [
-  {
-    href: '/comercio/cuenta',
-    label: 'Mi cuenta',
-    description: 'Datos del comercio y preferencias',
-    icon: CircleUserRound,
-    iconBg: 'bg-blue-50 text-blue-600',
-  },
-  {
-    href: '/comercio/carrito',
-    label: 'Carrito',
-    description: 'Productos seleccionados para comprar',
-    icon: ShoppingCart,
-    iconBg: 'bg-amber-50 text-amber-600',
-  },
-  {
-    href: '/comercio/buscar',
-    label: 'Categorías',
-    description: 'Explorar productos por rubro',
-    icon: Grid2X2,
-    iconBg: 'bg-purple-50 text-purple-600',
-  },
-  {
-    href: '/comercio/pedidos',
-    label: 'Mis pedidos',
-    description: 'Historial y seguimiento de compras',
-    icon: ReceiptText,
-    iconBg: 'bg-red-50 text-red-500',
-  },
-]
+import Link from 'next/link'
+import { ChevronRight, CircleUserRound, Grid2X2, Heart, ReceiptText, ShieldCheck, ShoppingCart } from 'lucide-react'
+import { useApp } from '@/lib/app-context'
 
 export default function ComercioMasPage() {
+  const { wishlist } = useApp()
+
+  const moreItems = [
+    {
+      href: '/comercio/cuenta',
+      label: 'Mi cuenta',
+      description: 'Datos del comercio y preferencias',
+      icon: CircleUserRound,
+      iconBg: 'bg-blue-50 text-blue-600',
+      badge: null,
+    },
+    {
+      href: '/comercio/wishlist',
+      label: 'Mi lista de deseos',
+      description: 'Productos guardados para comprar después',
+      icon: Heart,
+      iconBg: 'bg-[#F1FFD1] text-[#4A662E]',
+      badge: wishlist.length > 0 ? wishlist.length : null,
+    },
+    {
+      href: '/comercio/carrito',
+      label: 'Carrito',
+      description: 'Productos seleccionados para comprar',
+      icon: ShoppingCart,
+      iconBg: 'bg-amber-50 text-amber-600',
+      badge: null,
+    },
+    {
+      href: '/comercio/buscar',
+      label: 'Categorías',
+      description: 'Explorar productos por rubro',
+      icon: Grid2X2,
+      iconBg: 'bg-purple-50 text-purple-600',
+      badge: null,
+    },
+    {
+      href: '/comercio/pedidos',
+      label: 'Mis pedidos',
+      description: 'Historial y seguimiento de compras',
+      icon: ReceiptText,
+      iconBg: 'bg-red-50 text-red-500',
+      badge: null,
+    },
+  ]
+
   return (
     <div className="min-h-screen bg-[#F4F5F7]">
       <div className="bg-[#0B1A45] px-5 pt-6 pb-10 lg:hidden">
@@ -71,7 +88,13 @@ export default function ComercioMasPage() {
                   <p className="text-sm font-semibold text-gray-900">{item.label}</p>
                   <p className="mt-0.5 text-xs leading-snug text-gray-400">{item.description}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-gray-300" strokeWidth={1.75} />
+                {item.badge != null ? (
+                  <span className="h-5 min-w-5 px-1.5 rounded-full bg-[#C8FF00] text-[#0B1A45] text-[10px] font-bold flex items-center justify-center">
+                    {item.badge}
+                  </span>
+                ) : (
+                  <ChevronRight className="h-4 w-4 shrink-0 text-gray-300" strokeWidth={1.75} />
+                )}
               </Link>
             )
           })}

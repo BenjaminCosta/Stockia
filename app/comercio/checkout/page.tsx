@@ -77,8 +77,11 @@ export default function CheckoutPage() {
   const { data: distribuidora } = useDistributor(cart?.distribuidoraId || '')
 
   useEffect(() => {
-    if (!hasCart) router.push('/comercio/carrito')
-  }, [hasCart, router])
+    // Only redirect to carrito when cart is empty AND we haven't confirmed yet.
+    // Without this guard, clearCart() would trigger a redirect before the
+    // intentional push to /pedidos had a chance to run.
+    if (!hasCart && !confirmed) router.push('/comercio/carrito')
+  }, [hasCart, confirmed, router])
 
   if (!hasCart) return null
 
@@ -132,23 +135,30 @@ export default function CheckoutPage() {
     : `Confirmar y pagar ${formatCurrency(total)}`
 
   return (
-    <div className="min-h-screen bg-background pb-44 md:pb-12">
-      <div className="max-w-5xl mx-auto md:p-8">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-44 md:pb-12">
+      <div className="max-w-5xl mx-auto px-4 py-6 md:px-8 md:py-8">
 
         {/* Header */}
-        <div className="bg-white md:bg-transparent px-4 md:px-0 py-4 md:py-0 md:mb-8 sticky top-0 md:static z-30 shadow-sm md:shadow-none flex items-center gap-3">
-          <Link href="/comercio/carrito" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors">
+        <header className="mb-5 flex items-center gap-4 md:mb-8">
+          <Link href="/comercio/carrito" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-white border border-[#DFE1E8] flex items-center justify-center text-[#0B1A45] hover:bg-gray-50 transition-colors active:scale-95 shadow-sm">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="font-heading font-bold text-xl md:text-3xl text-foreground">Confirmar pedido</h1>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Checkout
+            </p>
+            <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">
+              Confirmar pedido
+            </h1>
+          </div>
           {!isExternal && (
             <div className="ml-auto flex items-center gap-1.5 text-xs md:text-sm font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-full">
               <Lock className="h-3.5 w-3.5" /> Pago seguro
             </div>
           )}
-        </div>
+        </header>
 
-        <div className="px-4 md:px-0 mt-4 md:mt-0 grid grid-cols-1 md:grid-cols-12 gap-6">
+        <div className="mt-4 grid grid-cols-1 gap-6 md:mt-0 md:grid-cols-12">
 
           {/* Left column */}
           <div className="md:col-span-7 space-y-6">

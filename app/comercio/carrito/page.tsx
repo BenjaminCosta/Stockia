@@ -10,23 +10,31 @@ import { formatCurrency } from '@/lib/mock-data'
 import { useDistributors } from '@/hooks/use-data'
 import { LoadingButton } from '@/components/ui/LoadingButton'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { QuantityStepper } from '@/components/quantity-stepper'
 
 export default function CarritoPage() {
   const router = useRouter()
-  const { cart, removeFromCart, getCartTotal } = useApp()
+  const { cart, removeFromCart, getCartTotal, updateCartItemQuantity } = useApp()
   const { data: distributors } = useDistributors()
   const [isConfirming, setIsConfirming] = useState(false)
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="bg-background">
-        <div className="bg-white px-4 md:px-8 py-4 sticky top-16 md:top-20 z-30 border-b border-gray-100 flex items-center gap-4">
-          <Link href="/comercio" className="h-9 w-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <h1 className="font-heading font-bold text-xl text-foreground">Tu Pedido</h1>
-        </div>
-        <div className="px-4 py-8">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
+        <div className="max-w-5xl mx-auto px-4 py-6 md:px-8 md:py-8">
+          <header className="mb-8 flex items-center gap-4">
+            <Link href="/comercio" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-white border border-[#DFE1E8] flex items-center justify-center text-[#0B1A45] hover:bg-gray-50 transition-colors duration-150 active:scale-95 shadow-sm">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Pedido actual
+              </p>
+              <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">
+                Carrito
+              </h1>
+            </div>
+          </header>
           <EmptyState
             icon={ShoppingBag}
             title="Tu carrito está vacío"
@@ -54,30 +62,32 @@ export default function CarritoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-44 md:pb-12">
-      <div className="max-w-5xl mx-auto md:p-8">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-44 md:pb-12">
+      <div className="max-w-5xl mx-auto px-4 py-6 md:px-8 md:py-8">
 
         {/* Header */}
-        <div className="bg-white md:bg-transparent px-4 md:px-0 py-4 md:py-0 md:mb-8 sticky top-0 md:static z-30 shadow-sm md:shadow-none flex items-center gap-4">
-          <Link href="/comercio" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors">
+        <header className="mb-5 flex items-center gap-4 md:mb-8">
+          <Link href="/comercio" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-white border border-[#DFE1E8] flex items-center justify-center text-[#0B1A45] hover:bg-gray-50 transition-colors duration-150 active:scale-95 shadow-sm">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="font-heading font-bold text-xl md:text-3xl text-foreground">Tu Pedido</h1>
-            <p className="text-sm font-medium text-muted-foreground">
-              Carrito · {itemCount} producto{itemCount !== 1 ? 's' : ''}
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Pedido actual
             </p>
+            <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">
+              Carrito
+            </h1>
           </div>
-        </div>
+        </header>
 
-        <div className="px-4 md:px-0 mt-4 md:mt-0 grid grid-cols-1 md:grid-cols-12 gap-6">
+        <div className="mt-4 grid grid-cols-1 gap-6 md:mt-0 md:grid-cols-12">
 
           {/* Left — products */}
           <div className="md:col-span-7 space-y-6">
-            <div className="bg-white rounded-3xl p-5 md:p-8 shadow-sm border border-border">
+            <div className="bg-white rounded-3xl p-5 md:p-8 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] border border-[#DFE1E8]/80">
               <div className="flex justify-between items-end mb-6">
-                <h2 className="font-bold text-foreground text-sm uppercase tracking-wide">Productos</h2>
-                <span className="text-sm font-medium bg-primary/10 text-primary px-3 py-1 rounded-lg">
+                <h2 className="font-bold text-xs uppercase tracking-widest text-[#7A839C]">Productos</h2>
+                <span className="text-xs font-semibold bg-[#0B1A45]/8 text-[#0B1A45] px-3 py-1 rounded-lg">
                   {itemCount} ítems
                 </span>
               </div>
@@ -90,19 +100,26 @@ export default function CarritoPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-base text-foreground leading-tight">{item.product.name}</p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {formatCurrency(item.product.price)} x {item.quantity} un.
+                          {formatCurrency(item.product.price)} · unidad
                         </p>
+                        <div className="mt-2.5 flex items-center gap-3">
+                          <QuantityStepper
+                            value={item.quantity}
+                            onChange={v => updateCartItemQuantity(item.product.id, v)}
+                            min={1}
+                          />
+                          <button
+                            onClick={() => removeFromCart(item.product.id)}
+                            className="text-xs text-red-400 font-semibold hover:text-red-600 transition-colors flex items-center gap-1"
+                          >
+                            <Trash2 className="h-3 w-3" /> Eliminar
+                          </button>
+                        </div>
                       </div>
                       <div className="text-right shrink-0">
                         <p className="font-heading font-bold text-lg text-foreground">
                           {formatCurrency(item.product.price * item.quantity)}
                         </p>
-                        <button
-                          onClick={() => removeFromCart(item.product.id)}
-                          className="text-xs md:text-sm text-red-500 font-bold mt-2 flex items-center justify-end w-full hover:underline"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Eliminar
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -115,8 +132,8 @@ export default function CarritoPage() {
           <div className="md:col-span-5 space-y-6">
 
             {/* Distributor */}
-            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-border">
-              <h2 className="font-bold text-foreground mb-4 text-sm uppercase tracking-wide">Distribuidor</h2>
+            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] border border-[#DFE1E8]/80">
+              <h2 className="font-bold text-xs uppercase tracking-widest text-[#7A839C] mb-4">Distribuidor</h2>
               <div className="flex items-center justify-between cursor-pointer group">
                 <div className="flex items-center gap-3">
                   <InitialsAvatar
@@ -137,8 +154,8 @@ export default function CarritoPage() {
             </div>
 
             {/* Summary */}
-            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-border md:sticky md:top-8">
-              <h2 className="hidden md:block font-bold text-foreground mb-6 text-sm uppercase tracking-wide">Resumen</h2>
+            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] border border-[#DFE1E8]/80 md:sticky md:top-8">
+              <h2 className="hidden md:block font-bold text-xs uppercase tracking-widest text-[#7A839C] mb-6">Resumen</h2>
               <div className="space-y-3 text-base">
                 <MinimumOrderProgress
                   total={total}
@@ -174,7 +191,7 @@ export default function CarritoPage() {
       </div>
 
       {/* Mobile fixed bottom */}
-      <div className="md:hidden fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-200 z-40 shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
+      <div className="md:hidden fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-200 z-40 shadow-[0_-4px_12px_rgba(11,26,69,0.06)]">
         <div className="mb-3">
           <MinimumOrderProgress
             total={total}
@@ -213,20 +230,20 @@ function MinimumOrderProgress({
   const reachedMinimum = remainingToMin === 0
 
   return (
-    <div className={compact ? 'space-y-1.5' : 'rounded-2xl bg-gray-50 p-4 space-y-2'}>
+    <div className={compact ? 'space-y-1.5' : 'rounded-2xl bg-[#F7F8FA] border border-[#DFE1E8]/60 p-4 space-y-2'}>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Pedido mínimo</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-[#7A839C]">Pedido mínimo</span>
         <span className="text-xs font-bold text-foreground">
           {formatCurrency(total)} / {formatCurrency(minOrder)}
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+      <div className="h-1.5 overflow-hidden rounded-full bg-[#DFE1E8]">
         <div
-          className="h-full rounded-full bg-primary transition-all duration-300"
-          style={{ width: `${minProgress}%` }}
+          className={`h-full rounded-full transition-[width] duration-300 ${reachedMinimum ? 'bg-[#89B317]' : 'bg-[#0B1A45]'}`}
+          style={{ transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)', width: `${minProgress}%` }}
         />
       </div>
-      <p className={`text-xs font-medium ${reachedMinimum ? 'text-green-600' : 'text-muted-foreground'}`}>
+      <p className={`text-xs font-medium ${reachedMinimum ? 'text-[#4A662E]' : 'text-[#7A839C]'}`}>
         {reachedMinimum
           ? 'Mínimo alcanzado'
           : `Faltan ${formatCurrency(remainingToMin)} para alcanzar el mínimo`}
