@@ -45,3 +45,21 @@ export function isWithinCoverage(
 ): boolean {
   return getDistanceKm(commerceLocation, distributorLocation) <= coverageRadiusKm
 }
+
+/**
+ * Normalize a city name to a URL-safe slug for reliable zone matching.
+ * Removes accents, lowercases, replaces spaces and special chars with hyphens.
+ *
+ * Examples:
+ *   "Lomas de Zamora" → "lomas-de-zamora"
+ *   "Avellaneda"      → "avellaneda"
+ *   "Quilmes"         → "quilmes"
+ */
+export function normalizeCitySlug(city: string): string {
+  return city
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // strip accent combining chars
+    .replace(/[^a-z0-9]+/g, '-')     // non-alphanumeric runs → dash
+    .replace(/^-|-$/g, '')           // trim leading/trailing dashes
+}

@@ -1,26 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Package } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { categories } from '@/lib/mock-data'
 import { DistributorCardSkeleton } from '@/components/ui/SkeletonCard'
 import { useDistributors } from '@/hooks/use-data'
+import { useApp } from '@/lib/app-context'
+import { Comercio } from '@/lib/types'
 import { DistribuidoraCard } from '@/components/distribuidora-card'
 import { EmptyState } from '@/components/ui/EmptyState'
 
 export default function DistribuidorasPage() {
+  const { currentUser } = useApp()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const { data: distributors, loading: isLoading } = useDistributors()
 
-  const filtered = distributors.filter(d => {
-    const matchesSearch =
-      d.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.categories.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()))
+  const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
+  const loc = comercio?.location
+  const commerceContext = loc
+    ? { lat: loc.lat, lng: loc.lng, citySlug: loc.citySlug }
+    : undefined
+
+  const { data: distributors, loading: isLoading } = useDistributors(commerceContext)
+
+  const filtered = useMemo(() => distributors.filter(d => {
+    const q = searchQuery.toLowerCase()
+    const matchesSearch = d.companyName.toLowerCase().includes(q) ||
+      d.categories.some(c => c.toLowerCase().includes(q))
     const matchesCategory = !selectedCategory || d.categories.includes(selectedCategory)
     return matchesSearch && matchesCategory
-  })
+  }), [distributors, searchQuery, selectedCategory])
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
@@ -67,9 +77,7 @@ export default function DistribuidorasPage() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {[...Array(4)].map((_, i) => <DistributorCardSkeleton key={i} />)}
-          </div>
+          <DistributorCardSkeleton count={6} />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={Package}

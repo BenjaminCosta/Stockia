@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Package, Check, Minus, Plus, ShoppingCart, TrendingUp, Tag, MapPin, Heart } from 'lucide-react'
 import { categories, formatCurrency } from '@/lib/mock-data'
 import { Product } from '@/lib/types'
@@ -87,7 +88,7 @@ export interface ProductCardProps {
   view: 'grid' | 'list'
 }
 
-export function ProductCard({
+function ProductCardComponent({
   product,
   distName,
   distDistance,
@@ -97,30 +98,56 @@ export function ProductCard({
   justAdded,
   view,
 }: ProductCardProps) {
-  const bestSeller = isBestSeller(product)
-  const offer = product.isOffer === true
-  const outOfStock = product.stock === 0
-  const catObj = categories.find(c => c.name === product.category)
   const { toggleWishlist, isInWishlist } = useApp()
   const inWishlist = isInWishlist(product.id)
   const [popping, setPopping] = useState(false)
 
-  const handleWishlistToggle = (e: React.MouseEvent) => {
+  const bestSeller = useMemo(() => isBestSeller(product), [product.rating, product.reviewCount])
+  const offer = product.isOffer === true
+  const outOfStock = product.stock === 0
+  const catObj = useMemo(() => categories.find(c => c.name === product.category), [product.category])
+  const distributorInitials = useMemo(() => (distName || 'Distribuidora')
+    .split(' ')
+    .filter(Boolean)
+    .map(word => word[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase(), [distName])
+
+  const handleWishlistToggle = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     toggleWishlist(product)
     setPopping(true)
     setTimeout(() => setPopping(false), 500)
-  }
+  }, [toggleWishlist, product])
 
   const productImg = (sizeClass: string, rounded = 'rounded-xl') => (
     <div className={cn('flex items-center justify-center bg-white overflow-hidden', rounded, sizeClass)}>
       {catObj ? (
-        <img src={catObj.image} alt={product.category} className="h-2/3 w-2/3 object-contain" />
+        <Image src={catObj.image} alt={product.category} width={64} height={64} className="h-2/3 w-2/3 object-contain" />
       ) : (
         <Package className="h-8 w-8 text-gray-200" />
       )}
     </div>
+  )
+
+  const distributorLogo = (className?: string) => (
+    <Link
+      href={`/comercio/distribuidora/${product.distribuidoraId}`}
+      onClick={(event) => event.stopPropagation()}
+      aria-label={distName ? `Ver ${distName}` : 'Ver distribuidora'}
+      title={distName ? `Ver ${distName}` : 'Ver distribuidora'}
+      className={cn(
+        'group/dist flex items-center justify-center rounded-full border border-white/80 bg-white text-[10px] font-black text-[#0B1A45]',
+        'shadow-[0_8px_22px_rgba(8,15,43,0.16)] ring-1 ring-[#0B1A45]/5 transition-[transform,box-shadow] duration-200 hover:scale-105 hover:shadow-[0_12px_28px_rgba(8,15,43,0.22)] active:scale-95',
+        className,
+      )}
+    >
+      <span className="flex h-full w-full items-center justify-center rounded-full bg-[#F1FFD1] ring-1 ring-inset ring-[#C8FF00]/45">
+        {distributorInitials}
+      </span>
+    </Link>
   )
 
   /* ── Mobile / list card ───────────────────────────────────────────────── */
@@ -133,9 +160,12 @@ export function ProductCard({
           justAdded && 'ring-2 ring-[#C8FF00]/60',
         )}
       >
-        <Link href={`/comercio/producto/${product.id}`} className="shrink-0">
-          {productImg('h-16 w-16')}
-        </Link>
+        <div className="relative shrink-0">
+          <Link href={`/comercio/producto/${product.id}`}>
+            {productImg('h-16 w-16')}
+          </Link>
+          {distributorLogo('absolute -right-1 -bottom-1 h-7 w-7 p-0.5')}
+        </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-1 mb-0.5">
@@ -214,7 +244,7 @@ export function ProductCard({
         justAdded && 'ring-2 ring-[#C8FF00]/60',
       )}
     >
-      <Link href={`/comercio/producto/${product.id}`} className="relative block">
+      <div className="relative block">
         {(bestSeller || offer) && (
           <div className="absolute top-2 left-2 z-10 flex gap-1 flex-wrap">
             {bestSeller && (
@@ -248,8 +278,11 @@ export function ProductCard({
             )}
           />
         </button>
-        {productImg('aspect-square w-full', 'rounded-none')}
-      </Link>
+        <Link href={`/comercio/producto/${product.id}`} className="block">
+          {productImg('aspect-square w-full', 'rounded-none')}
+        </Link>
+        {distributorLogo('absolute bottom-2 left-2 z-10 h-8 w-8 p-0.5 md:h-9 md:w-9')}
+      </div>
 
       {/* Separator */}
       <div className="h-px mx-3 bg-linear-to-r from-transparent via-gray-200 to-transparent shadow-[0_1px_6px_rgba(11,26,69,0.07)]" />
@@ -320,3 +353,5 @@ export function ProductCard({
     </div>
   )
 }
+
+export const ProductCard = memo(ProductCardComponent)

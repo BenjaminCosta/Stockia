@@ -7,27 +7,60 @@ import Link from 'next/link'
 import {
   ArrowLeft,
   ArrowRight,
+  Banknote,
   Boxes,
   Building2,
   Check,
+  CreditCard,
+  Eye,
+  EyeOff,
   KeyRound,
   Mail,
   MapPin,
   Phone,
   Route,
+  ShieldCheck,
   Store,
   Truck,
 } from 'lucide-react'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '@/lib/firebase/client'
+import { normalizeCitySlug } from '@/lib/firebase/geo'
 import { upsertUser, upsertCommerce } from '@/lib/data/users.service'
 import { upsertDistributor } from '@/lib/data/distributors.service'
 import { setSessionCookie } from '@/lib/cookies'
-// useApp no longer needed — auth handled via Firebase directly
 import { LoadingButton } from '@/components/ui/LoadingButton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserRole } from '@/lib/types'
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const PRODUCT_CATEGORIES = [
+  'Bebidas',
+  'Snacks y golosinas',
+  'Almacén',
+  'Lácteos y frescos',
+  'Limpieza',
+  'Higiene personal',
+  'Cigarrillos',
+  'Congelados',
+  'Panificados',
+]
+
+const COMMERCE_TYPES = [
+  'Kiosco',
+  'Almacén / Despensa',
+  'Minimercado',
+  'Supermercado',
+  'Restaurante / Bar',
+  'Farmacia',
+  'Otro',
+]
+
+const zones = ['Avellaneda', 'Lanús', 'Quilmes', 'Lomas de Zamora', 'Berazategui']
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function registroErrorMessage(code: string): string {
   switch (code) {
@@ -39,16 +72,31 @@ function registroErrorMessage(code: string): string {
   }
 }
 
+function getPasswordStrength(password: string): { level: 0 | 1 | 2 | 3; label: string } {
+  if (password.length === 0) return { level: 0, label: '' }
+  if (password.length < 6) return { level: 1, label: 'Muy corta' }
+  const hasUpper = /[A-Z]/.test(password)
+  const hasLower = /[a-z]/.test(password)
+  const hasNumber = /\d/.test(password)
+  const hasSpecial = /[^A-Za-z0-9]/.test(password)
+  const score = [password.length >= 8, hasUpper && hasLower, hasNumber, hasSpecial].filter(Boolean).length
+  if (score <= 1) return { level: 1, label: 'Débil' }
+  if (score <= 2) return { level: 2, label: 'Media' }
+  return { level: 3, label: 'Fuerte' }
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 type OnboardingStep = 1 | 2 | 3 | 4
 
 const steps = [
   { number: 1, label: 'Inicio' },
-  { number: 2, label: 'Cuenta' },
+  { number: 2, label: 'Tipo' },
   { number: 3, label: 'Datos' },
   { number: 4, label: 'Ubicación' },
 ]
 
-const zones = ['Avellaneda', 'Lanús', 'Quilmes', 'Lomas de Zamora', 'Berazategui']
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RegistroPage() {
   const router = useRouter()
@@ -60,44 +108,48 @@ export default function RegistroPage() {
   // Credentials
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
   // Business data
   const [businessName, setBusinessName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
+  const [cuit, setCuit] = useState('')
+  const [businessType, setBusinessType] = useState('')       // comercio only
+  const [minimumOrder, setMinimumOrder] = useState('')       // distribuidora only
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]) // distribuidora only
+
+  // Location
   const [cityZone, setCityZone] = useState('Avellaneda')
   const [coverageRadius, setCoverageRadius] = useState('15')
   const [deliveryZones, setDeliveryZones] = useState('Avellaneda, Lanús, Quilmes')
 
   const progress = `${(step / steps.length) * 100}%`
+
   const title =
-    step === 1
-      ? 'Comprá y gestioná stock de forma simple'
-      : step === 2
-        ? 'Elegí tu tipo de cuenta'
-        : step === 3
-          ? role === 'distribuidora'
-            ? 'Datos de la empresa'
-            : 'Datos del comercio'
-          : role === 'distribuidora'
-            ? 'Cobertura de entrega'
-            : 'Ubicación del comercio'
+    step === 1 ? 'Comprá y gestioná stock de forma simple'
+    : step === 2 ? 'Elegí tu tipo de cuenta'
+    : step === 3 ? (role === 'distribuidora' ? 'Datos de la empresa' : 'Datos del comercio')
+    : role === 'distribuidora' ? 'Cobertura y categorías' : 'Ubicación del comercio'
 
   const description =
-    step === 1
-      ? 'Conectá comercios locales con distribuidoras para pedir, vender y organizar operaciones B2B.'
-      : step === 2
-        ? 'Esta selección define la navegación y las herramientas principales del prototipo.'
-        : step === 3
-          ? 'Completá la información básica para configurar el perfil inicial.'
-          : role === 'distribuidora'
-            ? 'Definí el radio y las zonas donde tu distribuidora reparte pedidos.'
-            : 'Confirmá la zona para mostrar proveedores cercanos desde el inicio.'
+    step === 1 ? 'Conectá comercios locales con distribuidoras para pedir, vender y organizar operaciones B2B.'
+    : step === 2 ? 'Esta selección define la navegación y las herramientas principales del prototipo.'
+    : step === 3 ? 'Completá la información de acceso y los datos básicos del negocio.'
+    : role === 'distribuidora' ? 'Definí las zonas de reparto y los rubros que manejás.'
+    : 'Confirmá la zona para mostrar proveedores cercanos desde el inicio.'
 
   const canContinue =
     (step === 1) ||
     (step === 2 && !!role) ||
-    (step === 3 && email.trim().length > 0 && password.length >= 6) ||
+    (step === 3 &&
+      email.trim().length > 0 &&
+      password.length >= 6 &&
+      password === confirmPassword &&
+      businessName.trim().length > 0 &&
+      phone.trim().length > 0 &&
+      address.trim().length > 0
+    ) ||
     (step === 4)
 
   const handleContinue = async () => {
@@ -114,7 +166,7 @@ export default function RegistroPage() {
     try {
       const credential = await createUserWithEmailAndPassword(auth, email.trim(), password)
       const uid = credential.user.uid
-      const name = businessName || email.split('@')[0]
+      const name = businessName.trim() || email.split('@')[0]
 
       await upsertUser(uid, { name, email: email.trim(), role })
 
@@ -125,10 +177,14 @@ export default function RegistroPage() {
           phone,
           address,
           city: cityZone,
+          citySlug: normalizeCitySlug(cityZone),
+          zone: '',
           province: 'Buenos Aires',
-          lat: 0,
-          lng: 0,
+          // lat/lng intentionally omitted — no geocoding yet.
+          // buildCurrentUser treats absent/0 coords as "no real location".
           status: 'active',
+          ...(cuit.trim() && { cuit: cuit.trim() }),
+          ...(businessType && { businessType }),
         })
       } else {
         await upsertDistributor(uid, {
@@ -138,19 +194,18 @@ export default function RegistroPage() {
           address,
           city: cityZone,
           province: 'Buenos Aires',
-          lat: 0,
-          lng: 0,
+          // lat/lng intentionally omitted — no geocoding yet.
           coverageRadiusKm: parseFloat(coverageRadius) || 15,
-          minimumOrder: 0,
-          categories: [],
+          minimumOrder: parseFloat(minimumOrder) || 0,
+          categories: selectedCategories,
           status: 'active',
           deliveryZones: deliveryZones.split(',').map(z => z.trim()).filter(Boolean),
+          ...(cuit.trim() && { cuit: cuit.trim() }),
         })
       }
 
-      // Set session cookies immediately so middleware allows the redirect
       setSessionCookie(role)
-      router.push(role === 'comercio' ? '/comercio' : '/distribuidora')
+      router.push(role === 'comercio' ? '/comercio/onboarding' : '/distribuidora/onboarding')
     } catch (err: unknown) {
       const code = (err as { code?: string }).code ?? ''
       setError(registroErrorMessage(code))
@@ -166,6 +221,12 @@ export default function RegistroPage() {
     setStep((current) => (current - 1) as OnboardingStep)
   }
 
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    )
+  }
+
   const selectZone = (zone: string) => {
     if (role === 'distribuidora') {
       const selectedZones = deliveryZones.split(',').map(item => item.trim()).filter(Boolean)
@@ -176,7 +237,6 @@ export default function RegistroPage() {
       )
       return
     }
-
     setCityZone(zone)
   }
 
@@ -190,7 +250,6 @@ export default function RegistroPage() {
           backgroundPosition: 'center',
         }}
       >
-        {/* Dark overlay */}
         <div className="absolute inset-0 bg-sidebar/90" />
         <div className="absolute inset-0 opacity-[0.07]">
           <div className="absolute -left-10 top-16 h-28 w-28 rounded-3xl border border-white rotate-12" />
@@ -243,31 +302,31 @@ export default function RegistroPage() {
       <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-32 md:px-8">
         <section className="-mt-20 rounded-2xl border border-border bg-card p-5 shadow-[0_18px_45px_-24px_rgba(31,41,55,0.45)] md:-mt-24 md:p-8">
           <div key={step} className="animate-onboarding-step">
-            {step === 1 && (
-              <WelcomeStep />
-            )}
+            {step === 1 && <WelcomeStep />}
 
-            {step === 2 && (
-              <RoleStep role={role} onSelect={setRole} />
-            )}
+            {step === 2 && <RoleStep role={role} onSelect={setRole} />}
 
             {step === 3 && (
               <BusinessDataStep
                 role={role}
                 email={email}
                 password={password}
+                confirmPassword={confirmPassword}
                 businessName={businessName}
                 phone={phone}
                 address={address}
-                cityZone={cityZone}
-                coverageRadius={coverageRadius}
+                cuit={cuit}
+                businessType={businessType}
+                minimumOrder={minimumOrder}
                 onEmailChange={setEmail}
                 onPasswordChange={setPassword}
+                onConfirmPasswordChange={setConfirmPassword}
                 onBusinessNameChange={setBusinessName}
                 onPhoneChange={setPhone}
                 onAddressChange={setAddress}
-                onCityZoneChange={setCityZone}
-                onCoverageRadiusChange={setCoverageRadius}
+                onCuitChange={setCuit}
+                onBusinessTypeChange={setBusinessType}
+                onMinimumOrderChange={setMinimumOrder}
               />
             )}
 
@@ -277,9 +336,11 @@ export default function RegistroPage() {
                 cityZone={cityZone}
                 coverageRadius={coverageRadius}
                 deliveryZones={deliveryZones}
+                selectedCategories={selectedCategories}
                 onCoverageRadiusChange={setCoverageRadius}
                 onDeliveryZonesChange={setDeliveryZones}
                 onSelectZone={selectZone}
+                onCategoryToggle={toggleCategory}
               />
             )}
           </div>
@@ -317,6 +378,8 @@ export default function RegistroPage() {
     </div>
   )
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function DesktopStepper({ currentStep }: { currentStep: OnboardingStep }) {
   return (
@@ -398,12 +461,7 @@ function RoleStep({ role, onSelect }: { role: UserRole | null; onSelect: (role: 
 }
 
 function RoleCard({
-  active,
-  icon: Icon,
-  title,
-  text,
-  detail,
-  onClick,
+  active, icon: Icon, title, text, detail, onClick,
 }: {
   active: boolean
   icon: typeof Store
@@ -439,108 +497,234 @@ function RoleCard({
 
 function BusinessDataStep({
   role,
-  email,
-  password,
-  businessName,
-  phone,
-  address,
-  cityZone,
-  coverageRadius,
-  onEmailChange,
-  onPasswordChange,
-  onBusinessNameChange,
-  onPhoneChange,
-  onAddressChange,
-  onCityZoneChange,
-  onCoverageRadiusChange,
+  email, password, confirmPassword,
+  businessName, phone, address, cuit, businessType, minimumOrder,
+  onEmailChange, onPasswordChange, onConfirmPasswordChange,
+  onBusinessNameChange, onPhoneChange, onAddressChange,
+  onCuitChange, onBusinessTypeChange, onMinimumOrderChange,
 }: {
   role: UserRole | null
   email: string
   password: string
+  confirmPassword: string
   businessName: string
   phone: string
   address: string
-  cityZone: string
-  coverageRadius: string
-  onEmailChange: (value: string) => void
-  onPasswordChange: (value: string) => void
-  onBusinessNameChange: (value: string) => void
-  onPhoneChange: (value: string) => void
-  onAddressChange: (value: string) => void
-  onCityZoneChange: (value: string) => void
-  onCoverageRadiusChange: (value: string) => void
+  cuit: string
+  businessType: string
+  minimumOrder: string
+  onEmailChange: (v: string) => void
+  onPasswordChange: (v: string) => void
+  onConfirmPasswordChange: (v: string) => void
+  onBusinessNameChange: (v: string) => void
+  onPhoneChange: (v: string) => void
+  onAddressChange: (v: string) => void
+  onCuitChange: (v: string) => void
+  onBusinessTypeChange: (v: string) => void
+  onMinimumOrderChange: (v: string) => void
 }) {
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
   const isDistributor = role === 'distribuidora'
+  const strength = getPasswordStrength(password)
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword
+  const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword
+
+  const strengthColor =
+    strength.level === 1 ? 'bg-red-400' :
+    strength.level === 2 ? 'bg-amber-400' :
+    strength.level === 3 ? 'bg-emerald-500' : 'bg-border'
+
+  const strengthTextColor =
+    strength.level === 1 ? 'text-red-500' :
+    strength.level === 2 ? 'text-amber-500' :
+    strength.level === 3 ? 'text-emerald-600' : ''
 
   return (
-    <div>
-      <div className="mb-6 border-b border-border pb-4">
-        <h2 className="font-heading text-xl font-semibold text-foreground">Datos básicos</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {isDistributor ? 'Información inicial de la empresa proveedora.' : 'Información inicial del punto de venta.'}
-        </p>
+    <div className="space-y-8">
+      {/* Section: Credenciales */}
+      <div>
+        <div className="mb-5 border-b border-border pb-4">
+          <h2 className="font-heading text-base font-semibold text-foreground">Credenciales de acceso</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">Con este email y contraseña vas a ingresar a la plataforma.</p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Email */}
+          <FormField icon={Mail} label="Email *">
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => onEmailChange(e.target.value)}
+              placeholder="tu@email.com"
+              required
+              className="h-12 bg-background pl-11"
+            />
+          </FormField>
+
+          {/* Password */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">Contraseña *</Label>
+            <div className="relative">
+              <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => onPasswordChange(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                required
+                className="h-12 bg-background pl-11 pr-10"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPassword(p => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {password.length > 0 && (
+              <div className="space-y-1 pt-0.5">
+                <div className="flex gap-1">
+                  {[1, 2, 3].map((level) => (
+                    <div
+                      key={level}
+                      className={`h-1 flex-1 rounded-full transition-colors duration-200 ${strength.level >= level ? strengthColor : 'bg-border'}`}
+                    />
+                  ))}
+                </div>
+                <p className={`text-xs font-medium ${strengthTextColor}`}>{strength.label}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Confirm password */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">Confirmar contraseña *</Label>
+            <div className="relative">
+              <ShieldCheck className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => onConfirmPasswordChange(e.target.value)}
+                placeholder="Repetí la contraseña"
+                required
+                className={`h-12 bg-background pl-11 pr-10 ${passwordsMismatch ? 'border-destructive focus-visible:ring-destructive/30' : passwordsMatch ? 'border-emerald-500 focus-visible:ring-emerald-500/30' : ''}`}
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowConfirmPassword(p => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {passwordsMismatch && (
+              <p className="text-xs font-medium text-destructive">Las contraseñas no coinciden</p>
+            )}
+            {passwordsMatch && (
+              <p className="flex items-center gap-1 text-xs font-medium text-emerald-600">
+                <Check className="h-3 w-3" /> Las contraseñas coinciden
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Credentials */}
-        <FormField icon={Mail} label="Email">
-          <Input
-            type="email"
-            value={email}
-            onChange={(event) => onEmailChange(event.target.value)}
-            placeholder="tu@email.com"
-            required
-            className="h-12 bg-background pl-11"
-          />
-        </FormField>
+      {/* Section: Negocio */}
+      <div>
+        <div className="mb-5 border-b border-border pb-4">
+          <h2 className="font-heading text-base font-semibold text-foreground">
+            {isDistributor ? 'Información de la empresa' : 'Información del comercio'}
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {isDistributor ? 'Datos básicos de tu empresa proveedora.' : 'Datos básicos de tu punto de venta.'}
+          </p>
+        </div>
 
-        <FormField icon={KeyRound} label="Contraseña">
-          <Input
-            type="password"
-            value={password}
-            onChange={(event) => onPasswordChange(event.target.value)}
-            placeholder="Mínimo 6 caracteres"
-            required
-            className="h-12 bg-background pl-11"
-          />
-        </FormField>
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Business name */}
+          <FormField icon={isDistributor ? Building2 : Store} label={isDistributor ? 'Nombre de la empresa *' : 'Nombre del comercio *'}>
+            <Input
+              value={businessName}
+              onChange={(e) => onBusinessNameChange(e.target.value)}
+              placeholder={isDistributor ? 'Ej: Bebidas del Sur' : 'Ej: Almacén Don Pedro'}
+              required
+              className="h-12 bg-background pl-11"
+            />
+          </FormField>
 
-        {/* Business info */}
-        <FormField icon={isDistributor ? Building2 : Store} label={isDistributor ? 'Nombre de la empresa' : 'Nombre del comercio'}>
-          <Input
-            value={businessName}
-            onChange={(event) => onBusinessNameChange(event.target.value)}
-            placeholder={isDistributor ? 'Ej: Bebidas del Sur' : 'Ej: Almacén Don Pedro'}
-            className="h-12 bg-background pl-11"
-          />
-        </FormField>
+          {/* Phone */}
+          <FormField icon={Phone} label="Teléfono *">
+            <Input
+              value={phone}
+              onChange={(e) => onPhoneChange(e.target.value)}
+              placeholder="+54 11 1234-5678"
+              required
+              className="h-12 bg-background pl-11"
+            />
+          </FormField>
 
-        <FormField icon={Phone} label="Teléfono">
-          <Input
-            value={phone}
-            onChange={(event) => onPhoneChange(event.target.value)}
-            placeholder="+54 11 1234-5678"
-            className="h-12 bg-background pl-11"
-          />
-        </FormField>
+          {/* Address — full width */}
+          <div className="md:col-span-2">
+            <FormField icon={MapPin} label="Dirección *">
+              <Input
+                value={address}
+                onChange={(e) => onAddressChange(e.target.value)}
+                placeholder="Calle, número y localidad"
+                required
+                className="h-12 bg-background pl-11"
+              />
+            </FormField>
+          </div>
 
-        <FormField icon={MapPin} label="Dirección">
-          <Input
-            value={address}
-            onChange={(event) => onAddressChange(event.target.value)}
-            placeholder="Calle y número"
-            className="h-12 bg-background pl-11"
-          />
-        </FormField>
+          {/* CUIT */}
+          <FormField icon={CreditCard} label="CUIT (opcional)">
+            <Input
+              value={cuit}
+              onChange={(e) => onCuitChange(e.target.value)}
+              placeholder="20-12345678-9"
+              className="h-12 bg-background pl-11"
+            />
+          </FormField>
 
-        <FormField icon={isDistributor ? Route : MapPin} label={isDistributor ? 'Zona de cobertura inicial' : 'Ciudad / zona'}>
-          <Input
-            value={isDistributor ? coverageRadius : cityZone}
-            onChange={(event) => isDistributor ? onCoverageRadiusChange(event.target.value) : onCityZoneChange(event.target.value)}
-            placeholder={isDistributor ? 'Ej: 15 km' : 'Ej: Avellaneda, Centro'}
-            className="h-12 bg-background pl-11"
-          />
-        </FormField>
+          {/* Tipo de comercio (comercio only) / Pedido mínimo (distribuidora only) */}
+          {isDistributor ? (
+            <FormField icon={Banknote} label="Pedido mínimo (opcional)">
+              <Input
+                type="number"
+                min="0"
+                value={minimumOrder}
+                onChange={(e) => onMinimumOrderChange(e.target.value)}
+                placeholder="Ej: 5000"
+                className="h-12 bg-background pl-11"
+              />
+            </FormField>
+          ) : (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Tipo de negocio (opcional)</Label>
+              <div className="flex flex-wrap gap-2">
+                {COMMERCE_TYPES.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => onBusinessTypeChange(businessType === type ? '' : type)}
+                    className={`rounded-xl border px-3 py-2 text-sm font-medium transition-all ${
+                      businessType === type
+                        ? 'border-primary bg-accent text-primary'
+                        : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -551,100 +735,150 @@ function LocationStep({
   cityZone,
   coverageRadius,
   deliveryZones,
+  selectedCategories,
   onCoverageRadiusChange,
   onDeliveryZonesChange,
   onSelectZone,
+  onCategoryToggle,
 }: {
   role: UserRole | null
   cityZone: string
   coverageRadius: string
   deliveryZones: string
-  onCoverageRadiusChange: (value: string) => void
-  onDeliveryZonesChange: (value: string) => void
+  selectedCategories: string[]
+  onCoverageRadiusChange: (v: string) => void
+  onDeliveryZonesChange: (v: string) => void
   onSelectZone: (zone: string) => void
+  onCategoryToggle: (cat: string) => void
 }) {
   const isDistributor = role === 'distribuidora'
   const selectedZones = deliveryZones.split(',').map(item => item.trim()).filter(Boolean)
 
   return (
-    <div className="grid gap-6 md:grid-cols-[1fr_360px]">
+    <div className="space-y-8">
+      {/* Location / Coverage section */}
       <div>
-        <div className="mb-6 border-b border-border pb-4">
-          <h2 className="font-heading text-xl font-semibold text-foreground">
+        <div className="mb-5 border-b border-border pb-4">
+          <h2 className="font-heading text-base font-semibold text-foreground">
             {isDistributor ? 'Configurá tu reparto' : 'Confirmá tu ubicación'}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {isDistributor ? 'Estos datos ayudan a mostrarte a los comercios correctos.' : 'Esto ayuda a ordenar proveedores cercanos.'}
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {isDistributor
+              ? 'Estos datos ayudan a mostrarte a los comercios correctos.'
+              : 'Esto ayuda a ordenar proveedores cercanos a tu negocio.'}
           </p>
         </div>
 
-        <div className="space-y-4">
-          {isDistributor ? (
-            <>
-              <FormField icon={Route} label="Radio de entrega">
-                <Input
-                  value={coverageRadius}
-                  onChange={(event) => onCoverageRadiusChange(event.target.value)}
-                  placeholder="Ej: 20 km"
-                  className="h-12 bg-background pl-11"
-                />
+        <div className="grid gap-6 md:grid-cols-[1fr_320px]">
+          <div className="space-y-4">
+            {isDistributor ? (
+              <>
+                <FormField icon={Route} label="Radio de entrega (km)">
+                  <Input
+                    value={coverageRadius}
+                    onChange={(e) => onCoverageRadiusChange(e.target.value)}
+                    placeholder="Ej: 20"
+                    className="h-12 bg-background pl-11"
+                  />
+                </FormField>
+                <FormField icon={MapPin} label="Zonas donde reparte">
+                  <Input
+                    value={deliveryZones}
+                    onChange={(e) => onDeliveryZonesChange(e.target.value)}
+                    placeholder="Ej: Quilmes, Avellaneda, Lanús"
+                    className="h-12 bg-background pl-11"
+                  />
+                </FormField>
+              </>
+            ) : (
+              <FormField icon={MapPin} label="Ubicación principal">
+                <Input value={cityZone} readOnly className="h-12 bg-background pl-11" />
               </FormField>
-              <FormField icon={MapPin} label="Zonas donde reparte">
-                <Input
-                  value={deliveryZones}
-                  onChange={(event) => onDeliveryZonesChange(event.target.value)}
-                  placeholder="Ej: Quilmes, Avellaneda, Lanús"
-                  className="h-12 bg-background pl-11"
-                />
-              </FormField>
-            </>
-          ) : (
-            <FormField icon={MapPin} label="Ubicación principal">
-              <Input value={cityZone} readOnly className="h-12 bg-background pl-11" />
-            </FormField>
-          )}
+            )}
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {zones.map((zone) => {
-              const selected = isDistributor ? selectedZones.includes(zone) : cityZone.includes(zone)
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {zones.map((zone) => {
+                const selected = isDistributor ? selectedZones.includes(zone) : cityZone.includes(zone)
+                return (
+                  <button
+                    type="button"
+                    key={zone}
+                    onClick={() => onSelectZone(zone)}
+                    className={`rounded-xl border px-3 py-3 text-sm font-medium transition-all ${
+                      selected
+                        ? 'border-primary bg-accent text-primary'
+                        : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground'
+                    }`}
+                  >
+                    {zone}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-muted/40 p-5">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              {isDistributor ? <Truck className="h-6 w-6" /> : <Store className="h-6 w-6" />}
+            </div>
+            <h3 className="font-heading text-lg font-semibold text-foreground">
+              {isDistributor ? 'Tus zonas visibles' : 'Proveedores cerca'}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {isDistributor
+                ? `Los comercios dentro de ${coverageRadius || 'tu radio'} km van a poder encontrarte.`
+                : 'Al finalizar, vas a ver distribuidoras ordenadas por cercanía.'}
+            </p>
+            <div className="mt-4 rounded-xl bg-card p-3 text-sm text-muted-foreground">
+              {isDistributor ? deliveryZones || 'Sin zonas seleccionadas' : cityZone || 'Ubicación pendiente'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Categories section — distribuidora only */}
+      {isDistributor && (
+        <div>
+          <div className="mb-5 border-b border-border pb-4">
+            <h2 className="font-heading text-base font-semibold text-foreground">Rubros que manejás</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Seleccioná las categorías de productos que distribuís. Podés cambiarlas después.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {PRODUCT_CATEGORIES.map((cat) => {
+              const selected = selectedCategories.includes(cat)
               return (
                 <button
+                  key={cat}
                   type="button"
-                  key={zone}
-                  onClick={() => onSelectZone(zone)}
-                  className={`rounded-xl border px-3 py-3 text-sm font-medium transition-all ${
+                  onClick={() => onCategoryToggle(cat)}
+                  className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
                     selected
                       ? 'border-primary bg-accent text-primary'
                       : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground'
                   }`}
                 >
-                  {zone}
+                  {selected && <Check className="h-3.5 w-3.5" />}
+                  {cat}
                 </button>
               )
             })}
           </div>
-        </div>
-      </div>
 
-      <div className="rounded-2xl border border-border bg-muted/40 p-5">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {isDistributor ? <Truck className="h-6 w-6" /> : <Store className="h-6 w-6" />}
+          {selectedCategories.length > 0 && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              {selectedCategories.length} {selectedCategories.length === 1 ? 'rubro seleccionado' : 'rubros seleccionados'}
+            </p>
+          )}
         </div>
-        <h3 className="font-heading text-lg font-semibold text-foreground">
-          {isDistributor ? 'Tus zonas visibles' : 'Proveedores cerca'}
-        </h3>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          {isDistributor
-            ? `Los comercios dentro de ${coverageRadius || 'tu radio'} van a poder encontrar tus productos.`
-            : 'Al finalizar, vas a entrar al home de Comercio para ver distribuidoras cercanas.'}
-        </p>
-        <div className="mt-5 rounded-xl bg-card p-4 text-sm text-muted-foreground">
-          {isDistributor ? deliveryZones || 'Sin zonas seleccionadas' : cityZone || 'Ubicación pendiente'}
-        </div>
-      </div>
+      )}
     </div>
   )
 }
+
+// ─── Shared UI helpers ────────────────────────────────────────────────────────
 
 function FormField({
   icon: Icon,

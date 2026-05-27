@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Package, ShoppingCart, ChevronRight, X } from 'lucide-react'
+import { Package, ShoppingCart, ChevronRight, X, Store, MapPin, Star } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { formatCurrency } from '@/lib/mock-data'
 import { useApp } from '@/lib/app-context'
@@ -11,6 +11,7 @@ import { useProducts, useDistributors, useCategories } from '@/hooks/use-data'
 import { Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { ProductCard } from '@/components/product-card'
+import { ProductCardSkeleton } from '@/components/ui/SkeletonCard'
 // ── Floating Cart Bar ────────────────────────────────────────────────────────
 
 function FloatingCartBar() {
@@ -93,38 +94,6 @@ function FloatingCartBar() {
   )
 }
 
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
-function ProductSkeleton({ view }: { view: 'grid' | 'list' }) {
-  if (view === 'list') {
-    return (
-      <div className="bg-white rounded-2xl border border-[#DFE1E8] p-3 flex items-center gap-3 animate-pulse">
-        <div className="h-16 w-16 rounded-xl bg-gray-100 shrink-0" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 bg-gray-100 rounded w-3/4" />
-          <div className="h-3 bg-gray-100 rounded w-1/2" />
-          <div className="h-5 bg-gray-100 rounded w-1/3" />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <div className="h-8 w-24 bg-gray-100 rounded-xl" />
-          <div className="h-8 w-24 bg-gray-100 rounded-xl" />
-        </div>
-      </div>
-    )
-  }
-  return (
-    <div className="bg-white rounded-2xl border border-[#DFE1E8] overflow-hidden animate-pulse">
-      <div className="h-44 bg-gray-100 mx-3 mt-3 rounded-xl" />
-      <div className="p-4 space-y-3">
-        <div className="h-4 bg-gray-100 rounded w-4/5" />
-        <div className="h-3 bg-gray-100 rounded w-1/2" />
-        <div className="h-7 bg-gray-100 rounded w-1/3" />
-        <div className="h-9 bg-gray-100 rounded-xl" />
-      </div>
-    </div>
-  )
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BuscarPage() {
@@ -132,8 +101,10 @@ export default function BuscarPage() {
   const router = useRouter()
   const selectedCategory = searchParams.get('categoria')
   const ofertaFilter = searchParams.get('oferta') === '1'
+  const queryParam = searchParams.get('q') ?? ''
 
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(queryParam)
+  const [debouncedQuery, setDebouncedQuery] = useState(queryParam)
   const [quantities, setQuantities]   = useState<Record<string, number>>({})
   const [justAdded, setJustAdded]     = useState<Record<string, boolean>>({})
   const { addToCart, getCartItemCount, cart } = useApp()
@@ -141,6 +112,16 @@ export default function BuscarPage() {
   const { data: products, loading: isLoading } = useProducts()
   const { data: distributors } = useDistributors()
   const { data: allCategories } = useCategories()
+
+  useEffect(() => {
+    setSearchQuery(queryParam)
+    setDebouncedQuery(queryParam)
+  }, [queryParam])
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 300)
+    return () => clearTimeout(t)
+  }, [searchQuery])
 
   const handleCategoryClick = (name: string | null) => {
     if (name) {
@@ -150,27 +131,59 @@ export default function BuscarPage() {
     }
   }
 
-  const activeProducts = products.filter((p: Product) => p.active)
-  const filteredProducts = activeProducts.filter((p: Product) => {
-    const q = searchQuery.toLowerCase()
-    const matchesSearch = p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+  const distributorMap = useMemo(() => new Map(distributors.map(d => [d.id, d])), [distributors])
+
+  const activeProducts = useMemo(() => products.filter((p: Product) => p.active), [products])
+
+  const normalizedQuery = debouncedQuery.trim()
+  const normalizedSearch = normalizedQuery.toLowerCase()
+
+  const matchingDistributors = useMemo(() => {
+    if (!normalizedSearch) return []
+    return distributors.filter(distributor => {
+      const distributorProducts = activeProducts.filter(product => product.distribuidoraId === distributor.id)
+      return (
+        distributor.companyName.toLowerCase().includes(normalizedSearch) ||
+        distributor.categories.some(category => category.toLowerCase().includes(normalizedSearch)) ||
+        distributorProducts.some(product =>
+          product.name.toLowerCase().includes(normalizedSearch) ||
+          product.category.toLowerCase().includes(normalizedSearch)
+        )
+      )
+    })
+  }, [distributors, activeProducts, normalizedSearch])
+
+  const filteredProducts = useMemo(() => activeProducts.filter((p: Product) => {
+    const q = normalizedSearch
+    const distributor = distributorMap.get(p.distribuidoraId)
+    const matchesSearch = !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      (distributor?.companyName.toLowerCase().includes(q) ?? false)
     const matchesCategory = !selectedCategory || p.category === selectedCategory
     const matchesOffer = !ofertaFilter || p.isOffer === true
     return matchesSearch && matchesCategory && matchesOffer
-  })
-  const pageTitle = ofertaFilter ? 'Ofertas' : selectedCategory ? `Productos de ${selectedCategory}` : 'Buscar productos'
+  }), [activeProducts, normalizedSearch, distributorMap, selectedCategory, ofertaFilter])
+  const pageTitle = normalizedQuery
+    ? `Resultados para "${normalizedQuery}"`
+    : ofertaFilter
+      ? 'Ofertas'
+      : selectedCategory
+        ? `Productos de ${selectedCategory}`
+        : 'Buscar productos'
 
   const getQty = (id: string) => quantities[id] ?? 1
   const setQty = (id: string, v: number) => setQuantities(prev => ({ ...prev, [id]: v }))
 
   const handleAdd = useCallback((product: Product) => {
-    const dist = distributors.find(d => d.id === product.distribuidoraId)
+    const dist = distributorMap.get(product.distribuidoraId)
     if (!dist) return
     const qty = quantities[product.id] ?? 1
-    addToCart(product, dist.companyName, qty)
+    const added = addToCart(product, dist.companyName, qty)
+    if (!added) return
     setJustAdded(prev => ({ ...prev, [product.id]: true }))
     setTimeout(() => setJustAdded(prev => ({ ...prev, [product.id]: false })), 2000)
-  }, [addToCart, quantities, distributors])
+  }, [addToCart, quantities, distributorMap])
 
   const hasCartItems = !!(cart && cart.items.length > 0)
 
@@ -254,17 +267,77 @@ export default function BuscarPage() {
           </div>
         </header>
 
+        {normalizedQuery && matchingDistributors.length > 0 && (
+          <section className="mb-7">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Distribuidoras
+                </p>
+                <h2 className="font-heading text-base font-bold tracking-tight text-[#0B1A45] md:text-lg">
+                  Proveedores que coinciden
+                </h2>
+              </div>
+              <span className="rounded-full border border-[#DFE1E8] bg-white px-3 py-1 text-xs font-bold text-[#0B1A45] shadow-sm">
+                {matchingDistributors.length}
+              </span>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {matchingDistributors.slice(0, 6).map(distributor => (
+                <Link
+                  key={distributor.id}
+                  href={`/comercio/distribuidora/${distributor.id}`}
+                  className="group rounded-[1.35rem] border border-[#DFE1E8] bg-white p-3 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_12px_32px_rgba(11,26,69,0.06)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[#0B1A45]/20 hover:shadow-[0_16px_42px_rgba(11,26,69,0.10)]"
+                >
+                  <article className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F1FFD1] font-heading text-sm font-bold text-[#0B1A45] ring-1 ring-[#C8FF00]/45">
+                      {distributor.initials || distributor.companyName.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="truncate text-sm font-bold text-[#0B1A45] transition-colors group-hover:text-[#17295C]">
+                            {distributor.companyName}
+                          </h3>
+                          <p className="mt-0.5 truncate text-xs font-medium text-[#7A839C]">
+                            {distributor.categories.slice(0, 3).join(' · ')}
+                          </p>
+                        </div>
+                        <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-[#7A839C] transition-transform group-hover:translate-x-0.5 group-hover:text-[#0B1A45]" />
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-[#7A839C]">
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {distributor.distance}
+                        </span>
+                        {distributor.rating ? (
+                          <span className="inline-flex items-center gap-1 text-[#0B1A45]">
+                            <Star className="h-3.5 w-3.5 fill-current" />
+                            {distributor.rating.toFixed(1)}
+                          </span>
+                        ) : null}
+                        <span className="inline-flex items-center gap-1">
+                          <Store className="h-3.5 w-3.5" />
+                          Mín. {formatCurrency(distributor.minOrder)}
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="flex-1 min-w-0">
             {isLoading ? (
               <>
-                <div className="grid grid-cols-2 gap-3 lg:hidden px-4">
-                  {[...Array(4)].map((_, i) => <ProductSkeleton key={i} view="grid" />)}
-                </div>
-                <div className="hidden lg:grid grid-cols-3 gap-4">
-                  {[...Array(6)].map((_, i) => <ProductSkeleton key={i} view="grid" />)}
-                </div>
+                <ProductCardSkeleton count={4} className="px-4 lg:hidden" />
+                <ProductCardSkeleton count={8} className="hidden lg:grid" />
               </>
-            ) : filteredProducts.length === 0 ? (
+            ) : filteredProducts.length === 0 && matchingDistributors.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
                 <div className="h-14 w-14 rounded-2xl bg-white border border-[#DFE1E8] flex items-center justify-center shadow-sm">
                   <Package className="h-7 w-7 text-gray-300" />
@@ -272,7 +345,7 @@ export default function BuscarPage() {
                 <p className="font-bold text-[#0B1A45]">Sin resultados</p>
                 <p className="text-sm text-[#7A839C]">Probá con otro término o categoría</p>
                 <button
-                  onClick={() => { setSearchQuery(''); handleCategoryClick(null) }}
+                  onClick={() => { setSearchQuery(''); router.replace('/comercio/buscar') }}
                   className="text-[#0B1A45] text-sm font-semibold underline mt-1"
                 >
                   Limpiar filtros
@@ -280,14 +353,16 @@ export default function BuscarPage() {
               </div>
             ) : (
               <>
-                <p className="text-xs text-[#7A839C] mb-4 font-medium">
-                  {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
-                </p>
+                {filteredProducts.length > 0 && (
+                  <p className="text-xs text-[#7A839C] mb-4 font-medium">
+                    {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+                  </p>
+                )}
 
                 {/* Mobile — 2-col grid */}
                 <div className="grid grid-cols-2 gap-3 lg:hidden px-4">
                   {filteredProducts.map((product: Product) => {
-                    const dist = distributors.find(d => d.id === product.distribuidoraId)
+                    const dist = distributorMap.get(product.distribuidoraId)
                     return (
                       <ProductCard
                         key={product.id}
@@ -307,7 +382,7 @@ export default function BuscarPage() {
                 {/* Desktop — grid */}
                 <div className="hidden lg:grid grid-cols-4 gap-3">
                   {filteredProducts.map((product: Product) => {
-                    const dist = distributors.find(d => d.id === product.distribuidoraId)
+                    const dist = distributorMap.get(product.distribuidoraId)
                     return (
                       <ProductCard
                         key={product.id}

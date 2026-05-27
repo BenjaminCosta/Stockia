@@ -1,25 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Store, MapPin, Phone, Mail, FileText, Bell, Shield, ChevronRight, LogOut, Edit, Settings, MessageSquare, Save, X, Star } from 'lucide-react'
+import { Store, MapPin, Phone, Mail, FileText, Shield, ChevronRight, LogOut, Edit, Settings, MessageSquare, Save, X, Star } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { Comercio } from '@/lib/types'
-import { Switch } from '@/components/ui/switch'
 import { useComercioOrders } from '@/hooks/use-data'
 import { FeedbackModal } from '@/components/FeedbackModal'
+import { normalizeCitySlug } from '@/lib/firebase/geo'
 import { updateDocument } from '@/lib/firebase/firestore'
 import { COLLECTIONS } from '@/lib/firebase/collections'
 import { getCommerceRatingSummary } from '@/lib/data/commerce-reviews.service'
 import { getAllCommerceReviewsByCommerce } from '@/lib/data/commerce-reviews.service'
 import type { CommerceReview } from '@/lib/types'
 import { StarDisplay } from '@/components/star-rating'
-
-const notifications = [
-  { label: 'Actualizaciones de pedidos', sub: 'Recibí notificaciones cuando cambia el estado de un pedido', defaultOn: true },
-  { label: 'Nuevas distribuidoras', sub: 'Te avisamos cuando llega una nueva distribuidora a tu zona', defaultOn: true },
-  { label: 'Ofertas y promociones', sub: 'Descuentos y novedades de tus distribuidoras favoritas', defaultOn: false },
-]
+import { SkeletonBlock } from '@/components/ui/SkeletonCard'
 
 // ─── Editable info section ─────────────────────────────────────────────────────
 
@@ -52,6 +48,7 @@ function EditableInfoSection({ comercio }: { comercio: Comercio | null }) {
         phone: form.phone,
         address: form.address,
         city: form.city,
+        citySlug: normalizeCitySlug(form.city),
       })
       setSaved(true)
       setEditing(false)
@@ -77,7 +74,7 @@ function EditableInfoSection({ comercio }: { comercio: Comercio | null }) {
   ]
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
+    <section id="perfil-comercio" className="scroll-mt-28 bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-bold text-foreground text-sm uppercase tracking-wider">Datos del negocio</h2>
         <div className="flex items-center gap-2">
@@ -128,7 +125,7 @@ function EditableInfoSection({ comercio }: { comercio: Comercio | null }) {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -151,14 +148,26 @@ function ComercioReviewsSection({ comercioId }: { comercioId: string }) {
   }, [comercioId])
 
   if (loading) return (
-    <div className="bg-white rounded-3xl shadow-sm border border-border p-6">
-      <div className="h-4 w-32 bg-gray-100 rounded animate-pulse mb-4" />
-      <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-16 bg-gray-50 rounded-2xl animate-pulse" />)}</div>
+    <div className="rounded-3xl border border-[#DFE1E8] bg-white p-6 shadow-[0_14px_38px_rgba(11,26,69,0.06)]" aria-busy="true" aria-label="Cargando reseñas">
+      <SkeletonBlock className="mb-5 h-4 w-36" />
+      <div className="mb-5 flex items-center gap-5 rounded-2xl bg-[#F7F8FA] p-4">
+        <SkeletonBlock className="h-16 w-16 shrink-0 rounded-2xl" />
+        <div className="grid flex-1 grid-cols-2 gap-2">
+          {[0, 1, 2, 3].map(item => (
+            <SkeletonBlock key={item} className="h-12 rounded-xl bg-white" />
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {[0, 1].map(item => (
+          <SkeletonBlock key={item} className="h-20 rounded-2xl" />
+        ))}
+      </div>
     </div>
   )
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
+    <section id="resenas-comercio" className="scroll-mt-28 bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
       <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-5">Reseñas recibidas</h2>
 
       {summary && summary.reviewCount > 0 ? (
@@ -222,7 +231,7 @@ function ComercioReviewsSection({ comercioId }: { comercioId: string }) {
           <p className="text-xs text-gray-400 mt-1">Las distribuidoras podrán calificarte luego de cada pedido.</p>
         </div>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -232,6 +241,7 @@ export default function CuentaPage() {
   const router = useRouter()
   const { currentUser, logout } = useApp()
   const [showFeedback, setShowFeedback] = useState(false)
+  const [commerceSummary, setCommerceSummary] = useState<Awaited<ReturnType<typeof getCommerceRatingSummary>> | null>(null)
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
 
   const storeName = comercio?.storeName || 'Mi comercio'
@@ -240,6 +250,23 @@ export default function CuentaPage() {
 
   const { data: myOrders } = useComercioOrders(comercio?.id || 'com-1')
   const uniqueDistributors = new Set(myOrders.map(o => o.distribuidoraId)).size
+  const reviewCount = commerceSummary?.reviewCount ?? 0
+
+  useEffect(() => {
+    if (!comercio?.id) {
+      setCommerceSummary(null)
+      return
+    }
+
+    let mounted = true
+    getCommerceRatingSummary(comercio.id).then(summary => {
+      if (mounted) setCommerceSummary(summary)
+    })
+
+    return () => {
+      mounted = false
+    }
+  }, [comercio?.id])
 
   const handleLogout = () => {
     logout()
@@ -249,19 +276,33 @@ export default function CuentaPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Dark hero header */}
-      <div className="bg-primary pt-8 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-b-3xl md:mt-4 md:mx-4 overflow-hidden shadow-lg">
-        <svg className="absolute inset-0 w-full h-full opacity-[0.06]" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="90%" cy="20%" r="80" fill="none" stroke="white" strokeWidth="5" />
-          <rect x="5%" y="65%" width="70" height="70" fill="none" stroke="white" strokeWidth="4" transform="rotate(15)" />
+      <div className="relative overflow-hidden bg-[#080f2b] px-4 pb-20 pt-7 shadow-[0_18px_52px_rgba(8,15,43,0.18)] md:mx-4 md:mt-4 md:rounded-b-[1.75rem] md:px-8 md:pb-24 md:pt-8">
+        <div className="absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#0B1A45] opacity-80 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-12 -right-12 h-48 w-48 rounded-full bg-[#0B1A45]/60 blur-2xl pointer-events-none" />
+        <div className="absolute right-1/4 top-0 h-32 w-32 rounded-full bg-lima/4 blur-3xl pointer-events-none" />
+
+        <svg className="absolute inset-0 h-full w-full opacity-[0.04] pointer-events-none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <circle cx="92%" cy="-10%" r="38%" fill="none" stroke="white" strokeWidth="32" />
+          <circle cx="8%" cy="110%" r="22%" fill="none" stroke="white" strokeWidth="20" />
+          <line x1="0" y1="100%" x2="100%" y2="0" stroke="white" strokeWidth="0.8" opacity="0.6" />
+          <line x1="0" y1="70%" x2="70%" y2="0" stroke="white" strokeWidth="0.5" opacity="0.4" />
+          <circle cx="15%" cy="30%" r="1.5" fill="white" opacity="0.5" />
+          <circle cx="22%" cy="55%" r="1" fill="white" opacity="0.3" />
         </svg>
-        <div className="max-w-5xl mx-auto relative z-10 flex items-start justify-between">
+
+        <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle,rgba(255,255,255,1)_1px,transparent_1px)] bg-size-[18px_18px] pointer-events-none" />
+
+        <div className="relative z-10 mx-auto flex max-w-5xl items-start justify-between">
           <div className="flex items-center gap-4 md:gap-6">
-            <div className="h-16 w-16 md:h-24 md:w-24 rounded-2xl md:rounded-3xl bg-primary flex items-center justify-center font-heading font-bold text-2xl md:text-4xl text-white shrink-0 shadow-inner border border-white/10">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-white font-heading text-2xl font-bold text-[#080f2b] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_16px_34px_rgba(0,0,0,0.22)] md:h-24 md:w-24 md:rounded-3xl md:text-4xl">
               {initials}
             </div>
-            <div>
-              <h1 className="font-heading font-bold text-xl md:text-3xl text-white leading-tight">{storeName}</h1>
-              <div className="flex items-center gap-1.5 text-white/70 text-sm md:text-base mt-2 font-medium bg-white/10 px-3 py-1 rounded-full w-max">
+            <div className="min-w-0">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-lima/60 md:text-xs">
+                Cuenta comercio
+              </p>
+              <h1 className="font-heading text-xl font-bold leading-tight tracking-tight text-white md:text-4xl">{storeName}</h1>
+              <div className="mt-2 flex w-max max-w-full items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-medium text-white/70 md:text-base">
                 <MapPin className="h-3.5 w-3.5" /> {city}, Buenos Aires
               </div>
             </div>
@@ -288,16 +329,14 @@ export default function CuentaPage() {
                 </div>
                 <div className="pl-4 md:pl-0 md:pt-4 flex flex-col md:flex-row md:justify-between md:items-center">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 md:mb-0 text-center md:text-left">Reseñas</p>
-                  <p className="font-heading font-bold text-3xl md:text-2xl text-primary text-center md:text-left">
-                    <Star className="inline h-4 w-4 fill-current mb-0.5" />
-                  </p>
+                  <p className="font-heading font-bold text-3xl md:text-2xl text-foreground text-center md:text-left">{reviewCount}</p>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
             <div className="bg-white rounded-3xl shadow-sm border border-border divide-y divide-gray-100 overflow-hidden">
-              <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+              <Link href="/comercio/cuenta#perfil-comercio" className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
                 <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
                   <Store className="h-5 w-5 text-gray-500" />
                 </div>
@@ -306,8 +345,8 @@ export default function CuentaPage() {
                   <span className="block text-xs text-muted-foreground mt-0.5">Nombre, logo y datos de negocio</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
-              <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+              </Link>
+              <Link href="/comercio/seguridad" className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
                 <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
                   <Shield className="h-5 w-5 text-gray-500" />
                 </div>
@@ -316,17 +355,17 @@ export default function CuentaPage() {
                   <span className="block text-xs text-muted-foreground mt-0.5">Contraseña y acceso</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
-              <button className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
+              </Link>
+              <Link href="/comercio/configuracion" className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors">
                 <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center">
                   <Settings className="h-5 w-5 text-gray-500" />
                 </div>
                 <div className="flex-1">
                   <span className="block font-bold text-sm text-foreground">Configuración</span>
-                  <span className="block text-xs text-muted-foreground mt-0.5">Preferencias y notificaciones</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">Preferencias generales de la cuenta</span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
+              </Link>
               <button
                 onClick={() => setShowFeedback(true)}
                 className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors"
@@ -358,27 +397,6 @@ export default function CuentaPage() {
 
             {/* Reviews received from distributors */}
             {comercio?.id && <ComercioReviewsSection comercioId={comercio.id} />}
-
-            {/* Notifications */}
-            <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Notificaciones</h2>
-              <div className="space-y-6">
-                {notifications.map((item, i) => (
-                  <div key={i} className={`flex items-center justify-between gap-4 ${i !== 0 ? 'pt-6 border-t border-gray-100' : ''}`}>
-                    <div className="flex gap-4 items-start">
-                      <div className="h-10 w-10 rounded-xl bg-gray-50 items-center justify-center shrink-0 hidden md:flex">
-                        <Bell className="h-5 w-5 text-gray-500" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-base text-foreground">{item.label}</p>
-                        <p className="text-sm text-muted-foreground mt-1 max-w-md">{item.sub}</p>
-                      </div>
-                    </div>
-                    <Switch defaultChecked={item.defaultOn} className="data-[state=checked]:bg-primary shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>

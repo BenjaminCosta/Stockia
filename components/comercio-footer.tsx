@@ -1,13 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { Truck } from 'lucide-react'
 import { StockiaLogo } from '@/components/stockia-logo'
 
 const footerCols = [
   { title: 'Comprar', links: ['Distribuidores', 'Categorías', 'Ofertas', 'Mis pedidos'] },
   { title: 'Soporte', links: ['Centro de ayuda', 'Contacto', 'Términos', 'Privacidad'] },
-  { title: 'StockIA', links: ['Para distribuidoras', 'Cómo funciona', 'Empresa', 'Blog'] },
+  { title: 'StockIA', links: ['Para distribuidoras', 'Cómo funciona', 'Empresa'] },
 ]
 
 const footerLinks: Record<string, string> = {
@@ -15,14 +14,13 @@ const footerLinks: Record<string, string> = {
   'Categorías': '/comercio/buscar',
   'Ofertas': '/comercio/buscar',
   'Mis pedidos': '/comercio/pedidos',
-  'Centro de ayuda': '#',
-  'Contacto': '#',
-  'Términos': '#',
-  'Privacidad': '#',
+  'Centro de ayuda': '/comercio/ayuda',
+  'Contacto': '/comercio/contacto',
+  'Términos': '/comercio/terminos',
+  'Privacidad': '/comercio/privacidad',
   'Para distribuidoras': '/login',
-  'Cómo funciona': '#',
-  'Empresa': '#',
-  'Blog': '#',
+  'Cómo funciona': '/comercio/como-funciona',
+  'Empresa': '/comercio/empresa',
 }
 
 export function ComercioFooter() {
@@ -31,7 +29,7 @@ export function ComercioFooter() {
 
 
       {/* Main grid */}
-      <div className="max-w-[1400px] mx-auto px-8 py-12 grid grid-cols-12 gap-8 text-sm">
+      <div className="max-w-350 mx-auto px-8 py-12 grid grid-cols-12 gap-8 text-sm">
         {/* Brand col */}
         <div className="col-span-4">
           <StockiaLogo size={32} variant="white" className="h-8" />
@@ -82,7 +80,7 @@ export function ComercioFooter() {
 
       {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="max-w-[1400px] mx-auto px-8 py-4 flex items-center justify-between text-xs text-white/35">
+        <div className="max-w-350 mx-auto px-8 py-4 flex items-center justify-between text-xs text-white/35">
           <span>© 2026 StockIA. Todos los derechos reservados.</span>
           <span>Hecho en Argentina 🇦🇷</span>
         </div>

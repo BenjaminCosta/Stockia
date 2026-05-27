@@ -19,9 +19,15 @@ export interface FirestoreCommerce {
   address: string
   city: string
   province: string
-  lat: number
-  lng: number
+  /** URL-safe, accent-free slug of city — used for zone-matching. */
+  citySlug?: string
+  zone?: string
+  /** Real WGS-84 coords. Omitted when not yet geocoded. */
+  lat?: number
+  lng?: number
   status: 'active' | 'paused'
+  cuit?: string
+  businessType?: string
   createdAt: unknown
 }
 

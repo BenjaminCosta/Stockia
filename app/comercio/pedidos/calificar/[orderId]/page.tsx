@@ -8,6 +8,7 @@ import { useApp } from '@/lib/app-context'
 import { useOrder } from '@/hooks/use-data'
 import { createReview, getReviewByOrder } from '@/lib/data/reviews.service'
 import { StarPicker } from '@/components/star-rating'
+import { SkeletonBlock } from '@/components/ui/SkeletonCard'
 import { Comercio } from '@/lib/types'
 
 const criteria: { key: 'ratingFulfillment' | 'ratingDelivery' | 'ratingProductCondition' | 'ratingCommunication'; label: string; description: string }[] = [
@@ -67,8 +68,28 @@ function CalificarForm({ orderId }: { orderId: string }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <div className="flex min-h-screen flex-col bg-[#F4F5F7]" aria-busy="true" aria-label="Cargando calificación">
+        <header className="sticky top-0 z-40 border-b border-gray-100 bg-white">
+          <div className="mx-auto flex h-14 max-w-2xl items-center gap-3 px-4">
+            <SkeletonBlock className="h-9 w-9 rounded-xl" />
+            <SkeletonBlock className="h-4 w-40" />
+          </div>
+        </header>
+        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
+          <div className="rounded-3xl border border-[#DFE1E8] bg-white p-5 shadow-[0_16px_42px_rgba(11,26,69,0.08)]">
+            <SkeletonBlock className="mx-auto h-16 w-16 rounded-2xl" />
+            <SkeletonBlock className="mx-auto mt-4 h-5 w-52" />
+            <SkeletonBlock className="mx-auto mt-2 h-3 w-64 max-w-full" />
+            <div className="mt-6 space-y-3">
+              {[0, 1, 2, 3].map(item => (
+                <div key={item} className="rounded-2xl border border-[#DFE1E8] p-4">
+                  <SkeletonBlock className="h-4 w-44" />
+                  <SkeletonBlock className="mt-2 h-3 w-11/12" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
       </div>
     )
   }

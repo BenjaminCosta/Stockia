@@ -1,63 +1,126 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Clock, CreditCard, CheckCircle, Lock, Handshake, Info } from 'lucide-react'
+import {
+  ArrowLeft, Check, CheckCircle, Clock, CreditCard,
+  Handshake, Info, Lock, MapPin,
+} from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency, getEstimatedDeliveryDate } from '@/lib/mock-data'
 import { useDistributor } from '@/hooks/use-data'
 import { createOrder } from '@/lib/data/orders.service'
 import type { OrderItem } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 type PaymentMethod = 'mp' | 'external'
+
+// ─── Flow step indicator ───────────────────────────────────────────────────────
+
+function FlowSteps({ step }: { step: 1 | 2 | 3 }) {
+  const steps = [
+    { n: 1, label: 'Carrito' },
+    { n: 2, label: 'Checkout' },
+    { n: 3, label: 'Confirmado' },
+  ]
+  return (
+    <div className="flex items-center max-w-[220px]">
+      {steps.map((s, i) => (
+        <Fragment key={s.n}>
+          <div className="flex flex-col items-center gap-1">
+            <div className={cn(
+              'h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-colors',
+              s.n < step  ? 'bg-primary text-white' :
+              s.n === step ? 'bg-primary text-white ring-4 ring-primary/15' :
+              'bg-gray-100 text-gray-400'
+            )}>
+              {s.n < step ? <Check className="h-3 w-3" /> : s.n}
+            </div>
+            <span className={cn(
+              'text-[9px] font-semibold whitespace-nowrap',
+              s.n === step ? 'text-primary' : s.n < step ? 'text-foreground' : 'text-gray-400'
+            )}>
+              {s.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div className={cn('flex-1 h-px mx-1.5 mb-3.5', s.n < step ? 'bg-primary' : 'bg-gray-200')} />
+          )}
+        </Fragment>
+      ))}
+    </div>
+  )
+}
 
 // ─── Confirmation screens ─────────────────────────────────────────────────────
 
 function MpConfirmation() {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
-      <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
-        <CheckCircle className="h-10 w-10 text-green-600" />
+    <div className="min-h-screen bg-[#080f2b] flex flex-col items-center justify-center px-6 text-center relative overflow-hidden">
+      {/* Background texture */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(200,255,0,0.10),transparent_50%),radial-gradient(circle_at_bottom_left,rgba(11,26,69,0.8),transparent_60%)] pointer-events-none" />
+      <svg className="absolute inset-0 h-full w-full opacity-[0.04] pointer-events-none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <circle cx="90%" cy="10%" r="35%" fill="none" stroke="white" strokeWidth="28" />
+        <circle cx="10%" cy="90%" r="20%" fill="none" stroke="white" strokeWidth="16" />
+      </svg>
+
+      <div className="relative z-10 flex flex-col items-center max-w-sm">
+        {/* Icon */}
+        <div className="h-24 w-24 rounded-full bg-[#C8FF00]/10 ring-2 ring-[#C8FF00]/25 flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(200,255,0,0.15)]">
+          <CheckCircle className="h-12 w-12 text-[#C8FF00]" />
+        </div>
+
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#C8FF00]/60 mb-3">Pedido confirmado</p>
+        <h1 className="font-heading font-bold text-3xl text-white mb-3 leading-tight">
+          ¡Tu pedido está en camino!
+        </h1>
+        <p className="text-white/55 text-sm leading-relaxed mb-2">
+          Tu pago fue procesado correctamente. La distribuidora comenzará a prepararlo pronto.
+        </p>
+        <p className="text-white/30 text-xs">Redirigiendo a tus pedidos...</p>
       </div>
-      <h1 className="font-heading font-bold text-2xl text-foreground mb-2">¡Pedido confirmado!</h1>
-      <p className="text-muted-foreground mb-4">Tu pago fue procesado correctamente.</p>
-      <p className="text-sm text-gray-400">Redirigiendo a tus pedidos...</p>
     </div>
   )
 }
 
 function ExternalConfirmation({ distribuidoraName }: { distribuidoraName: string }) {
   return (
-    <div className="min-h-screen bg-[#F4F5F7] flex flex-col items-center justify-center px-6 text-center">
-      <div className="h-20 w-20 rounded-full bg-amber-50 flex items-center justify-center mb-6">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_60%)] flex flex-col items-center justify-center px-6 text-center">
+      {/* Icon */}
+      <div className="h-20 w-20 rounded-3xl bg-amber-50 border border-amber-100 flex items-center justify-center mb-6 shadow-sm">
         <Handshake className="h-10 w-10 text-amber-500" />
       </div>
-      <h1 className="font-heading font-bold text-2xl text-foreground mb-2">
-        Pedido enviado a la distribuidora
+
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-500/70 mb-2">Pedido enviado</p>
+      <h1 className="font-heading font-bold text-2xl md:text-3xl text-foreground mb-3 leading-tight max-w-sm">
+        Esperando confirmación de la distribuidora
       </h1>
-      <p className="text-gray-500 text-sm max-w-xs mb-6">
-        Cuando <span className="font-semibold text-gray-700">{distribuidoraName}</span> confirme el pedido,
-        se habilitarán los datos de contacto para coordinar el pago y la entrega.
+      <p className="text-muted-foreground text-sm max-w-xs mb-8 leading-relaxed">
+        <span className="font-semibold text-foreground">{distribuidoraName}</span> revisará stock y
+        condiciones. Cuando lo confirme, podrán coordinar pago y entrega.
       </p>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 max-w-xs w-full text-left mb-8">
-        <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Próximos pasos</p>
-        <div className="space-y-3">
+
+      {/* Próximos pasos */}
+      <div className="bg-white rounded-3xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] p-6 max-w-xs w-full text-left mb-8">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#7A839C] mb-4">Próximos pasos</p>
+        <div className="space-y-4">
           {[
-            { step: '1', text: 'La distribuidora revisa stock y condiciones' },
-            { step: '2', text: 'Confirma el pedido en la plataforma' },
-            { step: '3', text: 'Coordinan pago y entrega por fuera' },
-          ].map(s => (
-            <div key={s.step} className="flex items-start gap-3">
-              <div className="h-5 w-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                {s.step}
+            'La distribuidora revisa stock y condiciones',
+            'Confirma el pedido en la plataforma',
+            'Coordinan pago y entrega directamente',
+          ].map((text, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <div className="h-6 w-6 rounded-full bg-primary/8 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                {i + 1}
               </div>
-              <p className="text-sm text-gray-600">{s.text}</p>
+              <p className="text-sm text-muted-foreground leading-snug">{text}</p>
             </div>
           ))}
         </div>
       </div>
-      <p className="text-sm text-gray-400">Redirigiendo a tus pedidos...</p>
+
+      <p className="text-xs text-muted-foreground">Redirigiendo a tus pedidos...</p>
     </div>
   )
 }
@@ -72,25 +135,22 @@ export default function CheckoutPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
 
   const hasCart = !!cart && cart.items.length > 0
-
-  // Must be called before any early return
   const { data: distribuidora } = useDistributor(cart?.distribuidoraId || '')
 
   useEffect(() => {
-    // Only redirect to carrito when cart is empty AND we haven't confirmed yet.
-    // Without this guard, clearCart() would trigger a redirect before the
-    // intentional push to /pedidos had a chance to run.
     if (!hasCart && !confirmed) router.push('/comercio/carrito')
   }, [hasCart, confirmed, router])
 
   if (!hasCart) return null
 
   const total = getCartTotal()
+  const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0)
   const comercio = currentUser as { storeName?: string; address?: string } | null
   const deliveryDate = distribuidora
     ? getEstimatedDeliveryDate((distribuidora as any).deliveryTimeHours)
     : 'Próximos días hábiles'
   const deliveryLabel = distribuidora?.deliveryTimeLabel ?? '48 horas hábiles'
+  const isExternal = paymentMethod === 'external'
 
   const handleConfirmar = async () => {
     if (!currentUser || !cart) return
@@ -109,7 +169,7 @@ export default function CheckoutPage() {
         items,
         subtotal,
         total: subtotal,
-        paymentMethod: paymentMethod === 'mp' ? 'mercado_pago' : 'external',
+        paymentMethod: isExternal ? 'external' : 'mercado_pago',
       })
     } catch (err) {
       console.error('[checkout] createOrder failed', err)
@@ -120,18 +180,17 @@ export default function CheckoutPage() {
     setTimeout(() => {
       clearCart()
       router.push('/comercio/pedidos?success=true')
-    }, 3000)
+    }, 1500)
   }
 
   if (confirmed) {
-    return paymentMethod === 'mp'
-      ? <MpConfirmation />
-      : <ExternalConfirmation distribuidoraName={cart.distribuidoraName} />
+    return isExternal
+      ? <ExternalConfirmation distribuidoraName={cart.distribuidoraName} />
+      : <MpConfirmation />
   }
 
-  const isExternal = paymentMethod === 'external'
   const btnLabel = isExternal
-    ? `Enviar pedido a distribuidora`
+    ? 'Enviar pedido a la distribuidora'
     : `Confirmar y pagar ${formatCurrency(total)}`
 
   return (
@@ -139,112 +198,129 @@ export default function CheckoutPage() {
       <div className="max-w-5xl mx-auto px-4 py-6 md:px-8 md:py-8">
 
         {/* Header */}
-        <header className="mb-5 flex items-center gap-4 md:mb-8">
-          <Link href="/comercio/carrito" className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-white border border-[#DFE1E8] flex items-center justify-center text-[#0B1A45] hover:bg-gray-50 transition-colors active:scale-95 shadow-sm">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Checkout
-            </p>
-            <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">
-              Confirmar pedido
-            </h1>
-          </div>
-          {!isExternal && (
-            <div className="ml-auto flex items-center gap-1.5 text-xs md:text-sm font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-full">
-              <Lock className="h-3.5 w-3.5" /> Pago seguro
+        <header className="mb-5 md:mb-8 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/comercio/carrito"
+              className="h-10 w-10 rounded-full bg-white border border-[#DFE1E8] flex items-center justify-center text-[#0B1A45] hover:bg-gray-50 transition-colors active:scale-95 shadow-sm"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pedido</p>
+              <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">Checkout</h1>
             </div>
-          )}
+          </div>
+          <div className="flex items-center gap-3">
+            {!isExternal && (
+              <span className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-[#4A662E] bg-[#F1FFD1] border border-[#89B317]/25 px-3 py-1.5 rounded-full">
+                <Lock className="h-3 w-3" /> Pago seguro
+              </span>
+            )}
+            <FlowSteps step={2} />
+          </div>
         </header>
 
-        <div className="mt-4 grid grid-cols-1 gap-6 md:mt-0 md:grid-cols-12">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
 
           {/* Left column */}
-          <div className="md:col-span-7 space-y-6">
+          <div className="md:col-span-7 space-y-5">
 
-            {/* Delivery address */}
-            <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Dirección de entrega</h2>
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 bg-[#F1FFD1] text-[#4A662E] rounded-2xl flex items-center justify-center shrink-0">
-                  <MapPin className="h-6 w-6" />
+            {/* Dirección de entrega */}
+            <div className="bg-white rounded-3xl shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] border border-[#DFE1E8]/80 p-5 md:p-6">
+              <h2 className="font-bold text-xs uppercase tracking-widest text-[#7A839C] mb-4">Dirección de entrega</h2>
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 bg-[#F1FFD1] text-[#4A662E] rounded-xl flex items-center justify-center shrink-0">
+                  <MapPin className="h-5 w-5" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-bold text-foreground text-base md:text-lg">{comercio?.storeName || 'Mi comercio'}</p>
-                  <p className="text-sm md:text-base text-muted-foreground mt-1">
-                    {comercio?.address || 'Av. Mitre 1234, Avellaneda'}
+                <div>
+                  <p className="font-bold text-foreground text-sm">{comercio?.storeName || 'Mi comercio'}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {comercio?.address || 'Actualizá tu dirección en Cuenta'}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Estimated delivery */}
-            <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Entrega estimada</h2>
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
-                  <Clock className="h-6 w-6" />
+            {/* Entrega estimada */}
+            <div className="bg-white rounded-3xl shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] border border-[#DFE1E8]/80 p-5 md:p-6">
+              <h2 className="font-bold text-xs uppercase tracking-widest text-[#7A839C] mb-4">Entrega estimada</h2>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0">
+                  <Clock className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="font-bold text-foreground text-base md:text-lg capitalize">{deliveryDate}</p>
-                  <p className="text-sm md:text-base text-muted-foreground mt-1">
+                  <p className="font-bold text-foreground text-sm capitalize">{deliveryDate}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     {cart.distribuidoraName} · {deliveryLabel}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Payment method */}
-            <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Método de pago</h2>
-              <div className="space-y-4">
+            {/* Método de pago */}
+            <div className="bg-white rounded-3xl shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] border border-[#DFE1E8]/80 p-5 md:p-6">
+              <h2 className="font-bold text-xs uppercase tracking-widest text-[#7A839C] mb-4">Método de pago</h2>
+              <div className="space-y-3">
+
                 {/* Mercado Pago */}
                 <button
                   onClick={() => setPaymentMethod('mp')}
-                  className={`w-full flex items-center gap-4 p-5 rounded-2xl border-2 transition-all text-left ${
-                    paymentMethod === 'mp' ? 'border-primary bg-[#F1FFD1]/50' : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                  className={cn(
+                    'w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left',
+                    paymentMethod === 'mp'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  )}
                 >
-                  <div className="h-12 w-12 bg-blue-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
-                    <CreditCard className="h-6 w-6" />
+                  <div className="h-11 w-11 bg-[#009EE3] rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
+                    <CreditCard className="h-5 w-5" />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-foreground text-base">Mercado Pago</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">Pagá con saldo, tarjeta o QR</p>
+                  <div className="flex-1 text-left">
+                    <p className="font-bold text-foreground text-sm">Mercado Pago</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Saldo, tarjeta o QR</p>
                   </div>
-                  <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === 'mp' ? 'border-primary' : 'border-gray-300'}`}>
-                    {paymentMethod === 'mp' && <div className="h-3 w-3 rounded-full bg-primary" />}
+                  <div className={cn(
+                    'h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0',
+                    paymentMethod === 'mp' ? 'border-primary' : 'border-gray-300'
+                  )}>
+                    {paymentMethod === 'mp' && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
                   </div>
                 </button>
 
                 {/* Coordinar con distribuidora */}
                 <button
                   onClick={() => setPaymentMethod('external')}
-                  className={`w-full flex items-center gap-4 p-5 rounded-2xl border-2 transition-all text-left ${
-                    paymentMethod === 'external' ? 'border-amber-400 bg-amber-50/50' : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                  className={cn(
+                    'w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left',
+                    paymentMethod === 'external'
+                      ? 'border-amber-400 bg-amber-50/60'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  )}
                 >
-                  <div className="h-12 w-12 bg-amber-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
-                    <Handshake className="h-6 w-6" />
+                  <div className="h-11 w-11 bg-amber-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
+                    <Handshake className="h-5 w-5" />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-foreground text-base">Coordinar con distribuidora</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">Efectivo, transferencia, cuenta corriente o plazo</p>
+                  <div className="flex-1 text-left">
+                    <p className="font-bold text-foreground text-sm">Coordinar con distribuidora</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Efectivo, transferencia, cuenta corriente</p>
                   </div>
-                  <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === 'external' ? 'border-amber-400' : 'border-gray-300'}`}>
-                    {paymentMethod === 'external' && <div className="h-3 w-3 rounded-full bg-amber-400" />}
+                  <div className={cn(
+                    'h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0',
+                    paymentMethod === 'external' ? 'border-amber-400' : 'border-gray-300'
+                  )}>
+                    {paymentMethod === 'external' && <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />}
                   </div>
                 </button>
 
-                {/* Info card when external is selected */}
+                {/* Aviso external */}
                 {isExternal && (
-                  <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-                    <Info className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200/80 rounded-2xl">
+                    <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-semibold text-amber-800 text-sm">El pedido queda pendiente de confirmación</p>
-                      <p className="text-sm text-amber-700 mt-1 leading-relaxed">
-                        La distribuidora revisará stock y condiciones. Cuando lo confirme, podrán coordinar el pago y la entrega directamente.
+                      <p className="font-semibold text-amber-800 text-xs">Pedido pendiente de confirmación</p>
+                      <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                        La distribuidora revisará stock y condiciones. Cuando lo confirme, los datos de contacto quedarán disponibles para coordinar el pago.
                       </p>
                     </div>
                   </div>
@@ -253,50 +329,63 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Right column — order summary */}
+          {/* Right column — resumen */}
           <div className="md:col-span-5">
-            <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8 md:sticky md:top-8">
-              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Resumen del pedido</h2>
-              <div className="space-y-3 text-sm md:text-base">
+            <div className="bg-white rounded-3xl shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] border border-[#DFE1E8]/80 p-5 md:p-6 md:sticky md:top-8">
+              <h2 className="font-bold text-xs uppercase tracking-widest text-[#7A839C] mb-4">Resumen del pedido</h2>
+
+              {/* Distribuidora */}
+              <div className="flex items-center gap-2.5 mb-4 pb-4 border-b border-gray-100">
+                <div className="h-8 w-8 rounded-lg bg-[#F7F8FA] border border-[#DFE1E8] flex items-center justify-center font-bold text-[#0B1A45] text-xs shrink-0">
+                  {cart.distribuidoraName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+                </div>
+                <p className="font-semibold text-sm text-foreground">{cart.distribuidoraName}</p>
+              </div>
+
+              <div className="space-y-2 text-sm mb-4">
                 {cart.items.map(item => (
-                  <div key={item.product.id} className="flex justify-between items-start gap-4">
-                    <span className="text-muted-foreground">{item.product.name} x{item.quantity}</span>
-                    <span className="font-medium shrink-0">{formatCurrency(item.product.price * item.quantity)}</span>
+                  <div key={item.product.id} className="flex justify-between items-start gap-3">
+                    <span className="text-muted-foreground leading-snug">
+                      {item.product.name}
+                      <span className="ml-1 font-medium text-foreground/60">×{item.quantity}</span>
+                    </span>
+                    <span className="font-semibold shrink-0">{formatCurrency(item.product.price * item.quantity)}</span>
                   </div>
                 ))}
+              </div>
 
-                <div className="border-t border-gray-100 pt-4 mt-4 space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground font-medium">Subtotal</span>
-                    <span className="font-medium">{formatCurrency(total)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground font-medium">Envío</span>
-                    <span className="text-green-600 font-bold">Gratis</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-100 mt-2">
-                    <span className="font-bold text-foreground text-lg">Total</span>
-                    <span className="font-heading font-bold text-2xl text-primary">{formatCurrency(total)}</span>
-                  </div>
+              <div className="border-t border-gray-100 pt-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground font-medium">Subtotal ({itemCount} {itemCount === 1 ? 'ítem' : 'ítems'})</span>
+                  <span className="font-medium">{formatCurrency(total)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground font-medium">Envío</span>
+                  <span className="text-[#4A662E] font-bold">Gratis</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                  <span className="font-bold text-foreground">Total</span>
+                  <span className="font-heading font-bold text-2xl text-primary">{formatCurrency(total)}</span>
                 </div>
               </div>
 
               {/* Desktop button */}
-              <div className="hidden md:block mt-8">
+              <div className="hidden md:block mt-6 space-y-3">
                 <button
                   onClick={handleConfirmar}
                   disabled={isPlacingOrder}
-                  className={`w-full h-14 text-base font-bold rounded-xl shadow-lg transition-colors disabled:opacity-70 ${
+                  className={cn(
+                    'w-full h-13 text-sm font-bold rounded-xl shadow-lg transition-[background-color,transform] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed',
                     isExternal
                       ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
                       : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20'
-                  }`}
+                  )}
                 >
-                  {isPlacingOrder ? 'Enviando...' : btnLabel}
+                  {isPlacingOrder ? 'Procesando...' : btnLabel}
                 </button>
                 {!isExternal && (
-                  <p className="text-center text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1.5 font-medium">
-                    <Lock className="h-3.5 w-3.5" /> Tu información está cifrada y protegida
+                  <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+                    <Lock className="h-3 w-3" /> Tu información está cifrada y protegida
                   </p>
                 )}
               </div>
@@ -305,23 +394,24 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Mobile fixed bottom bar */}
-      <div className="md:hidden fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
+      {/* Mobile — barra fija */}
+      <div className="md:hidden fixed bottom-20 left-0 right-0 bg-white border-t border-gray-100 p-4 z-40 shadow-[0_-6px_24px_rgba(11,26,69,0.07)] space-y-2">
         {!isExternal && (
-          <p className="text-center text-xs text-muted-foreground mb-3 flex items-center justify-center gap-1.5 font-medium">
+          <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
             <Lock className="h-3 w-3" /> Tu información está cifrada y protegida
           </p>
         )}
         <button
           onClick={handleConfirmar}
           disabled={isPlacingOrder}
-          className={`w-full h-14 text-base font-bold rounded-xl shadow-lg transition-colors disabled:opacity-70 ${
+          className={cn(
+            'w-full h-13 text-sm font-bold rounded-xl shadow-lg transition-[background-color,transform] active:scale-[0.98] disabled:opacity-60',
             isExternal
               ? 'bg-amber-500 text-white hover:bg-amber-600'
               : 'bg-primary text-white hover:bg-primary/90'
-          }`}
+          )}
         >
-          {isPlacingOrder ? 'Enviando...' : btnLabel}
+          {isPlacingOrder ? 'Procesando...' : btnLabel}
         </button>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { collection, query, where, onSnapshot, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import { COLLECTIONS } from '@/lib/firebase/collections'
 import { getDistributorCards, getDistributorById as fetchDistributor } from '@/lib/data/distributors.service'
+import type { CommerceContext } from '@/lib/types'
 import { getAllProducts, getProductsByDistributor } from '@/lib/data/products.service'
 import { getOrdersByCommerce, getOrdersByDistributor, getOrderById } from '@/lib/data/orders.service'
 import { getCategories } from '@/lib/data/categories.service'
@@ -18,21 +19,46 @@ function toLocalStatus(s: string): OrderStatus {
   return 'pendiente'
 }
 
-// Generic async-data loader hook
+// ─── Module-level cache with 5-min TTL ───────────────────────────────────────
+const CACHE_TTL = 5 * 60 * 1000
+const dataCache = new Map<string, { data: unknown; ts: number }>()
+
+// Generic async-data loader hook with TTL cache
 function useAsyncData<T>(
   fetcher: () => Promise<T>,
-  deps: unknown[]
+  deps: unknown[],
+  cacheKey?: string
 ): { data: T | null; loading: boolean } {
-  const [data, setData] = useState<T | null>(null)
-  const [loading, setLoading] = useState(true)
-  const depsRef = useRef(deps)
-  depsRef.current = deps
+  const [data, setData] = useState<T | null>(() => {
+    if (!cacheKey) return null
+    const cached = dataCache.get(cacheKey)
+    return (cached && Date.now() - cached.ts < CACHE_TTL) ? (cached.data as T) : null
+  })
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (!cacheKey) return true
+    const cached = dataCache.get(cacheKey)
+    return !(cached && Date.now() - cached.ts < CACHE_TTL)
+  })
 
   useEffect(() => {
+    if (cacheKey) {
+      const cached = dataCache.get(cacheKey)
+      if (cached && Date.now() - cached.ts < CACHE_TTL) {
+        setData(cached.data as T)
+        setLoading(false)
+        return
+      }
+    }
     let cancelled = false
     setLoading(true)
     fetcher()
-      .then(result => { if (!cancelled) { setData(result); setLoading(false) } })
+      .then(result => {
+        if (!cancelled) {
+          if (cacheKey) dataCache.set(cacheKey, { data: result, ts: Date.now() })
+          setData(result)
+          setLoading(false)
+        }
+      })
       .catch(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -41,11 +67,13 @@ function useAsyncData<T>(
   return { data, loading }
 }
 
-export function useDistributors(commerceLocation?: { lat: number; lng: number }) {
+export function useDistributors(context?: CommerceContext) {
+  const cacheKey = `dist-cards:${context?.lat ?? 0}:${context?.lng ?? 0}:${context?.citySlug ?? ''}`
   const { data, loading } = useAsyncData<DistributorCard[]>(
-    () => getDistributorCards(commerceLocation),
+    () => getDistributorCards(context),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [commerceLocation?.lat, commerceLocation?.lng]
+    [context?.lat, context?.lng, context?.citySlug],
+    cacheKey
   )
   return { data: data ?? [], loading }
 }
@@ -53,7 +81,8 @@ export function useDistributors(commerceLocation?: { lat: number; lng: number })
 export function useDistributor(id: string) {
   const { data, loading } = useAsyncData<Distribuidora | null>(
     () => id ? fetchDistributor(id) as Promise<Distribuidora | null> : Promise.resolve(null),
-    [id]
+    [id],
+    id ? `dist:${id}` : undefined
   )
   return { data, loading }
 }
@@ -61,7 +90,8 @@ export function useDistributor(id: string) {
 export function useProducts(distributorId?: string) {
   const { data, loading } = useAsyncData<Product[]>(
     () => (distributorId ? getProductsByDistributor(distributorId) : getAllProducts()) as Promise<Product[]>,
-    [distributorId]
+    [distributorId],
+    `prods:${distributorId ?? 'all'}`
   )
   return { data: data ?? [], loading }
 }
@@ -69,7 +99,8 @@ export function useProducts(distributorId?: string) {
 export function useCategories() {
   const { data, loading } = useAsyncData<Category[]>(
     () => getCategories(),
-    []
+    [],
+    'categories'
   )
   return { data: data ?? [], loading }
 }

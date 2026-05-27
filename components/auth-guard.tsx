@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/app-context'
+import { FullPageLoadingState } from '@/components/ui/LoadingState'
 import type { UserRole } from '@/lib/types'
 
 interface AuthGuardProps {
@@ -35,14 +36,7 @@ export function AuthGuard({ children, requiredRole }: AuthGuardProps) {
   }, [authLoading, isAuthenticated, userRole, requiredRole, router])
 
   if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Cargando...</p>
-        </div>
-      </div>
-    )
+    return <FullPageLoadingState label="Validando tu sesión" />
   }
 
   if (!isAuthenticated) return null

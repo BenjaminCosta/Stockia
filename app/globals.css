@@ -149,6 +149,19 @@
   }
 }
 
+.stockia-header-search-field::-webkit-search-cancel-button,
+.stockia-header-search-field::-webkit-search-decoration,
+.stockia-header-search-field::-webkit-search-results-button,
+.stockia-header-search-field::-webkit-search-results-decoration,
+.stockia-header-search-field::-ms-clear,
+.stockia-header-search-field::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 @keyframes stockia-shimmer {
   100% {
     transform: translateX(100%);
@@ -279,6 +292,33 @@
   100% { opacity: 0; }
 }
 
+@keyframes stockia-loader-ring {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.9) rotate(0deg);
+  }
+  60% {
+    opacity: 0.25;
+    transform: scale(1.12) rotate(180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2) rotate(260deg);
+  }
+}
+
+@keyframes stockia-splash-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes stockia-splash-scan {
+  0%   { transform: translateX(-120%); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+
 @keyframes check-pop {
   0%   { transform: scale(0); opacity: 0; }
   60%  { transform: scale(1.2); opacity: 1; }
@@ -291,6 +331,10 @@
 
 @utility animate-stockia-dot {
   animation: stockia-dot 0.9s ease-in-out infinite;
+}
+
+@utility animate-stockia-loader-ring {
+  animation: stockia-loader-ring 1.35s cubic-bezier(0.23, 1, 0.32, 1) infinite;
 }
 
 @utility animate-onboarding-step {

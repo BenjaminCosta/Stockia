@@ -4,31 +4,68 @@ import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
 import {
   Minus, Plus, ShoppingCart,
-  Package, Clock, AlertTriangle, ShieldCheck, Star, CheckCircle2
+  Package, Clock, AlertTriangle, ShieldCheck, Star, CheckCircle2, ChevronRight
 } from 'lucide-react'
 import { PageHero } from '@/components/ui/PageHero'
 import { Button } from '@/components/ui/button'
+import { ReviewCard } from '@/components/review-card'
+import { CriteriaRow, StarDisplay } from '@/components/star-rating'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
 import { useProducts, useDistributor } from '@/hooks/use-data'
+import { getReviewsByDistributor, getDistributorRatingSummary } from '@/lib/data/reviews.service'
+import { DistributorRatingSummary, Review } from '@/lib/types'
+import { ProductDetailSkeleton, SkeletonBlock } from '@/components/ui/SkeletonCard'
 
 function ProductoDetail({ id }: { id: string }) {
   const { addToCart, cart } = useApp()
   const [qty, setQty] = useState(1)
   const [isAdded, setIsAdded] = useState(false)
   const [qtyInput, setQtyInput] = useState('1')
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [ratingSummary, setRatingSummary] = useState<DistributorRatingSummary | null>(null)
+  const [reviewsLoading, setReviewsLoading] = useState(true)
   useEffect(() => { setQtyInput(String(qty)) }, [qty])
 
   const { data: products, loading } = useProducts()
   const product = products.find(p => p.id === id)
-  const { data: distribuidora } = useDistributor(product?.distribuidoraId || '')
+  const { data: distribuidora, loading: distributorLoading } = useDistributor(product?.distribuidoraId || '')
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      </div>
-    )
+  useEffect(() => {
+    if (!distribuidora?.id) {
+      setReviews([])
+      setRatingSummary(null)
+      setReviewsLoading(false)
+      return
+    }
+
+    let cancelled = false
+    setReviewsLoading(true)
+
+    Promise.all([
+      getReviewsByDistributor(distribuidora.id),
+      getDistributorRatingSummary(distribuidora.id),
+    ])
+      .then(([nextReviews, nextSummary]) => {
+        if (cancelled) return
+        setReviews(nextReviews)
+        setRatingSummary(nextSummary)
+        setReviewsLoading(false)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setReviews([])
+        setRatingSummary(null)
+        setReviewsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [distribuidora?.id])
+
+  if (loading || (product && distributorLoading)) {
+    return <ProductDetailSkeleton />
   }
 
   if (!product || !distribuidora) {
@@ -52,7 +89,8 @@ function ProductoDetail({ id }: { id: string }) {
   const distInitials = distribuidora.companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
 
   const handleAddToCart = () => {
-    addToCart(product, distribuidora.companyName, qty)
+    const added = addToCart(product, distribuidora.companyName, qty)
+    if (!added) return
     setIsAdded(true)
     setTimeout(() => setIsAdded(false), 1500)
   }
@@ -96,15 +134,22 @@ function ProductoDetail({ id }: { id: string }) {
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-100 text-sm">
-                <div className="bg-gray-50 rounded-2xl p-4 md:p-5">
+                <Link
+                  href={`/comercio/distribuidora/${distribuidora.id}`}
+                  className="group rounded-2xl border border-[#DFE1E8] bg-gray-50 p-4 transition-[border-color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:border-[#0B1A45]/12 hover:bg-white md:p-5"
+                >
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Distribuidor</p>
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded bg-gray-200 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B1A45] text-xs font-bold text-white shadow-[0_8px_18px_rgba(11,26,69,0.14)]">
                       {distInitials}
                     </div>
-                    <p className="font-bold text-foreground leading-tight text-sm">{distribuidora.companyName}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-foreground leading-tight text-sm">{distribuidora.companyName}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Ver distribuidora</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-gray-300 transition-colors duration-150 group-hover:text-[#0B1A45]" />
                   </div>
-                </div>
+                </Link>
                 <div className="bg-gray-50 rounded-2xl p-4 md:p-5">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Stock disponible</p>
                   <div className="flex items-center gap-2">
@@ -228,34 +273,64 @@ function ProductoDetail({ id }: { id: string }) {
               </div>
             </div>
 
-            {/* Reviews */}
+            {/* Distributor reviews */}
             <div className="bg-white rounded-3xl shadow-sm border border-border p-6">
-              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-4">Calificaciones</h2>
-              <div className="flex items-center gap-4">
-                <div className="text-center bg-gray-50 rounded-2xl p-4 min-w-25">
-                  <p className="font-heading font-bold text-4xl text-foreground">{product.rating.toFixed(1)}</p>
-                  <div className="flex gap-1 justify-center mt-2">
-                    {[1, 2, 3, 4, 5].map(s => (
-                      <Star key={s} className={`h-3 w-3 ${s <= Math.round(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`} />
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2 font-medium">{product.reviewCount} reseñas</p>
-                </div>
-                <div className="flex-1 space-y-2">
-                  {[5, 4, 3, 2, 1].map(s => (
-                    <div key={s} className="flex items-center gap-2 text-xs">
-                      <span className="w-2 font-bold text-gray-500">{s}</span>
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 shrink-0" />
-                      <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="bg-yellow-400 h-full rounded-full"
-                          style={{ width: s === 5 ? '75%' : s === 4 ? '18%' : s === 3 ? '5%' : '1%' }}
-                        />
-                      </div>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reseñas de la distribuidora</p>
+              <h2 className="mt-1 font-heading text-xl font-bold text-foreground">{distribuidora.companyName}</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Este producto no tiene reseñas propias en esta versión. Las calificaciones que ves acá corresponden a la distribuidora.
+              </p>
+
+              {reviewsLoading ? (
+                <div className="mt-5 space-y-4">
+                  <div className="rounded-2xl bg-gray-50 p-4">
+                    <SkeletonBlock className="h-10 w-20" />
+                    <SkeletonBlock className="mt-3 h-3 w-28" />
+                    <div className="mt-4 space-y-2">
+                      {[1, 2, 3, 4].map(item => (
+                        <SkeletonBlock key={item} className="h-3 rounded-full" />
+                      ))}
                     </div>
+                  </div>
+                  {[1, 2].map(item => (
+                    <SkeletonBlock key={item} className="h-28 rounded-2xl" />
                   ))}
                 </div>
-              </div>
+              ) : ratingSummary && ratingSummary.reviewCount > 0 ? (
+                <>
+                  <div className="mt-5 rounded-2xl bg-gray-50 p-4">
+                    <div className="flex flex-col gap-4">
+                      <div className="rounded-2xl bg-white p-4 text-center shadow-sm">
+                        <p className="font-heading text-4xl font-bold text-foreground">{ratingSummary.averageGeneral.toFixed(1)}</p>
+                        <StarDisplay rating={ratingSummary.averageGeneral} size="sm" className="mt-2 justify-center" />
+                        <p className="mt-2 text-xs font-medium text-muted-foreground">{ratingSummary.reviewCount} reseñas</p>
+                      </div>
+                      <div className="min-w-0 space-y-2">
+                        <CriteriaRow label="Cumplimiento" value={ratingSummary.averageFulfillment} />
+                        <CriteriaRow label="Entrega" value={ratingSummary.averageDelivery} />
+                        <CriteriaRow label="Mercadería" value={ratingSummary.averageProductCondition} />
+                        <CriteriaRow label="Atención" value={ratingSummary.averageCommunication} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {reviews.slice(0, 2).map(review => (
+                      <ReviewCard key={review.id} review={review} />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-5 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                    <Star className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <p className="mt-3 font-semibold text-foreground">Todavía no hay reseñas de la distribuidora</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Cuando otros comercios califiquen sus pedidos, las vas a ver acá.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -5,7 +5,20 @@ import { usePathname } from 'next/navigation'
 import { House, MoreHorizontal, ReceiptText, Search, Store } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const MAS_PATHS = ['/comercio/mas', '/comercio/cuenta', '/comercio/carrito']
+const MAS_PATHS = [
+  '/comercio/mas',
+  '/comercio/cuenta',
+  '/comercio/carrito',
+  '/comercio/ayuda',
+  '/comercio/contacto',
+  '/comercio/terminos',
+  '/comercio/privacidad',
+  '/comercio/como-funciona',
+  '/comercio/empresa',
+  '/comercio/notificaciones',
+  '/comercio/seguridad',
+  '/comercio/configuracion',
+]
 
 const navItems = [
   { href: '/comercio', label: 'Inicio', icon: House, exact: true, extraPaths: [] as string[] },

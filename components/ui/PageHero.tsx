@@ -14,6 +14,7 @@ interface PageHeroProps {
   /** Slot para botones de acción adicionales (se renderizan abajo del título) */
   children?: React.ReactNode
   className?: string
+  contentClassName?: string
 }
 
 export function PageHero({
@@ -24,6 +25,7 @@ export function PageHero({
   backHref,
   children,
   className,
+  contentClassName,
 }: PageHeroProps) {
   return (
     <div className={cn('bg-[#080f2b] px-4 md:px-8 pt-5 pb-10 md:pt-8 relative overflow-hidden', className)}>
@@ -52,9 +54,9 @@ export function PageHero({
       </svg>
 
       {/* Subtle dot mesh */}
-      <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle,_rgba(255,255,255,1)_1px,_transparent_1px)] bg-size-[18px_18px] pointer-events-none" />
+      <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle,rgba(255,255,255,1)_1px,transparent_1px)] bg-size-[18px_18px] pointer-events-none" />
 
-      <div className="relative z-10">
+      <div className={cn('relative z-10 max-w-350 mx-auto w-full', contentClassName)}>
         {backHref && (
           <Link
             href={backHref}

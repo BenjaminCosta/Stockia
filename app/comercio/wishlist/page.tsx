@@ -4,11 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Heart, ArrowLeft, Trash2, ShoppingCart } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
+import { useDistributors } from '@/hooks/use-data'
 import { ProductCard } from '@/components/product-card'
 import { Product } from '@/lib/types'
 
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist, clearCart, addToCart } = useApp()
+  const { data: distributors } = useDistributors()
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [justAdded, setJustAdded] = useState<Record<string, boolean>>({})
 
@@ -19,8 +21,9 @@ export default function WishlistPage() {
   }
 
   const handleAddToCart = (product: Product) => {
-    const distName = product.distribuidoraId // fallback — real name not stored in product
-    addToCart(product, distName, getQty(product.id))
+    const distName = distributors.find((dist) => dist.id === product.distribuidoraId)?.companyName || product.distribuidoraId
+    const added = addToCart(product, distName, getQty(product.id))
+    if (!added) return
     setJustAdded(prev => ({ ...prev, [product.id]: true }))
     setTimeout(() => setJustAdded(prev => ({ ...prev, [product.id]: false })), 2000)
   }
@@ -114,17 +117,23 @@ export default function WishlistPage() {
 
         {/* Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-          {wishlist.map(product => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              qty={getQty(product.id)}
-              onQtyChange={v => handleQtyChange(product.id, v)}
-              onAdd={() => handleAddToCart(product)}
-              justAdded={justAdded[product.id] ?? false}
-              view="grid"
-            />
-          ))}
+          {wishlist.map(product => {
+            const distributor = distributors.find(dist => dist.id === product.distribuidoraId)
+
+            return (
+              <ProductCard
+                key={product.id}
+                product={product}
+                distName={distributor?.companyName}
+                distDistance={distributor?.distance}
+                qty={getQty(product.id)}
+                onQtyChange={v => handleQtyChange(product.id, v)}
+                onAdd={() => handleAddToCart(product)}
+                justAdded={justAdded[product.id] ?? false}
+                view="grid"
+              />
+            )
+          })}
         </div>
       </div>
     </div>

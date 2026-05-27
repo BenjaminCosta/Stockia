@@ -17,10 +17,14 @@ export interface Comercio extends User {
   phone: string
   address: string
   location: {
-    lat: number
-    lng: number
+    /** Real WGS-84 latitude. Undefined (or 0) means no geocoords yet. */
+    lat?: number
+    /** Real WGS-84 longitude. Undefined (or 0) means no geocoords yet. */
+    lng?: number
     city: string
     zone: string
+    /** URL-safe, accent-free, lowercase version of city for zone matching. */
+    citySlug: string
   }
 }
 
@@ -38,13 +42,27 @@ export interface Distribuidora extends User {
   deliveryZones: string[]
   deliveryHours: string      // "Lunes a Viernes · 8 a 17hs"
   location: {
-    lat: number
-    lng: number
+    /** Real WGS-84 latitude. Undefined (or 0) means no geocoords yet. */
+    lat?: number
+    /** Real WGS-84 longitude. Undefined (or 0) means no geocoords yet. */
+    lng?: number
     city: string
   }
   // Commission fields
   commissionRate?: number                            // e.g. 0.015 = 1.5%
   commissionStatus?: 'ok' | 'overdue' | 'blocked'   // platform sets this
+}
+
+/**
+ * Context passed from a commerce to location-aware queries.
+ * When lat/lng are present and non-zero, Haversine radius is used.
+ * When only citySlug is present, zone-name matching is used.
+ * When neither is present, all distributors are returned.
+ */
+export interface CommerceContext {
+  lat?: number
+  lng?: number
+  citySlug?: string
 }
 
 // Product types

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback, useEffect, use } from 'react'
+import { useState, useCallback, useEffect, useMemo, use } from 'react'
 import Link from 'next/link'
-import { Info, Package, FileText, Star } from 'lucide-react'
+import { Package, FileText, Star } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { PageHero } from '@/components/ui/PageHero'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -10,7 +10,7 @@ import { PillFilter } from '@/components/ui/PillFilter'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
 import { useDistributor, useProducts } from '@/hooks/use-data'
-import { ProductCardSkeleton } from '@/components/ui/SkeletonCard'
+import { DistributorDetailSkeleton, ProductCardSkeleton } from '@/components/ui/SkeletonCard'
 import { ProductCard } from '@/components/product-card'
 import { getReviewsByDistributor, getDistributorRatingSummary } from '@/lib/data/reviews.service'
 import { Review, DistributorRatingSummary } from '@/lib/types'
@@ -40,26 +40,31 @@ export default function DistribuidoraCatalogPage({
     getDistributorRatingSummary(id).then(setRatingSummary)
   }, [id])
 
-  const productCategories = [...new Set(products.map(p => p.category))]
-  const categoryList = ['Todos', ...productCategories]
+  const productMap = useMemo(() => new Map(products.map(p => [p.id, p])), [products])
 
-  const filteredProducts = products.filter(p => {
+  const categoryList = useMemo(() => {
+    const cats = [...new Set(products.map(p => p.category))]
+    return ['Todos', ...cats]
+  }, [products])
+
+  const filteredProducts = useMemo(() => products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = selectedCategory === 'Todos' || p.category === selectedCategory
     return matchesSearch && matchesCategory && p.active
-  })
+  }), [products, searchQuery, selectedCategory])
 
-  const totalItems = Object.values(cartItems).reduce((a, b) => a + b, 0)
-  const totalAmount = Object.entries(cartItems).reduce((sum, [pId, qty]) => {
-    const p = products.find(prod => prod.id === pId)
+  const totalItems = useMemo(() => Object.values(cartItems).reduce((a, b) => a + b, 0), [cartItems])
+  const totalAmount = useMemo(() => Object.entries(cartItems).reduce((sum, [pId, qty]) => {
+    const p = productMap.get(pId)
     return sum + (p?.price || 0) * qty
-  }, 0)
+  }, 0), [cartItems, productMap])
 
   const handleAgregar = useCallback((productId: string) => {
     const product = products.find(p => p.id === productId)
     if (!product || !distribuidora) return
     const qty = quantities[productId] ?? 1
-    addToCart(product, distribuidora.companyName, qty)
+    const added = addToCart(product, distribuidora.companyName, qty)
+    if (!added) return
     setAddedProducts(prev => new Set(prev).add(productId))
     setCartItems(prev => ({ ...prev, [productId]: (prev[productId] || 0) + qty }))
     window.setTimeout(() => {
@@ -70,6 +75,10 @@ export default function DistribuidoraCatalogPage({
       })
     }, 2000)
   }, [addToCart, distribuidora, products, quantities])
+
+  if (isLoading) {
+    return <DistributorDetailSkeleton />
+  }
 
   if (!distribuidora) {
     return (
@@ -117,18 +126,6 @@ export default function DistribuidoraCatalogPage({
             </div>
           </PageHero>
 
-          {/* Floating info card */}
-          <div className="px-4 md:px-8 -mt-4 relative z-10">
-            <div className="bg-white rounded-xl shadow-md p-4 flex items-center gap-4 text-sm border border-gray-100">
-              <div className="bg-blue-50 text-blue-600 p-2.5 rounded-lg shrink-0">
-                <Info className="h-5 w-5" />
-              </div>
-              <p className="text-gray-600">
-                Haciendo pedido hoy, recibís el <span className="font-bold text-foreground text-base">Jueves</span>
-              </p>
-            </div>
-          </div>
-
           <div className="md:px-8 md:mt-8">
             {/* Category pills */}
             <PillFilter
@@ -149,7 +146,7 @@ export default function DistribuidoraCatalogPage({
             {/* Products */}
             <div className="px-4 md:px-0 mt-6">
               {isLoading ? (
-                <ProductCardSkeleton />
+                <ProductCardSkeleton count={6} className="md:grid-cols-2 lg:grid-cols-3" />
               ) : filteredProducts.length === 0 ? (
                 <EmptyState
                   icon={Package}
@@ -164,6 +161,7 @@ export default function DistribuidoraCatalogPage({
                       <ProductCard
                         key={product.id}
                         product={product}
+                        distName={distribuidora.companyName}
                         qty={quantities[product.id] ?? 1}
                         onQtyChange={v => setQuantities(prev => ({ ...prev, [product.id]: v }))}
                         onAdd={() => handleAgregar(product.id)}
@@ -179,6 +177,7 @@ export default function DistribuidoraCatalogPage({
                       <ProductCard
                         key={product.id}
                         product={product}
+                        distName={distribuidora.companyName}
                         qty={quantities[product.id] ?? 1}
                         onQtyChange={v => setQuantities(prev => ({ ...prev, [product.id]: v }))}
                         onAdd={() => handleAgregar(product.id)}
@@ -231,7 +230,7 @@ export default function DistribuidoraCatalogPage({
 
         {/* Desktop sticky cart sidebar */}
         {totalItems > 0 && (
-          <div className="hidden md:block w-[360px] shrink-0 sticky top-8">
+          <div className="sticky top-8 hidden w-90 shrink-0 md:block">
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
               <div className="bg-gray-50 p-6 border-b border-gray-100 flex justify-between items-center">
                 <h2 className="font-heading font-bold text-xl text-foreground">Tu Pedido</h2>
@@ -240,9 +239,9 @@ export default function DistribuidoraCatalogPage({
                 </span>
               </div>
               <div className="p-6">
-                <div className="max-h-[400px] overflow-y-auto pr-2 space-y-4 mb-6">
+                <div className="mb-6 max-h-100 space-y-4 overflow-y-auto pr-2">
                   {Object.entries(cartItems).map(([pId, qty]) => {
-                    const p = products.find(prod => prod.id === pId)
+                    const p = productMap.get(pId)
                     if (!p) return null
                     return (
                       <div key={pId} className="flex justify-between items-start gap-4 text-sm">
