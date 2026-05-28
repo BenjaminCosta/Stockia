@@ -25,7 +25,7 @@ export const storage = app ? getStorage(app) : (null as unknown as ReturnType<ty
 
 // Analytics only runs in the browser — never on the server
 let analytics: Analytics | null = null
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && app) {
   import('firebase/analytics').then(({ getAnalytics }) => {
     analytics = getAnalytics(app)
   })
