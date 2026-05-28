@@ -25,7 +25,6 @@ import {
 } from 'lucide-react'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '@/lib/firebase/client'
-import { normalizeCitySlug } from '@/lib/firebase/geo'
 import { upsertUser, upsertCommerce } from '@/lib/data/users.service'
 import { upsertDistributor } from '@/lib/data/distributors.service'
 import { setSessionCookie } from '@/lib/cookies'
@@ -33,6 +32,8 @@ import { LoadingButton } from '@/components/ui/LoadingButton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserRole } from '@/lib/types'
+import { LocationSelector, LocationSelectorValue } from '@/components/location-selector'
+import { isValidLocality, isValidProvince, normalizeLocationInput } from '@/lib/locations/location-utils'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -57,8 +58,6 @@ const COMMERCE_TYPES = [
   'Farmacia',
   'Otro',
 ]
-
-const zones = ['Avellaneda', 'Lanús', 'Quilmes', 'Lomas de Zamora', 'Berazategui']
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -120,9 +119,11 @@ export default function RegistroPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]) // distribuidora only
 
   // Location
-  const [cityZone, setCityZone] = useState('Avellaneda')
+  const [location, setLocation] = useState<LocationSelectorValue>({ province: '', city: '' })
   const [coverageRadius, setCoverageRadius] = useState('15')
-  const [deliveryZones, setDeliveryZones] = useState('Avellaneda, Lanús, Quilmes')
+  const [deliveryLocationDraft, setDeliveryLocationDraft] = useState<LocationSelectorValue>({ province: '', city: '' })
+  const [deliveryLocationKeys, setDeliveryLocationKeys] = useState<string[]>([])
+  const [deliveryLocationLabels, setDeliveryLocationLabels] = useState<Record<string, string>>({})
 
   const progress = `${(step / steps.length) * 100}%`
 
@@ -136,8 +137,8 @@ export default function RegistroPage() {
     step === 1 ? 'Conectá comercios locales con distribuidoras para pedir, vender y organizar operaciones B2B.'
     : step === 2 ? 'Esta selección define la navegación y las herramientas principales del prototipo.'
     : step === 3 ? 'Completá la información de acceso y los datos básicos del negocio.'
-    : role === 'distribuidora' ? 'Definí las zonas de reparto y los rubros que manejás.'
-    : 'Confirmá la zona para mostrar proveedores cercanos desde el inicio.'
+    : role === 'distribuidora' ? 'Definí las localidades de reparto y los rubros que manejás.'
+    : 'Confirmá tu localidad para mostrar proveedores desde el inicio.'
 
   const canContinue =
     (step === 1) ||
@@ -150,7 +151,10 @@ export default function RegistroPage() {
       phone.trim().length > 0 &&
       address.trim().length > 0
     ) ||
-    (step === 4)
+    (step === 4 &&
+      isValidProvince(location.province) &&
+      isValidLocality(location.province, location.city)
+    )
 
   const handleContinue = async () => {
     if (!canContinue) return
@@ -169,6 +173,7 @@ export default function RegistroPage() {
       const name = businessName.trim() || email.split('@')[0]
 
       await upsertUser(uid, { name, email: email.trim(), role })
+      const normalizedLocation = normalizeLocationInput(location)
 
       if (role === 'comercio') {
         await upsertCommerce(uid, {
@@ -176,30 +181,35 @@ export default function RegistroPage() {
           businessName: name,
           phone,
           address,
-          city: cityZone,
-          citySlug: normalizeCitySlug(cityZone),
-          zone: '',
-          province: 'Buenos Aires',
-          // lat/lng intentionally omitted — no geocoding yet.
-          // buildCurrentUser treats absent/0 coords as "no real location".
+          ...normalizedLocation,
           status: 'active',
           ...(cuit.trim() && { cuit: cuit.trim() }),
           ...(businessType && { businessType }),
         })
       } else {
+        const safeDeliveryLocationKeys = deliveryLocationKeys.length
+          ? deliveryLocationKeys
+          : [normalizedLocation.locationKey]
         await upsertDistributor(uid, {
           userId: uid,
           companyName: name,
           phone,
           address,
-          city: cityZone,
-          province: 'Buenos Aires',
-          // lat/lng intentionally omitted — no geocoding yet.
+          city: normalizedLocation.city,
+          citySlug: normalizedLocation.citySlug,
+          province: normalizedLocation.province,
+          provinceSlug: normalizedLocation.provinceSlug,
+          locationKey: normalizedLocation.locationKey,
+          lat: null,
+          lng: null,
+          location: normalizedLocation,
           coverageRadiusKm: parseFloat(coverageRadius) || 15,
           minimumOrder: parseFloat(minimumOrder) || 0,
           categories: selectedCategories,
           status: 'active',
-          deliveryZones: deliveryZones.split(',').map(z => z.trim()).filter(Boolean),
+          deliveryZones: safeDeliveryLocationKeys.map(key => deliveryLocationLabels[key] ?? key),
+          deliveryLocationKeys: safeDeliveryLocationKeys,
+          deliveryZoneKeys: safeDeliveryLocationKeys,
           ...(cuit.trim() && { cuit: cuit.trim() }),
         })
       }
@@ -227,17 +237,19 @@ export default function RegistroPage() {
     )
   }
 
-  const selectZone = (zone: string) => {
-    if (role === 'distribuidora') {
-      const selectedZones = deliveryZones.split(',').map(item => item.trim()).filter(Boolean)
-      setDeliveryZones(
-        selectedZones.includes(zone)
-          ? selectedZones.filter(item => item !== zone).join(', ')
-          : [...selectedZones, zone].join(', ')
-      )
-      return
-    }
-    setCityZone(zone)
+  const addDeliveryLocation = () => {
+    if (!isValidProvince(deliveryLocationDraft.province) || !isValidLocality(deliveryLocationDraft.province, deliveryLocationDraft.city)) return
+    const normalized = normalizeLocationInput(deliveryLocationDraft)
+    setDeliveryLocationKeys(prev => prev.includes(normalized.locationKey) ? prev : [...prev, normalized.locationKey])
+    setDeliveryLocationLabels(prev => ({
+      ...prev,
+      [normalized.locationKey]: `${normalized.city}, ${normalized.province}`,
+    }))
+    setDeliveryLocationDraft({ province: '', city: '' })
+  }
+
+  const removeDeliveryLocation = (locationKey: string) => {
+    setDeliveryLocationKeys(prev => prev.filter(key => key !== locationKey))
   }
 
   return (
@@ -333,13 +345,17 @@ export default function RegistroPage() {
             {step === 4 && (
               <LocationStep
                 role={role}
-                cityZone={cityZone}
+                location={location}
+                onLocationChange={setLocation}
                 coverageRadius={coverageRadius}
-                deliveryZones={deliveryZones}
+                deliveryLocationDraft={deliveryLocationDraft}
+                deliveryLocationKeys={deliveryLocationKeys}
+                deliveryLocationLabels={deliveryLocationLabels}
                 selectedCategories={selectedCategories}
                 onCoverageRadiusChange={setCoverageRadius}
-                onDeliveryZonesChange={setDeliveryZones}
-                onSelectZone={selectZone}
+                onDeliveryLocationDraftChange={setDeliveryLocationDraft}
+                onAddDeliveryLocation={addDeliveryLocation}
+                onRemoveDeliveryLocation={removeDeliveryLocation}
                 onCategoryToggle={toggleCategory}
               />
             )}
@@ -445,7 +461,7 @@ function RoleStep({ role, onSelect }: { role: UserRole | null; onSelect: (role: 
         icon={Store}
         title="Comercio"
         text="Quiero comprar productos para mi negocio"
-        detail="Kioscos, almacenes, minimercados y tiendas de barrio."
+        detail="Kioscos, almacenes, minimercados y tiendas locales."
         onClick={() => onSelect('comercio')}
       />
       <RoleCard
@@ -732,27 +748,34 @@ function BusinessDataStep({
 
 function LocationStep({
   role,
-  cityZone,
+  location,
+  onLocationChange,
   coverageRadius,
-  deliveryZones,
+  deliveryLocationDraft,
+  deliveryLocationKeys,
+  deliveryLocationLabels,
   selectedCategories,
   onCoverageRadiusChange,
-  onDeliveryZonesChange,
-  onSelectZone,
+  onDeliveryLocationDraftChange,
+  onAddDeliveryLocation,
+  onRemoveDeliveryLocation,
   onCategoryToggle,
 }: {
   role: UserRole | null
-  cityZone: string
+  location: LocationSelectorValue
+  onLocationChange: (value: LocationSelectorValue) => void
   coverageRadius: string
-  deliveryZones: string
+  deliveryLocationDraft: LocationSelectorValue
+  deliveryLocationKeys: string[]
+  deliveryLocationLabels: Record<string, string>
   selectedCategories: string[]
   onCoverageRadiusChange: (v: string) => void
-  onDeliveryZonesChange: (v: string) => void
-  onSelectZone: (zone: string) => void
+  onDeliveryLocationDraftChange: (value: LocationSelectorValue) => void
+  onAddDeliveryLocation: () => void
+  onRemoveDeliveryLocation: (locationKey: string) => void
   onCategoryToggle: (cat: string) => void
 }) {
   const isDistributor = role === 'distribuidora'
-  const selectedZones = deliveryZones.split(',').map(item => item.trim()).filter(Boolean)
 
   return (
     <div className="space-y-8">
@@ -771,7 +794,13 @@ function LocationStep({
 
         <div className="grid gap-6 md:grid-cols-[1fr_320px]">
           <div className="space-y-4">
-            {isDistributor ? (
+            <LocationSelector
+              value={location}
+              onChange={onLocationChange}
+              compact
+            />
+
+            {isDistributor && (
               <>
                 <FormField icon={Route} label="Radio de entrega (km)">
                   <Input
@@ -781,40 +810,40 @@ function LocationStep({
                     className="h-12 bg-background pl-11"
                   />
                 </FormField>
-                <FormField icon={MapPin} label="Zonas donde reparte">
-                  <Input
-                    value={deliveryZones}
-                    onChange={(e) => onDeliveryZonesChange(e.target.value)}
-                    placeholder="Ej: Quilmes, Avellaneda, Lanús"
-                    className="h-12 bg-background pl-11"
-                  />
-                </FormField>
-              </>
-            ) : (
-              <FormField icon={MapPin} label="Ubicación principal">
-                <Input value={cityZone} readOnly className="h-12 bg-background pl-11" />
-              </FormField>
-            )}
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {zones.map((zone) => {
-                const selected = isDistributor ? selectedZones.includes(zone) : cityZone.includes(zone)
-                return (
+                <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                  <p className="mb-3 text-sm font-semibold text-foreground">Localidades de reparto</p>
+                  <LocationSelector
+                    value={deliveryLocationDraft}
+                    onChange={onDeliveryLocationDraftChange}
+                    compact
+                  />
                   <button
                     type="button"
-                    key={zone}
-                    onClick={() => onSelectZone(zone)}
-                    className={`rounded-xl border px-3 py-3 text-sm font-medium transition-all ${
-                      selected
-                        ? 'border-primary bg-accent text-primary'
-                        : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground'
-                    }`}
+                    onClick={onAddDeliveryLocation}
+                    className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
                   >
-                    {zone}
+                    Agregar localidad
                   </button>
-                )
-              })}
-            </div>
+
+                  {deliveryLocationKeys.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {deliveryLocationKeys.map(key => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => onRemoveDeliveryLocation(key)}
+                          className="rounded-full border border-primary/20 bg-accent px-3 py-1.5 text-xs font-semibold text-primary"
+                          title="Quitar localidad"
+                        >
+                          {deliveryLocationLabels[key] ?? key} ×
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="rounded-2xl border border-border bg-muted/40 p-5">
@@ -822,15 +851,17 @@ function LocationStep({
               {isDistributor ? <Truck className="h-6 w-6" /> : <Store className="h-6 w-6" />}
             </div>
             <h3 className="font-heading text-lg font-semibold text-foreground">
-              {isDistributor ? 'Tus zonas visibles' : 'Proveedores cerca'}
+              {isDistributor ? 'Tus localidades visibles' : 'Proveedores cerca'}
             </h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {isDistributor
-                ? `Los comercios dentro de ${coverageRadius || 'tu radio'} km van a poder encontrarte.`
-                : 'Al finalizar, vas a ver distribuidoras ordenadas por cercanía.'}
+                ? 'Los comercios de tus localidades cubiertas van a poder encontrarte.'
+                : 'Al finalizar, vas a ver distribuidoras que entregan en tu localidad.'}
             </p>
             <div className="mt-4 rounded-xl bg-card p-3 text-sm text-muted-foreground">
-              {isDistributor ? deliveryZones || 'Sin zonas seleccionadas' : cityZone || 'Ubicación pendiente'}
+              {isDistributor
+                ? (deliveryLocationKeys.length ? deliveryLocationKeys.map(key => deliveryLocationLabels[key] ?? key).join(' · ') : 'Se usará tu localidad base si no agregás otras')
+                : [location.city, location.province].filter(Boolean).join(', ') || 'Ubicación pendiente'}
             </div>
           </div>
         </div>

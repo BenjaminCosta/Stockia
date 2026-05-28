@@ -12,6 +12,7 @@ export type CommissionStatus = 'pending' | 'paid' | 'overdue' | 'waived'
 export interface FirestoreCommission {
   distributorId: string
   orderId: string
+  orderNumber?: string
   orderTotal: number
   commissionRate: number   // always 0.015
   commissionAmount: number

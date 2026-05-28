@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Heart, ArrowLeft, Trash2, ShoppingCart } from 'lucide-react'
+import { Heart, Trash2, ShoppingCart } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { useDistributors } from '@/hooks/use-data'
 import { ProductCard } from '@/components/product-card'
+import { ComercioPageHeader } from '@/components/comercio-page-header'
 import { Product } from '@/lib/types'
 
 export default function WishlistPage() {
@@ -33,23 +34,7 @@ export default function WishlistPage() {
     return (
       <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
         <div className="max-w-350 mx-auto px-4 py-6 md:px-8 md:py-8">
-          {/* Header */}
-          <header className="mb-8 flex items-center gap-4">
-            <Link
-              href="/comercio"
-              className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-white border border-[#DFE1E8] flex items-center justify-center text-[#0B1A45] hover:bg-gray-50 transition-colors active:scale-95 shadow-sm"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Guardados
-              </p>
-              <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-[#0B1A45] md:text-3xl">
-                Mi lista de deseos
-              </h1>
-            </div>
-          </header>
+          <ComercioPageHeader label="Guardados" title="Favoritos" />
 
           {/* Empty */}
           <div className="flex flex-col items-center justify-center px-4 py-16 text-center md:py-24">
@@ -83,37 +68,28 @@ export default function WishlistPage() {
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-24 md:pb-12">
 
       <div className="max-w-350 mx-auto px-4 py-6 md:px-8 md:py-8">
-        {/* Header */}
-        <header className="mb-5 flex items-center gap-4 md:mb-6">
-          <Link
-            href="/comercio"
-            className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-white border border-[#DFE1E8] flex items-center justify-center text-[#0B1A45] hover:bg-gray-50 transition-colors active:scale-95 shadow-sm"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Guardados
-            </p>
-            <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-[#0B1A45] md:text-3xl truncate">
-              Mi lista de deseos
-            </h1>
-          </div>
-          <span className="shrink-0 h-6 min-w-6 px-2 rounded-full bg-[#C8FF00] text-[#0B1A45] text-xs font-bold flex items-center justify-center">
-            {wishlist.length}
-          </span>
-          <button
-            onClick={() => {
-              if (confirm('¿Limpiar toda la lista de deseos?')) {
-                wishlist.forEach(p => removeFromWishlist(p.id))
-              }
-            }}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-medium text-[#7A839C] hover:text-red-500 hover:bg-red-50 transition-colors"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Limpiar lista</span>
-          </button>
-        </header>
+        <ComercioPageHeader
+          label="Guardados"
+          title="Favoritos"
+          actions={(
+            <>
+              <span className="shrink-0 h-6 min-w-6 px-2 rounded-full bg-[#C8FF00] text-[#0B1A45] text-xs font-bold flex items-center justify-center">
+                {wishlist.length}
+              </span>
+              <button
+                onClick={() => {
+                  if (confirm('¿Limpiar favoritos?')) {
+                    wishlist.forEach(p => removeFromWishlist(p.id))
+                  }
+                }}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-medium text-[#7A839C] hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Limpiar favoritos</span>
+              </button>
+            </>
+          )}
+        />
 
         {/* Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">

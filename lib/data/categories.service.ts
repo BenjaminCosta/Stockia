@@ -49,7 +49,7 @@ export async function getCategoryById(id: string): Promise<Category | null> {
     const { getDocument } = await import('../firebase/firestore')
     const doc = await getDocument<FirestoreCategory>(COLLECTIONS.categories, id)
     if (doc) {
-      return { id: doc.id, name: doc.name, iconName: doc.iconName, image: doc.image }
+      return { id: doc.id, name: doc.name, iconName: doc.iconName, image: doc.image ?? '' }
     }
   } catch {
     // fall through

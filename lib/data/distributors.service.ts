@@ -1,7 +1,8 @@
 import { getCollection, getDocument, getDocumentsByField, updateDocument, setDocument } from '../firebase/firestore'
 import { COLLECTIONS } from '../firebase/collections'
 import { mockDistribuidoras, mockDistributorCards } from '../mock-data'
-import { getDistanceKm, formatDistance, isWithinCoverage, normalizeCitySlug, type LatLng } from '../firebase/geo'
+import { getDistanceKm, formatDistance, isWithinCoverage, normalizeCitySlug, normalizeTextSlug, buildLocationKey, hasRealCoordinates } from '../firebase/geo'
+import { normalizeLocationInput } from '../locations/location-utils'
 import type { Distribuidora, DistributorCard, CommerceContext } from '../types'
 
 // ─── Internal helper: aggregate ratings per distributor ────────────────────────
@@ -38,9 +39,14 @@ export interface FirestoreDistributor {
   address: string
   city: string
   province: string
+  provinceSlug?: string
+  citySlug?: string
+  locationKey?: string
+  /** Legacy key name from previous implementation. Prefer locationKey. */
+  zoneKey?: string
   /** Real WGS-84 coords. Omitted when not yet geocoded. */
-  lat?: number
-  lng?: number
+  lat?: number | null
+  lng?: number | null
   coverageRadiusKm: number
   minimumOrder: number
   categories: string[]
@@ -51,13 +57,33 @@ export interface FirestoreDistributor {
   deliveryTimeLabel?: string
   deliveryTimeHours?: number
   deliveryZones?: string[]
+  deliveryLocationKeys?: string[]
+  /** Legacy key name from previous implementation. Prefer deliveryLocationKeys. */
+  deliveryZoneKeys?: string[]
   deliveryHours?: string
+  location?: {
+    province?: string
+    provinceSlug?: string
+    city?: string
+    citySlug?: string
+    locationKey?: string
+    zoneKey?: string
+    lat?: number | null
+    lng?: number | null
+  }
   createdAt: unknown
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toDistribuidora(doc: FirestoreDistributor & { id: string }): Distribuidora {
+  const normalizedLocation = normalizeLocationInput({
+    province: doc.location?.province || doc.province || 'Buenos Aires',
+    city: doc.location?.city || doc.city || '',
+  })
+  const lat = doc.location?.lat ?? doc.lat ?? null
+  const lng = doc.location?.lng ?? doc.lng ?? null
+
   return {
     id: doc.id,
     email: '',           // populated from users collection in a real auth flow
@@ -72,8 +98,17 @@ function toDistribuidora(doc: FirestoreDistributor & { id: string }): Distribuid
     deliveryTimeLabel: doc.deliveryTimeLabel ?? '',
     deliveryTimeHours: doc.deliveryTimeHours ?? 24,
     deliveryZones: doc.deliveryZones ?? [],
+    deliveryLocationKeys: doc.deliveryLocationKeys ?? doc.deliveryZoneKeys ?? [],
+    deliveryZoneKeys: doc.deliveryZoneKeys ?? [],
     deliveryHours: doc.deliveryHours ?? '',
-    location: { lat: doc.lat, lng: doc.lng, city: doc.city },
+    location: {
+      ...normalizedLocation,
+      provinceSlug: doc.location?.provinceSlug || doc.provinceSlug || normalizedLocation.provinceSlug,
+      citySlug: doc.location?.citySlug || doc.citySlug || normalizedLocation.citySlug,
+      locationKey: doc.location?.locationKey || doc.location?.zoneKey || doc.locationKey || doc.zoneKey || normalizedLocation.locationKey,
+      lat: hasRealCoordinates(lat, lng) ? lat : null,
+      lng: hasRealCoordinates(lat, lng) ? lng : null,
+    },
     createdAt: '',
   }
 }
@@ -82,52 +117,76 @@ function toDistribuidora(doc: FirestoreDistributor & { id: string }): Distribuid
 //
 // Priority order:
 //   1. Real coords on both sides → Haversine + coverageRadiusKm
-//   2. commerceContext.citySlug present → deliveryZones slug match
-//   3. No context → show all distributors
+//   2. commerceContext.locationKey present → deliveryLocationKeys match
+//   3. Legacy commerceContext.citySlug present → legacy delivery list slug match
+//   4. No context → show all distributors
 //
 // "Real coords" means lat !== 0 && lng !== 0 && both are defined.
 // Lat 0 / Lng 0 maps to Null Island (Gulf of Guinea) — always invalid for ARG.
 
-function hasRealCoords(lat?: number, lng?: number): lat is number {
-  return !!(lat && lng && lat !== 0 && lng !== 0)
+function getDistributorLocationKey(d: FirestoreDistributor & { id: string }): string {
+  const provinceSlug = d.location?.provinceSlug || d.provinceSlug || normalizeTextSlug(d.location?.province || d.province || 'Buenos Aires')
+  const citySlug = d.location?.citySlug || d.citySlug || normalizeCitySlug(d.location?.city || d.city || '')
+  return d.location?.locationKey || d.location?.zoneKey || d.locationKey || d.zoneKey || buildLocationKey(provinceSlug, citySlug)
+}
+
+function getDistributorDeliveryLocationKeys(d: FirestoreDistributor & { id: string }): string[] {
+  if (d.deliveryLocationKeys?.length) return d.deliveryLocationKeys
+  if (d.deliveryZoneKeys?.length) return d.deliveryZoneKeys
+
+  const provinceSlug = d.location?.provinceSlug || d.provinceSlug || normalizeTextSlug(d.location?.province || d.province || 'Buenos Aires')
+  const legacyLocations = d.deliveryZones ?? []
+  return legacyLocations.map(location => {
+    const slug = normalizeCitySlug(location)
+    return location.includes(':') ? location : buildLocationKey(provinceSlug, slug)
+  })
 }
 
 function matchesContextFn(context: CommerceContext | undefined) {
-  const coordsOk = hasRealCoords(context?.lat, context?.lng)
+  const commerceCoordsOk = hasRealCoordinates(context?.lat, context?.lng)
+  const commerceLocationKey = context?.locationKey || context?.zoneKey
+  const hasLocationKey = !!commerceLocationKey
   const hasCitySlug = !!(context?.citySlug)
 
   return (d: FirestoreDistributor & { id: string }): boolean => {
-    if (coordsOk) {
+    const distLat = d.location?.lat ?? d.lat ?? null
+    const distLng = d.location?.lng ?? d.lng ?? null
+    if (commerceCoordsOk && hasRealCoordinates(distLat, distLng)) {
       // Haversine: commerce must be within the distributor's coverage radius
       return isWithinCoverage(
         { lat: context!.lat!, lng: context!.lng! },
-        { lat: d.lat ?? 0, lng: d.lng ?? 0 },
+        { lat: distLat!, lng: distLng! },
         d.coverageRadiusKm
       )
     }
+    if (hasLocationKey) {
+      return getDistributorDeliveryLocationKeys(d).includes(commerceLocationKey!)
+    }
     if (hasCitySlug) {
-      // Zone matching: distributor must deliver to commerce's city
+      // Legacy locality matching: distributor must deliver to commerce's city.
       return (d.deliveryZones ?? []).some(
         z => normalizeCitySlug(z) === context!.citySlug
-      )
+      ) || getDistributorLocationKey(d).endsWith(`:${context!.citySlug}`)
     }
     return true // no context → show all
   }
 }
 
 function computeDistanceFn(context: CommerceContext | undefined) {
-  const coordsOk = hasRealCoords(context?.lat, context?.lng)
-  const hasCitySlug = !!(context?.citySlug)
+  const commerceCoordsOk = hasRealCoordinates(context?.lat, context?.lng)
+  const hasLocationContext = !!(context?.locationKey || context?.zoneKey || context?.citySlug)
 
   return (d: FirestoreDistributor & { id: string }): string => {
-    if (coordsOk) {
+    const distLat = d.location?.lat ?? d.lat ?? null
+    const distLng = d.location?.lng ?? d.lng ?? null
+    if (commerceCoordsOk && hasRealCoordinates(distLat, distLng)) {
       const km = getDistanceKm(
         { lat: context!.lat!, lng: context!.lng! },
-        { lat: d.lat ?? 0, lng: d.lng ?? 0 }
+        { lat: distLat!, lng: distLng! }
       )
       return formatDistance(km)
     }
-    if (hasCitySlug) return 'En tu zona'
+    if (hasLocationContext) return 'Entrega en tu localidad'
     return '—'
   }
 }
@@ -166,12 +225,13 @@ export async function getDistributorById(id: string): Promise<Distribuidora | nu
  *
  * Matching strategy (in priority order):
  *   1. context.lat + context.lng are non-zero → Haversine within coverageRadiusKm
- *   2. context.citySlug present → deliveryZones slug-match
- *   3. No context → return all active distributors
+ *   2. context.locationKey present → deliveryLocationKeys match
+ *   3. context.citySlug present → legacy delivery list slug-match
+ *   4. No context → return all active distributors
  *
  * The `distance` field on each card reflects the strategy used:
  *   - "3.2 km"   (real coords)
- *   - "En tu zona" (slug match)
+ *   - "Entrega en tu localidad" (zone match)
  *   - "—"          (no context)
  *
  * Falls back to mockDistributorCards when Firestore has no data.
@@ -181,7 +241,7 @@ export async function getDistributorCards(
 ): Promise<DistributorCard[]> {
   const matchesCtx = matchesContextFn(context)
   const computeDist = computeDistanceFn(context)
-  const coordsOk = hasRealCoords(context?.lat, context?.lng)
+  const coordsOk = hasRealCoordinates(context?.lat, context?.lng)
 
   try {
     const [docs, ratings] = await Promise.all([

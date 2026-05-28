@@ -52,7 +52,7 @@ export type AdminCommission = {
   distributorName: string
   period: string
   orderTotal: number
-  commissionRate: number
+  commissionRate?: number
   commissionAmount: number
   status: 'pending' | 'paid' | 'overdue' | 'waived'
   orderId: string

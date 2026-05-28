@@ -17,14 +17,15 @@ export interface Comercio extends User {
   phone: string
   address: string
   location: {
-    /** Real WGS-84 latitude. Undefined (or 0) means no geocoords yet. */
-    lat?: number
-    /** Real WGS-84 longitude. Undefined (or 0) means no geocoords yet. */
-    lng?: number
+    /** Real WGS-84 latitude. Null/undefined means no geocoords yet. */
+    lat?: number | null
+    /** Real WGS-84 longitude. Null/undefined means no geocoords yet. */
+    lng?: number | null
+    province?: string
+    provinceSlug?: string
     city: string
-    zone: string
-    /** URL-safe, accent-free, lowercase version of city for zone matching. */
-    citySlug: string
+    citySlug?: string
+    locationKey?: string
   }
 }
 
@@ -40,13 +41,19 @@ export interface Distribuidora extends User {
   deliveryTimeLabel: string  // "48 horas hábiles", "Mismo día", "En 2hs"
   deliveryTimeHours: number  // for computing estimated date
   deliveryZones: string[]
+  deliveryLocationKeys?: string[]
+  deliveryZoneKeys?: string[]
   deliveryHours: string      // "Lunes a Viernes · 8 a 17hs"
   location: {
-    /** Real WGS-84 latitude. Undefined (or 0) means no geocoords yet. */
-    lat?: number
-    /** Real WGS-84 longitude. Undefined (or 0) means no geocoords yet. */
-    lng?: number
+    /** Real WGS-84 latitude. Null/undefined means no geocoords yet. */
+    lat?: number | null
+    /** Real WGS-84 longitude. Null/undefined means no geocoords yet. */
+    lng?: number | null
+    province?: string
+    provinceSlug?: string
     city: string
+    citySlug?: string
+    locationKey?: string
   }
   // Commission fields
   commissionRate?: number                            // e.g. 0.015 = 1.5%
@@ -56,13 +63,17 @@ export interface Distribuidora extends User {
 /**
  * Context passed from a commerce to location-aware queries.
  * When lat/lng are present and non-zero, Haversine radius is used.
- * When only citySlug is present, zone-name matching is used.
+ * When only locationKey/citySlug is present, province + locality matching is used.
  * When neither is present, all distributors are returned.
  */
 export interface CommerceContext {
   lat?: number
   lng?: number
+  locationKey?: string
+  /** Legacy key name kept for existing records. Prefer locationKey. */
+  zoneKey?: string
   citySlug?: string
+  provinceSlug?: string
 }
 
 // Product types

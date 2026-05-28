@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Check, Clock, MapPin, Package, X, Handshake } from 'lucide-react'
+import { Check, Clock, MapPin, Package, X } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { PillFilter } from '@/components/ui/PillFilter'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
+import { PaymentMethodBadge } from '@/components/payment-method-badge'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
 import { useDistribuidoraOrders } from '@/hooks/use-data'
@@ -112,19 +113,16 @@ export default function PedidosDistribuidoraPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold text-foreground text-sm">{order.comercioName}</h3>
                       <StatusBadge status={order.firestoreStatus ?? order.status} />
-                      {order.paymentMethod === 'external' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                          <Handshake className="h-2.5 w-2.5" /> Coordinar
-                        </span>
-                      )}
+                      <PaymentMethodBadge
+                        method={order.paymentMethod}
+                        labelOverride={order.paymentMethod === 'external' ? 'Pedido externo' : undefined}
+                        className="text-[10px] px-2 py-0.5"
+                      />
                     </div>
                     <div className="flex items-center gap-2.5 text-xs text-muted-foreground mt-0.5 flex-wrap">
                       <span className="font-mono">{order.orderNumber}</span>
                       <span className="flex items-center gap-1">
-                        <MapPin className="h-[10px] w-[10px] text-[#89B317]" /> {order.zone}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Package className="h-[10px] w-[10px]" /> {order.items.length} productos
+                        <Package className="h-2.5 w-2.5" /> {order.items.length} productos
                       </span>
                     </div>
                   </div>

@@ -112,7 +112,7 @@ export function ComercioTopHeader() {
   const { currentUser, getCartItemCount, getCartTotal, wishlist, commerceOrders } = useApp()
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
   const storeName = comercio?.storeName || 'Mi comercio'
-  const locationCity = comercio?.location?.city || 'Buenos Aires'
+  const locationCity = [comercio?.location?.city, comercio?.location?.province].filter(Boolean).join(', ') || 'Argentina'
   const initials = storeName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const cartItemCount = getCartItemCount()
   const cartTotal = getCartTotal()

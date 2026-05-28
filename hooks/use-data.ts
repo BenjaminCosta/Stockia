@@ -68,11 +68,11 @@ function useAsyncData<T>(
 }
 
 export function useDistributors(context?: CommerceContext) {
-  const cacheKey = `dist-cards:${context?.lat ?? 0}:${context?.lng ?? 0}:${context?.citySlug ?? ''}`
+  const cacheKey = `dist-cards:${context?.lat ?? 0}:${context?.lng ?? 0}:${context?.locationKey ?? context?.zoneKey ?? ''}:${context?.citySlug ?? ''}`
   const { data, loading } = useAsyncData<DistributorCard[]>(
     () => getDistributorCards(context),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [context?.lat, context?.lng, context?.citySlug],
+    [context?.lat, context?.lng, context?.locationKey, context?.zoneKey, context?.citySlug],
     cacheKey
   )
   return { data: data ?? [], loading }

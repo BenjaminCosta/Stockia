@@ -34,9 +34,10 @@ export function getPaymentMethodConfig(method?: PaymentMethod) {
 interface PaymentMethodBadgeProps {
   method?: PaymentMethod
   className?: string
+  labelOverride?: string
 }
 
-export function PaymentMethodBadge({ method, className }: PaymentMethodBadgeProps) {
+export function PaymentMethodBadge({ method, className, labelOverride }: PaymentMethodBadgeProps) {
   const config = getPaymentMethodConfig(method)
   const Icon = config.icon
 
@@ -49,7 +50,7 @@ export function PaymentMethodBadge({ method, className }: PaymentMethodBadgeProp
       )}
     >
       <Icon className="h-3 w-3" />
-      {config.label}
+      {labelOverride ?? config.label}
     </span>
   )
 }

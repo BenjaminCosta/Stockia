@@ -8,7 +8,6 @@ import { useApp } from '@/lib/app-context'
 import { Comercio } from '@/lib/types'
 import { useComercioOrders } from '@/hooks/use-data'
 import { FeedbackModal } from '@/components/FeedbackModal'
-import { normalizeCitySlug } from '@/lib/firebase/geo'
 import { updateDocument } from '@/lib/firebase/firestore'
 import { COLLECTIONS } from '@/lib/firebase/collections'
 import { getCommerceRatingSummary } from '@/lib/data/commerce-reviews.service'
@@ -16,6 +15,8 @@ import { getAllCommerceReviewsByCommerce } from '@/lib/data/commerce-reviews.ser
 import type { CommerceReview } from '@/lib/types'
 import { StarDisplay } from '@/components/star-rating'
 import { SkeletonBlock } from '@/components/ui/SkeletonCard'
+import { LocationSelector, LocationSelectorValue } from '@/components/location-selector'
+import { normalizeLocationInput } from '@/lib/locations/location-utils'
 
 // ─── Editable info section ─────────────────────────────────────────────────────
 
@@ -27,6 +28,9 @@ function EditableInfoSection({ comercio }: { comercio: Comercio | null }) {
     storeName: comercio?.storeName || '',
     phone: comercio?.phone || '',
     address: comercio?.address || '',
+  })
+  const [location, setLocation] = useState<LocationSelectorValue>({
+    province: comercio?.location?.province || '',
     city: comercio?.location?.city || '',
   })
 
@@ -35,6 +39,9 @@ function EditableInfoSection({ comercio }: { comercio: Comercio | null }) {
       storeName: comercio?.storeName || '',
       phone: comercio?.phone || '',
       address: comercio?.address || '',
+    })
+    setLocation({
+      province: comercio?.location?.province || '',
       city: comercio?.location?.city || '',
     })
   }, [comercio])
@@ -43,12 +50,12 @@ function EditableInfoSection({ comercio }: { comercio: Comercio | null }) {
     if (!comercio?.id) return
     setSaving(true)
     try {
+      const normalizedLocation = normalizeLocationInput(location)
       await updateDocument(COLLECTIONS.commerces, comercio.id, {
         businessName: form.storeName,
         phone: form.phone,
         address: form.address,
-        city: form.city,
-        citySlug: normalizeCitySlug(form.city),
+        ...normalizedLocation,
       })
       setSaved(true)
       setEditing(false)
@@ -64,7 +71,6 @@ function EditableInfoSection({ comercio }: { comercio: Comercio | null }) {
     { key: 'storeName', label: 'Nombre de fantasía', icon: <Store className="h-5 w-5" />, type: 'text' },
     { key: 'phone',     label: 'Teléfono',            icon: <Phone className="h-5 w-5" />, type: 'tel' },
     { key: 'address',   label: 'Dirección',            icon: <MapPin className="h-5 w-5" />, type: 'text' },
-    { key: 'city',      label: 'Ciudad',               icon: <MapPin className="h-5 w-5" />, type: 'text' },
   ] as const
 
   const staticFields = [
@@ -115,6 +121,23 @@ function EditableInfoSection({ comercio }: { comercio: Comercio | null }) {
             </div>
           </div>
         ))}
+        <div className="md:col-span-2 rounded-2xl border border-gray-100 bg-gray-50/50 p-4">
+          {editing ? (
+            <LocationSelector value={location} onChange={setLocation} compact />
+          ) : (
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-xl bg-white shadow-sm text-primary flex items-center justify-center shrink-0">
+                <MapPin className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ubicación</p>
+                <p className="font-bold text-sm text-foreground truncate">
+                  {[location.city, location.province].filter(Boolean).join(', ') || '—'}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
         {staticFields.map((f, i) => (
           <div key={i} className="flex items-start gap-4 p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
             <div className="h-10 w-10 rounded-xl bg-white shadow-sm text-primary flex items-center justify-center shrink-0">{f.icon}</div>
@@ -246,7 +269,8 @@ export default function CuentaPage() {
 
   const storeName = comercio?.storeName || 'Mi comercio'
   const initials = storeName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-  const city = comercio?.location?.city || 'Avellaneda'
+  const city = comercio?.location?.city || ''
+  const province = comercio?.location?.province || ''
 
   const { data: myOrders } = useComercioOrders(comercio?.id || 'com-1')
   const uniqueDistributors = new Set(myOrders.map(o => o.distribuidoraId)).size
@@ -303,7 +327,7 @@ export default function CuentaPage() {
               </p>
               <h1 className="font-heading text-xl font-bold leading-tight tracking-tight text-white md:text-4xl">{storeName}</h1>
               <div className="mt-2 flex w-max max-w-full items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-medium text-white/70 md:text-base">
-                <MapPin className="h-3.5 w-3.5" /> {city}, Buenos Aires
+                <MapPin className="h-3.5 w-3.5" /> {[city, province].filter(Boolean).join(', ') || 'Argentina'}
               </div>
             </div>
           </div>

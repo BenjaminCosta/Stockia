@@ -11,7 +11,7 @@ import { formatCurrency } from '@/lib/mock-data'
 import { useProducts } from '@/hooks/use-data'
 import { Distribuidora } from '@/lib/types'
 import { CategoryIcon } from '@/components/category-icon'
-import { ProductCardSkeleton } from '@/components/ui/SkeletonCard'
+import { InventoryTableSkeleton } from '@/components/ui/SkeletonCard'
 import ImportProductsModal from '@/components/products/ImportProductsModal'
 import { exportProductsToXlsx, downloadTemplate } from '@/lib/export/productsExport'
 import type { ParsedProductRow } from '@/lib/import/productsImport'
@@ -125,7 +125,7 @@ export default function ProductosPage() {
       {/* Content */}
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full">
         {isLoading ? (
-          <ProductCardSkeleton />
+          <InventoryTableSkeleton count={6} />
         ) : filteredProducts.length === 0 ? (
           <EmptyState
             icon={Package}

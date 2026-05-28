@@ -7,6 +7,7 @@ import { Distribuidora, Review, CommerceHistory } from '@/lib/types'
 import { getReviewsByDistributor, getDistributorRatingSummary, getCommerceHistoriesByDistributor } from '@/lib/data/reviews.service'
 import { StarDisplay, CriteriaRow } from '@/components/star-rating'
 import { ReviewCard } from '@/components/review-card'
+import { ReviewsDashboardSkeleton } from '@/components/ui/SkeletonCard'
 
 const tabs = ['Reseñas', 'Historial de comercios'] as const
 type Tab = typeof tabs[number]
@@ -65,8 +66,25 @@ export default function ResenasDistribuidoraPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="h-8 w-8 rounded-full border-2 border-[#C8FF00] border-t-transparent animate-spin" />
+      <div className="flex flex-col min-h-screen pb-24 lg:pb-8">
+        <header className="sticky top-0 z-20 bg-white border-b border-border px-4 md:px-8 pt-3 md:pt-6 pb-0">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="font-heading font-bold text-xl md:text-2xl text-foreground mb-3 md:mb-6">Reseñas</h1>
+            <div className="flex gap-1">
+              {tabs.map(tab => (
+                <div
+                  key={tab}
+                  className="px-4 py-2 text-sm font-semibold rounded-t-xl border-b-2 border-transparent text-gray-300"
+                >
+                  {tab}
+                </div>
+              ))}
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 px-4 md:px-8 py-4 md:py-6 max-w-4xl mx-auto w-full">
+          <ReviewsDashboardSkeleton />
+        </main>
       </div>
     )
   }

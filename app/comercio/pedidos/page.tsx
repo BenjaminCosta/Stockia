@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
 import { ChevronRight, CheckCircle, Package } from 'lucide-react'
+import { ComercioPageHeader } from '@/components/comercio-page-header'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { PaymentMethodBadge, getPaymentMethodConfig } from '@/components/payment-method-badge'
@@ -56,17 +57,7 @@ function PedidosContent() {
   return (
     <div className="flex flex-col min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-20 md:pb-8">
       <main className="flex-1 px-4 py-6 md:px-8 md:py-8 max-w-5xl mx-auto w-full">
-        <header className="mb-5 md:mb-6">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Pedidos
-          </p>
-          <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">
-            Mis pedidos
-          </h1>
-          <p className="mt-1.5 max-w-xl text-sm leading-6 text-muted-foreground">
-            Revisá rápido el estado, el tipo de pago y el total de cada compra.
-          </p>
-        </header>
+        <ComercioPageHeader label="Pedidos" title="Mis pedidos" />
 
         {/* Success banner */}
         {showSuccess && (

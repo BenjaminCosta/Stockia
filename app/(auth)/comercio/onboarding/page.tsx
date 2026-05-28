@@ -24,8 +24,8 @@ const steps = [
   },
   {
     icon: <MapPin className="h-10 w-10" />,
-    title: 'Distribuidoras en tu zona',
-    description: 'Conectamos tu negocio con los mejores distribuidores de Avellaneda, Quilmes, Lanús y alrededores.',
+    title: 'Distribuidoras en tu localidad',
+    description: 'Conectamos tu negocio con distribuidoras que entregan en tu localidad.',
   },
 ]
 

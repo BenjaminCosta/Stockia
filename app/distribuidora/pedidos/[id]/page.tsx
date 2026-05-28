@@ -13,6 +13,7 @@ import { CommerceReviewModal } from '@/components/CommerceReviewModal'
 import { FeedbackModal } from '@/components/FeedbackModal'
 import { useApp } from '@/lib/app-context'
 import type { Distribuidora } from '@/lib/types'
+import { OrderDetailSkeleton } from '@/components/ui/SkeletonCard'
 
 // ─── Status system ────────────────────────────────────────────────────────────
 
@@ -142,11 +143,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
   }, [order])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      </div>
-    )
+    return <OrderDetailSkeleton />
   }
 
   if (!order) {
@@ -305,7 +302,6 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
               </div>
               <div>
                 <p className="font-bold text-foreground text-base">{order.comercioName}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{order.zone}</p>
               </div>
             </div>
 
@@ -313,7 +309,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground bg-gray-50 px-3 py-2 rounded-xl">
                   <MapPin className="h-3.5 w-3.5 shrink-0" />
-                  {comercio?.address || 'Av. Mitre 1234'}, {order.zone}
+                  {comercio?.address || 'Dirección no informada'}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground bg-gray-50 px-3 py-2 rounded-xl">
                   <Phone className="h-3.5 w-3.5 shrink-0" />
@@ -346,7 +342,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
               <div>
                 <p className="font-bold text-foreground text-sm">{order.comercioName}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {comercio?.address || 'Av. San Martín 450'}, {order.zone}
+                  {comercio?.address || 'Dirección no informada'}
                 </p>
                 <div className="flex items-center gap-1.5 mt-3 text-xs font-medium text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg w-max capitalize">
                   <Clock className="h-3.5 w-3.5" /> Entrega: {estimatedDelivery}
