@@ -14,16 +14,22 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 }
 
-// Avoid re-initializing on hot-reload in dev
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+// Guard: don't initialize Firebase without a valid API key (e.g. during SSG prerender)
+const app = firebaseConfig.apiKey
+  ? getApps().length
+    ? getApp()
+    : initializeApp(firebaseConfig)
+  : null
 
-export const auth = getAuth(app)
-export const db = getFirestore(app)
-export const storage = getStorage(app)
+export const auth = app ? getAuth(app) : (null as unknown as ReturnType<typeof getAuth>)
+export const db = app ? getFirestore(app) : (null as unknown as ReturnType<typeof getFirestore>)
+export const storage = app
+  ? getStorage(app)
+  : (null as unknown as ReturnType<typeof getStorage>)
 
 // Analytics only runs in the browser — never on the server
 let analytics: Analytics | null = null
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && app) {
   import('firebase/analytics').then(({ getAnalytics }) => {
     analytics = getAnalytics(app)
   })
