@@ -148,11 +148,11 @@ export function ComercioTopHeader() {
     <header className="sticky top-0 z-50 bg-sidebar lg:bg-[#0B1A45] text-white">
 
       {/* Main header */}
-      <div className="max-w-350 mx-auto px-4 lg:px-8 h-12 lg:h-16 flex items-center gap-4">
+      <div className="max-w-350 mx-auto px-4 lg:px-8 h-10 lg:h-16 flex items-center gap-4">
 
         {/* Logo */}
         <Link href="/comercio" className="shrink-0">
-          <StockiaLogo variant="white" className="h-7 w-auto" />
+          <StockiaLogo variant="white" className="h-5.5 w-auto" />
         </Link>
 
         {/* Location chip — desktop */}

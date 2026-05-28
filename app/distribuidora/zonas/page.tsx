@@ -165,11 +165,12 @@ export default function ZonasPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Page header */}
-      <header className="sticky top-0 z-20 bg-white border-b border-border px-4 md:px-8 pt-5 md:pt-6 pb-4">
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[#DFE1E8]/80 px-4 md:px-8 pt-4 md:pt-6 pb-4">
         <div className="max-w-5xl mx-auto flex items-start justify-between gap-4">
           <div>
-            <h1 className="font-heading font-bold text-2xl text-foreground">Zonas de entrega</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Definí ubicación base, localidades cubiertas y condiciones de reparto.</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-0.5">Configuración logística</p>
+            <h1 className="font-heading font-bold text-2xl md:text-3xl tracking-tight text-[#0B1A45]">Zonas de entrega</h1>
+            <p className="text-sm text-muted-foreground mt-0.5 hidden md:block">Definí ubicación base, localidades cubiertas y condiciones de reparto.</p>
           </div>
           <button
             type="button"
@@ -199,11 +200,12 @@ export default function ZonasPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
           {/* Ubicación base */}
-          <div className="bg-white rounded-3xl shadow-md border border-border p-6 md:col-span-2">
+          <div className="bg-white rounded-3xl shadow-[0_10px_30px_rgba(11,26,69,0.06)] border border-[#DFE1E8]/80 p-6 md:col-span-2">
             <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="font-bold text-foreground text-sm uppercase tracking-wider">Ubicación base</h2>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-1">Origen</p>
+                <h2 className="font-heading font-bold text-[#0B1A45] text-lg">Ubicación base</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   La dirección es informativa y queda lista para futura geocodificación.
                 </p>
               </div>
@@ -239,8 +241,9 @@ export default function ZonasPage() {
           </div>
 
           {/* Localidades cubiertas — EDITABLE */}
-          <div className="bg-white rounded-3xl shadow-md border border-border p-6 md:col-span-2">
-            <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-1">Zonas cubiertas</h2>
+          <div className="bg-white rounded-3xl shadow-[0_10px_30px_rgba(11,26,69,0.06)] border border-[#DFE1E8]/80 p-6 md:col-span-2">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-1">Cobertura</p>
+            <h2 className="font-heading font-bold text-[#0B1A45] text-lg mb-0.5">Zonas cubiertas</h2>
             <p className="text-xs text-muted-foreground mb-5">
               Los comercios de estas localidades verán tu distribuidora en sus resultados.
             </p>
@@ -250,9 +253,9 @@ export default function ZonasPage() {
                 {locationKeys.map((locationKey) => (
                   <span
                     key={locationKey}
-                    className="flex items-center gap-1.5 bg-primary/10 text-primary font-semibold text-sm px-3 py-1.5 rounded-full"
+                    className="flex items-center gap-1.5 bg-[#F1FFD1] border border-[#C8FF00]/30 text-[#4A662E] font-semibold text-sm px-3 py-1.5 rounded-full"
                   >
-                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-[#89B317]" />
                     {locationLabels[locationKey] ?? locationKey}
                     <button
                       type="button"
@@ -290,8 +293,9 @@ export default function ZonasPage() {
           </div>
 
           {/* Condiciones generales */}
-          <div className="bg-white rounded-3xl shadow-md border border-border p-6">
-            <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-5">Condiciones generales</h2>
+          <div className="bg-white rounded-3xl shadow-[0_10px_30px_rgba(11,26,69,0.06)] border border-[#DFE1E8]/80 p-6">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-1">Logística</p>
+            <h2 className="font-heading font-bold text-[#0B1A45] text-lg mb-5">Condiciones generales</h2>
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">
@@ -301,7 +305,7 @@ export default function ZonasPage() {
                   type="number"
                   value={minOrder}
                   onChange={(e) => setMinOrder(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#0B1A45] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors"
                 />
               </div>
               <div>
@@ -312,7 +316,7 @@ export default function ZonasPage() {
                   type="number"
                   value={deliveryTime}
                   onChange={(e) => setDeliveryTime(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#0B1A45] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors"
                 />
               </div>
               <div>
@@ -327,8 +331,8 @@ export default function ZonasPage() {
                       onClick={() => toggleDay(day)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${
                         selectedDays.includes(day)
-                          ? 'bg-primary text-white border-primary'
-                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-primary/40'
+                          ? 'bg-[#0B1A45] text-[#C8FF00] border-[#0B1A45]'
+                          : 'bg-[#F7F8FA] text-[#5F6880] border-[#DFE1E8]/80 hover:border-[#0B1A45]/30 hover:text-[#0B1A45]'
                       }`}
                     >
                       {day.slice(0, 3)}

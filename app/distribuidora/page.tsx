@@ -1,38 +1,45 @@
 'use client'
 
 import Link from 'next/link'
+import { useMemo } from 'react'
 import { TrendingUp, Package, Clock, CheckCircle, AlertCircle, ShoppingCart, ChevronRight } from 'lucide-react'
 import { StatusBadge } from '@/components/status-badge'
 import { PageHero } from '@/components/ui/PageHero'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
-import { useDistribuidoraOrders, useProducts } from '@/hooks/use-data'
+import { useProducts } from '@/hooks/use-data'
 import { Distribuidora } from '@/lib/types'
 import { DistribuidoraDashboardSkeleton } from '@/components/ui/SkeletonCard'
 
 export default function DistribuidoraDashboardPage() {
-  const { currentUser } = useApp()
+  const { currentUser, distribuidoraOrders: orders, distribuidoraOrdersLoading: ordersLoading } = useApp()
   const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
   const companyName = distribuidora?.companyName || 'Mi distribuidora'
 
   const distId = distribuidora?.id || 'dist-1'
-  const { data: orders, loading: ordersLoading } = useDistribuidoraOrders(distId)
   const { data: products, loading: productsLoading } = useProducts(distId)
   const isLoading = ordersLoading || productsLoading
-  const recentOrders = [...orders]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 4)
-  const lowStockProducts = products.filter(p => p.stock <= 10)
-  const lowStockCount = lowStockProducts.length
-  const healthyStockCount = products.filter(p => p.stock > 10).length
-  const stockCoverage = products.length > 0 ? Math.round((healthyStockCount / products.length) * 100) : null
-  const pendingCount = orders.filter(o => o.status === 'pendiente' || o.firestoreStatus === 'pending_confirmation').length
-  const kpis = {
-    ventasHoy: orders.reduce((s, o) => s + o.total, 0),
-    pendientes: pendingCount,
-    pedidosHoy: orders.length,
-    stockOk: stockCoverage,
-  }
+
+  const { recentOrders, lowStockProducts, lowStockCount, kpis } = useMemo(() => {
+    const recent = [...orders]
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 4)
+    const lowStock = products.filter(p => p.stock <= 10)
+    const healthyCount = products.filter(p => p.stock > 10).length
+    const coverage = products.length > 0 ? Math.round((healthyCount / products.length) * 100) : null
+    const pendingCount = orders.filter(o => o.status === 'pendiente' || o.firestoreStatus === 'pending_confirmation').length
+    return {
+      recentOrders: recent,
+      lowStockProducts: lowStock,
+      lowStockCount: lowStock.length,
+      kpis: {
+        ventasHoy: orders.reduce((s, o) => s + o.total, 0),
+        pendientes: pendingCount,
+        pedidosHoy: orders.length,
+        stockOk: coverage,
+      },
+    }
+  }, [orders, products])
 
   const stockMessage = products.length === 0
     ? {
@@ -103,21 +110,42 @@ export default function DistribuidoraDashboardPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 md:gap-4 pt-4 md:pt-6 border-t border-[#DFE1E8]/60">
+          <div className="grid grid-cols-3 gap-2 md:gap-3 pt-4 md:pt-5 border-t border-[#DFE1E8]/60">
             {[
-              { icon: Clock, label: 'Pendientes', value: String(kpis.pendientes), color: '' },
-              { icon: Package, label: 'Pedidos hoy', value: String(kpis.pedidosHoy), color: '' },
-              { icon: CheckCircle, label: 'Stock OK', value: kpis.stockOk === null ? '—' : `${kpis.stockOk}%`, color: 'text-[#89B317]' },
-            ].map(({ icon: Icon, label, value, color }, i) => (
+              {
+                icon: Clock,
+                label: 'Pendientes',
+                value: String(kpis.pendientes),
+                valueCls: kpis.pendientes > 0 ? 'text-amber-700' : 'text-foreground',
+                bg: kpis.pendientes > 0 ? 'bg-amber-50 border-amber-200/60' : 'bg-[#F7F8FA] border-[#DFE1E8]/60',
+                iconCls: kpis.pendientes > 0 ? 'text-amber-500' : 'text-[#7A839C]',
+              },
+              {
+                icon: Package,
+                label: 'Pedidos hoy',
+                value: String(kpis.pedidosHoy),
+                valueCls: 'text-foreground',
+                bg: 'bg-[#F7F8FA] border-[#DFE1E8]/60',
+                iconCls: 'text-[#7A839C]',
+              },
+              {
+                icon: CheckCircle,
+                label: 'Stock OK',
+                value: kpis.stockOk === null ? '—' : `${kpis.stockOk}%`,
+                valueCls: 'text-[#4A662E]',
+                bg: 'bg-[#F4FBE7] border-[#D9EEA8]/60',
+                iconCls: 'text-[#89B317]',
+              },
+            ].map(({ icon: Icon, label, value, valueCls, bg, iconCls }, i) => (
               <div
                 key={label}
-                className="animate-fade-up"
+                className={`animate-fade-up rounded-xl border px-3 py-3 ${bg}`}
                 style={{ animationDelay: `${100 + i * 80}ms` }}
               >
-                <p className="text-[10px] md:text-xs text-[#7A839C] mb-0.5 font-medium flex items-center gap-1">
+                <p className={`text-[10px] md:text-xs font-semibold mb-1.5 flex items-center gap-1 ${iconCls}`}>
                   <Icon className="h-3 w-3" /> {label}
                 </p>
-                <p className={`font-bold text-lg md:text-xl ${color || 'text-foreground'}`}>{value}</p>
+                <p className={`font-heading font-bold text-xl md:text-2xl ${valueCls}`}>{value}</p>
               </div>
             ))}
           </div>

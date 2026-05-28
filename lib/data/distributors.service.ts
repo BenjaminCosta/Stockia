@@ -89,6 +89,7 @@ function toDistribuidora(doc: FirestoreDistributor & { id: string }): Distribuid
     email: '',           // populated from users collection in a real auth flow
     role: 'distribuidora',
     companyName: doc.companyName,
+    logoUrl: doc.logoUrl,
     razonSocial: doc.razonSocial ?? '',
     cuit: doc.cuit ?? '',
     phone: doc.phone,
@@ -242,6 +243,7 @@ export async function getDistributorCards(
   const matchesCtx = matchesContextFn(context)
   const computeDist = computeDistanceFn(context)
   const coordsOk = hasRealCoordinates(context?.lat, context?.lng)
+  const hasContext = !!(context?.lat || context?.lng || context?.locationKey || context?.zoneKey || context?.citySlug)
 
   try {
     const [docs, ratings] = await Promise.all([
@@ -250,8 +252,9 @@ export async function getDistributorCards(
     ])
 
     if (docs.length > 0) {
-      const cards: DistributorCard[] = docs
-        .filter(matchesCtx)
+      const matchedDocs = docs.filter(matchesCtx)
+      const visibleDocs = matchedDocs.length > 0 ? matchedDocs : docs
+      const cards: DistributorCard[] = visibleDocs
         .map(d => {
           const r = ratings[d.id]
           return {
@@ -263,7 +266,7 @@ export async function getDistributorCards(
               .map(w => w[0])
               .join('')
               .toUpperCase(),
-            distance: computeDist(d),
+            distance: matchedDocs.length > 0 || !hasContext ? computeDist(d) : 'Consultar cobertura',
             deliveryInfo: d.deliveryTimeLabel ?? '',
             minOrder: d.minimumOrder,
             productCount: 0,

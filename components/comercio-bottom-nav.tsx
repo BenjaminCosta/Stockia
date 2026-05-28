@@ -45,13 +45,13 @@ export function ComercioBottomNav() {
             <Link
               key={href}
               href={href}
-              className="relative flex flex-1 flex-col items-center pt-2.5 pb-3 gap-0.5 transition-opacity duration-150 active:opacity-70"
+              className="relative flex flex-1 flex-col items-center pt-1.5 pb-2 gap-0.5 transition-opacity duration-150 active:opacity-70"
             >
               {isActive && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2.5px] bg-[#C8FF00] rounded-b-full" />
               )}
               <Icon
-                className={cn('h-5.5 w-5.5 transition-colors duration-150', isActive ? 'text-[#C8FF00]' : 'text-white/40')}
+                className={cn('h-5 w-5 transition-colors duration-150', isActive ? 'text-[#C8FF00]' : 'text-white/40')}
                 strokeWidth={isActive ? 2 : 1.75}
               />
               <span className={cn('text-[9px] font-semibold tracking-wide transition-colors duration-150', isActive ? 'text-[#C8FF00]' : 'text-white/40')}>

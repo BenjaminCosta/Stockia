@@ -31,6 +31,7 @@ export interface FirestoreCommerce {
   status: 'active' | 'paused'
   cuit?: string
   businessType?: string
+  logoUrl?: string
   createdAt: unknown
 }
 

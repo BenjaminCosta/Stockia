@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase/client'
 import { COLLECTIONS } from '@/lib/firebase/collections'
 import { getDistributorCards, getDistributorById as fetchDistributor } from '@/lib/data/distributors.service'
 import type { CommerceContext } from '@/lib/types'
-import { getAllProducts, getProductsByDistributor } from '@/lib/data/products.service'
+import { getAllProducts, getProductsByDistributor, getProductById } from '@/lib/data/products.service'
 import { getOrdersByCommerce, getOrdersByDistributor, getOrderById } from '@/lib/data/orders.service'
 import { getCategories } from '@/lib/data/categories.service'
 import type { DistributorCard, Product, Order, Distribuidora, OrderStatus, Category } from '@/lib/types'
@@ -68,7 +68,7 @@ function useAsyncData<T>(
 }
 
 export function useDistributors(context?: CommerceContext) {
-  const cacheKey = `dist-cards:${context?.lat ?? 0}:${context?.lng ?? 0}:${context?.locationKey ?? context?.zoneKey ?? ''}:${context?.citySlug ?? ''}`
+  const cacheKey = `dist-cards:v2:${context?.lat ?? 0}:${context?.lng ?? 0}:${context?.locationKey ?? context?.zoneKey ?? ''}:${context?.citySlug ?? ''}`
   const { data, loading } = useAsyncData<DistributorCard[]>(
     () => getDistributorCards(context),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,6 +94,15 @@ export function useProducts(distributorId?: string) {
     `prods:${distributorId ?? 'all'}`
   )
   return { data: data ?? [], loading }
+}
+
+export function useProduct(id: string) {
+  const { data, loading } = useAsyncData<Product | null>(
+    () => id ? getProductById(id) : Promise.resolve(null),
+    [id],
+    id ? `prod:${id}` : undefined
+  )
+  return { data, loading }
 }
 
 export function useCategories() {

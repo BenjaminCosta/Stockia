@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Plus, Pencil, Package, Upload, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
@@ -45,30 +45,36 @@ export default function ProductosPage() {
     )
   }
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.toLowerCase()
+    return products.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q)
+    )
+  }, [products, searchQuery])
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Blocked banner */}
       {isBlocked && (
-        <div className="bg-red-600 text-white px-4 py-3 flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 shrink-0" />
+        <div className="mx-4 mt-4 md:mx-8 flex items-start gap-3 rounded-2xl border border-red-200/80 bg-red-50 px-4 py-4 shadow-[0_1px_3px_rgba(239,68,68,0.06)]">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-red-500 mt-0.5" />
           <div className="flex-1">
-            <p className="font-bold text-sm">Cuenta bloqueada por comisiones vencidas</p>
-            <p className="text-xs text-red-100 mt-0.5">No podés publicar ni activar productos. Contactá a StockIA para regularizar tu situación.</p>
+            <p className="font-bold text-sm text-red-900">Cuenta bloqueada por comisiones vencidas</p>
+            <p className="text-xs text-red-700 mt-0.5">No podés publicar ni activar productos. Contactá a StockIA para regularizar tu situación.</p>
           </div>
         </div>
       )}
 
       {/* Page header */}
-      <header className="sticky top-0 md:top-0 z-20 bg-white border-b border-border px-4 md:px-8 pt-5 md:pt-6 pb-0">
+      <header className="sticky top-0 md:top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[#DFE1E8]/80 px-4 md:px-8 pt-4 md:pt-6 pb-0">
         <div className="max-w-5xl mx-auto">
-          <h1 className="font-heading font-bold text-2xl text-foreground mb-4 md:mb-6">Catálogo de Productos</h1>
+          <div className="mb-3 md:mb-4">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-0.5">Inventario</p>
+            <h1 className="font-heading font-bold text-2xl md:text-3xl tracking-tight text-[#0B1A45]">Catálogo de productos</h1>
+          </div>
 
-          <div className="flex gap-2 pb-4 flex-wrap">
+          <div className="flex gap-2 pb-3.5 flex-wrap">
             <SearchInput
               placeholder="Buscar productos..."
               value={searchQuery}
@@ -78,7 +84,7 @@ export default function ProductosPage() {
             {/* Import / Export / Template */}
             <button
               onClick={() => downloadTemplate()}
-              className="h-10 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+              className="h-10 px-3 rounded-xl border border-[#DFE1E8]/80 bg-white hover:bg-[#F7F8FA] text-[#5F6880] text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
               title="Descargar plantilla"
             >
               <FileSpreadsheet className="h-4 w-4" />
@@ -87,7 +93,7 @@ export default function ProductosPage() {
             <button
               onClick={() => exportProductsToXlsx(products, 'mis-productos')}
               disabled={products.length === 0}
-              className="h-10 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-10 px-3 rounded-xl border border-[#DFE1E8]/80 bg-white hover:bg-[#F7F8FA] text-[#5F6880] text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
               title="Exportar productos"
             >
               <Download className="h-4 w-4" />
@@ -95,7 +101,7 @@ export default function ProductosPage() {
             </button>
             <button
               onClick={() => setShowImport(true)}
-              className="h-10 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+              className="h-10 px-3 rounded-xl border border-[#DFE1E8]/80 bg-white hover:bg-[#F7F8FA] text-[#5F6880] text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
               title="Importar productos"
             >
               <Upload className="h-4 w-4" />
@@ -105,15 +111,15 @@ export default function ProductosPage() {
               <button
                 disabled
                 title="Cuenta bloqueada"
-                className="bg-gray-200 text-gray-400 px-4 md:px-6 rounded-xl text-sm md:text-base font-bold flex items-center justify-center gap-2 h-10 cursor-not-allowed"
+                className="bg-[#DFE1E8]/60 text-[#7A839C] px-4 md:px-5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 h-10 cursor-not-allowed"
               >
-                <Plus className="h-5 w-5 md:h-4 md:w-4" />
+                <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Nuevo</span>
               </button>
             ) : (
               <Link href="/distribuidora/productos/nuevo">
-                <button className="bg-primary hover:bg-primary/90 text-white px-4 md:px-6 rounded-xl text-sm md:text-base font-bold shadow-sm flex items-center justify-center gap-2 h-10 transition-colors">
-                  <Plus className="h-5 w-5 md:h-4 md:w-4" />
+                <button className="bg-[#0B1A45] hover:bg-[#14265f] text-white px-4 md:px-5 rounded-xl text-sm font-bold shadow-sm flex items-center justify-center gap-2 h-10 transition-colors">
+                  <Plus className="h-4 w-4" />
                   <span className="hidden sm:inline">Nuevo</span>
                 </button>
               </Link>
@@ -135,9 +141,9 @@ export default function ProductosPage() {
             actionHref={!searchQuery ? '/distribuidora/productos/nuevo' : undefined}
           />
         ) : (
-          <div className="bg-white md:rounded-2xl md:shadow-sm border border-transparent md:border-gray-200 overflow-hidden">
+          <div className="bg-white md:rounded-2xl md:shadow-[0_1px_3px_rgba(11,26,69,0.05),0_6px_20px_rgba(11,26,69,0.07)] border border-transparent md:border-[#DFE1E8]/80 overflow-hidden">
             {/* Desktop header row */}
-            <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-[#F7F8FA] border-b border-[#DFE1E8]/80 text-[10px] font-bold text-[#7A839C] uppercase tracking-[0.14em]">
               <div className="col-span-4">Producto</div>
               <div className="col-span-2">Categoría</div>
               <div className="col-span-2">Precio</div>
@@ -150,24 +156,24 @@ export default function ProductosPage() {
               {filteredProducts.map((product, i) => (
                 <div
                   key={product.id}
-                  className={`bg-white rounded-2xl md:rounded-none p-5 md:p-4 border border-gray-100 md:border-x-0 md:border-t-0 md:grid md:grid-cols-12 md:gap-4 md:items-center shadow-sm md:shadow-none ${i !== 0 ? 'md:border-t md:border-gray-100' : ''}`}
+                  className={`bg-white rounded-2xl md:rounded-none p-4 md:p-4 border border-[#DFE1E8]/60 md:border-x-0 md:border-t-0 md:grid md:grid-cols-12 md:gap-4 md:items-center shadow-[0_1px_3px_rgba(11,26,69,0.04)] md:shadow-none ${i !== 0 ? 'md:border-t md:border-[#DFE1E8]/60' : ''}`}
                 >
-                  {/* Product name — mobile shows category above, edit btn top-right */}
-                  <div className="col-span-4 mb-4 md:mb-0">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 md:hidden">
-                          <CategoryIcon category={product.category} className="h-5 w-5 text-gray-500" />
+                  {/* Product name */}
+                  <div className="col-span-4 mb-3 md:mb-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-9 h-9 bg-[#F1FFD1] rounded-xl flex items-center justify-center shrink-0 md:hidden">
+                          <CategoryIcon category={product.category} className="h-4.5 w-4.5 text-[#4A662E]" />
                         </div>
-                        <div>
-                          <div className="text-xs font-bold text-gray-500 md:hidden uppercase tracking-wider mb-0.5">{product.category}</div>
-                          <div className="font-bold text-foreground text-base md:text-sm leading-tight">{product.name}</div>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-bold text-[#7A839C] md:hidden uppercase tracking-[0.14em] mb-0.5">{product.category}</div>
+                          <div className="font-bold text-[#0B1A45] text-sm leading-tight truncate">{product.name}</div>
                         </div>
                       </div>
-                      <div className="md:hidden">
+                      <div className="md:hidden shrink-0">
                         <Link href={`/distribuidora/productos/${product.id}`}>
-                          <button className="h-8 w-8 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors">
-                            <Pencil className="h-4 w-4" />
+                          <button className="h-8 w-8 rounded-xl bg-[#F7F8FA] hover:bg-[#EFF0F3] border border-[#DFE1E8]/60 flex items-center justify-center text-[#5F6880] transition-colors">
+                            <Pencil className="h-3.5 w-3.5" />
                           </button>
                         </Link>
                       </div>
@@ -175,39 +181,43 @@ export default function ProductosPage() {
                   </div>
 
                   {/* Category — desktop only */}
-                  <div className="col-span-2 hidden md:block text-sm text-gray-600">
-                    <span className="bg-gray-100 px-2 py-1 rounded text-xs font-medium">{product.category}</span>
+                  <div className="col-span-2 hidden md:block">
+                    <span className="bg-[#F7F8FA] border border-[#DFE1E8]/60 px-2 py-1 rounded-lg text-xs font-semibold text-[#5F6880]">{product.category}</span>
                   </div>
 
                   {/* Price */}
-                  <div className="col-span-2 mb-3 md:mb-0 flex md:block justify-between items-center bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none">
-                    <span className="md:hidden text-xs font-bold text-gray-500 uppercase tracking-wider">Precio</span>
-                    <div className="font-heading font-bold text-lg md:text-base text-foreground">{formatCurrency(product.price)}</div>
+                  <div className="col-span-2 mb-2.5 md:mb-0 flex md:block justify-between items-center">
+                    <span className="md:hidden text-[10px] font-bold text-[#7A839C] uppercase tracking-[0.14em]">Precio</span>
+                    <div className="font-heading font-bold text-base md:text-sm text-[#0B1A45]">{formatCurrency(product.price)}</div>
                   </div>
 
                   {/* Stock */}
-                  <div className="col-span-2 mb-4 md:mb-0 flex md:block justify-between items-center bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none">
-                    <span className="md:hidden text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</span>
-                    <div className="text-right md:text-left">
-                      <div className="text-base md:text-sm font-bold text-foreground">{product.stock} un.</div>
-                      <div className={`text-[10px] font-bold mt-0.5 uppercase tracking-wide ${
-                        product.stock > 10 ? 'text-green-600' : product.stock > 0 ? 'text-amber-600' : 'text-red-600'
+                  <div className="col-span-2 mb-3 md:mb-0 flex md:block justify-between items-center gap-2">
+                    <span className="md:hidden text-[10px] font-bold text-[#7A839C] uppercase tracking-[0.14em]">Stock</span>
+                    <div className="flex items-center gap-1.5 md:flex-col md:items-start">
+                      <span className="font-bold text-sm text-[#0B1A45]">{product.stock} un.</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                        product.stock > 10
+                          ? 'bg-[#F4FBE7] text-[#4A662E]'
+                          : product.stock > 0
+                          ? 'bg-amber-50 text-amber-700'
+                          : 'bg-red-50 text-red-600'
                       }`}>
                         {product.stock > 10 ? 'En stock' : product.stock > 0 ? 'Poco stock' : 'Sin stock'}
-                      </div>
+                      </span>
                     </div>
                   </div>
 
                   {/* Active toggle */}
-                  <div className="col-span-1 flex justify-between md:justify-center items-center pt-3 md:pt-0 border-t border-gray-100 md:border-none">
-                    <span className="md:hidden text-sm font-bold text-gray-700">Producto activo</span>
-                    <Switch defaultChecked={product.active} className="data-[state=checked]:bg-primary" />
+                  <div className="col-span-1 flex justify-between md:justify-center items-center pt-3 md:pt-0 border-t border-[#DFE1E8]/40 md:border-none">
+                    <span className="md:hidden text-sm font-semibold text-[#0B1A45]">Producto activo</span>
+                    <Switch defaultChecked={product.active} className="data-[state=checked]:bg-[#0B1A45]" />
                   </div>
 
                   {/* Edit — desktop only */}
                   <div className="col-span-1 hidden md:flex justify-end">
                     <Link href={`/distribuidora/productos/${product.id}`}>
-                      <button className="h-8 w-8 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors">
+                      <button className="h-8 w-8 rounded-xl bg-[#F7F8FA] hover:bg-[#EFF0F3] border border-[#DFE1E8]/60 flex items-center justify-center text-[#5F6880] transition-colors">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </Link>

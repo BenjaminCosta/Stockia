@@ -16,6 +16,7 @@ export interface Comercio extends User {
   cuit: string
   phone: string
   address: string
+  logoUrl?: string
   location: {
     /** Real WGS-84 latitude. Null/undefined means no geocoords yet. */
     lat?: number | null
@@ -55,6 +56,7 @@ export interface Distribuidora extends User {
     citySlug?: string
     locationKey?: string
   }
+  logoUrl?: string
   // Commission fields
   commissionRate?: number                            // e.g. 0.015 = 1.5%
   commissionStatus?: 'ok' | 'overdue' | 'blocked'   // platform sets this

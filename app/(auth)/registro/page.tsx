@@ -11,18 +11,18 @@ import {
   Boxes,
   Building2,
   Check,
-  CreditCard,
   Eye,
   EyeOff,
   KeyRound,
   Mail,
   MapPin,
-  Phone,
   Route,
   ShieldCheck,
   Store,
   Truck,
 } from 'lucide-react'
+import { PhoneInput } from '@/components/ui/PhoneInput'
+import { CuitInput } from '@/components/ui/CuitInput'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '@/lib/firebase/client'
 import { upsertUser, upsertCommerce } from '@/lib/data/users.service'
@@ -111,8 +111,9 @@ export default function RegistroPage() {
 
   // Business data
   const [businessName, setBusinessName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
+  const [phone, setPhone] = useState('+54')
+  const [addressStreet, setAddressStreet] = useState('')
+  const [addressNumber, setAddressNumber] = useState('')
   const [cuit, setCuit] = useState('')
   const [businessType, setBusinessType] = useState('')       // comercio only
   const [minimumOrder, setMinimumOrder] = useState('')       // distribuidora only
@@ -148,8 +149,9 @@ export default function RegistroPage() {
       password.length >= 6 &&
       password === confirmPassword &&
       businessName.trim().length > 0 &&
-      phone.trim().length > 0 &&
-      address.trim().length > 0
+      phone.trim().length > 2 &&
+      addressStreet.trim().length > 0 &&
+      addressNumber.trim().length > 0
     ) ||
     (step === 4 &&
       isValidProvince(location.province) &&
@@ -174,6 +176,7 @@ export default function RegistroPage() {
 
       await upsertUser(uid, { name, email: email.trim(), role })
       const normalizedLocation = normalizeLocationInput(location)
+      const address = `${addressStreet.trim()} ${addressNumber.trim()}`.trim()
 
       if (role === 'comercio') {
         await upsertCommerce(uid, {
@@ -194,7 +197,7 @@ export default function RegistroPage() {
           userId: uid,
           companyName: name,
           phone,
-          address,
+          address, // already built above
           city: normalizedLocation.city,
           citySlug: normalizedLocation.citySlug,
           province: normalizedLocation.province,
@@ -326,7 +329,8 @@ export default function RegistroPage() {
                 confirmPassword={confirmPassword}
                 businessName={businessName}
                 phone={phone}
-                address={address}
+                addressStreet={addressStreet}
+                addressNumber={addressNumber}
                 cuit={cuit}
                 businessType={businessType}
                 minimumOrder={minimumOrder}
@@ -335,7 +339,8 @@ export default function RegistroPage() {
                 onConfirmPasswordChange={setConfirmPassword}
                 onBusinessNameChange={setBusinessName}
                 onPhoneChange={setPhone}
-                onAddressChange={setAddress}
+                onAddressStreetChange={setAddressStreet}
+                onAddressNumberChange={setAddressNumber}
                 onCuitChange={setCuit}
                 onBusinessTypeChange={setBusinessType}
                 onMinimumOrderChange={setMinimumOrder}
@@ -514,9 +519,9 @@ function RoleCard({
 function BusinessDataStep({
   role,
   email, password, confirmPassword,
-  businessName, phone, address, cuit, businessType, minimumOrder,
+  businessName, phone, addressStreet, addressNumber, cuit, businessType, minimumOrder,
   onEmailChange, onPasswordChange, onConfirmPasswordChange,
-  onBusinessNameChange, onPhoneChange, onAddressChange,
+  onBusinessNameChange, onPhoneChange, onAddressStreetChange, onAddressNumberChange,
   onCuitChange, onBusinessTypeChange, onMinimumOrderChange,
 }: {
   role: UserRole | null
@@ -525,7 +530,8 @@ function BusinessDataStep({
   confirmPassword: string
   businessName: string
   phone: string
-  address: string
+  addressStreet: string
+  addressNumber: string
   cuit: string
   businessType: string
   minimumOrder: string
@@ -534,18 +540,22 @@ function BusinessDataStep({
   onConfirmPasswordChange: (v: string) => void
   onBusinessNameChange: (v: string) => void
   onPhoneChange: (v: string) => void
-  onAddressChange: (v: string) => void
+  onAddressStreetChange: (v: string) => void
+  onAddressNumberChange: (v: string) => void
   onCuitChange: (v: string) => void
   onBusinessTypeChange: (v: string) => void
   onMinimumOrderChange: (v: string) => void
 }) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [emailTouched, setEmailTouched] = useState(false)
 
   const isDistributor = role === 'distribuidora'
   const strength = getPasswordStrength(password)
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword
   const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const showEmailFeedback = emailTouched && email.trim().length > 0
 
   const strengthColor =
     strength.level === 1 ? 'bg-red-400' :
@@ -568,16 +578,29 @@ function BusinessDataStep({
 
         <div className="grid gap-4 md:grid-cols-2">
           {/* Email */}
-          <FormField icon={Mail} label="Email *">
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => onEmailChange(e.target.value)}
-              placeholder="tu@email.com"
-              required
-              className="h-12 bg-background pl-11"
-            />
-          </FormField>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">Email *</Label>
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => onEmailChange(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
+                placeholder="tu@email.com"
+                required
+                className={`h-12 bg-background pl-11 ${showEmailFeedback && emailValid ? 'border-emerald-500 focus-visible:ring-emerald-500/30' : showEmailFeedback && !emailValid ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+              />
+            </div>
+            {showEmailFeedback && emailValid && (
+              <p className="flex items-center gap-1 text-xs font-medium text-emerald-600">
+                <Check className="h-3 w-3" /> Email válido
+              </p>
+            )}
+            {showEmailFeedback && !emailValid && (
+              <p className="text-xs font-medium text-destructive">Formato de email inválido</p>
+            )}
+          </div>
 
           {/* Password */}
           <div className="space-y-2">
@@ -674,38 +697,55 @@ function BusinessDataStep({
           </FormField>
 
           {/* Phone */}
-          <FormField icon={Phone} label="Teléfono *">
-            <Input
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">Teléfono *</Label>
+            <PhoneInput
               value={phone}
-              onChange={(e) => onPhoneChange(e.target.value)}
-              placeholder="+54 11 1234-5678"
+              onChange={onPhoneChange}
               required
-              className="h-12 bg-background pl-11"
             />
-          </FormField>
+          </div>
 
-          {/* Address — full width */}
+          {/* Address — street + number */}
           <div className="md:col-span-2">
-            <FormField icon={MapPin} label="Dirección *">
-              <Input
-                value={address}
-                onChange={(e) => onAddressChange(e.target.value)}
-                placeholder="Calle, número y localidad"
-                required
-                className="h-12 bg-background pl-11"
-              />
-            </FormField>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Dirección *</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-3">
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={addressStreet}
+                    onChange={(e) => onAddressStreetChange(e.target.value)}
+                    placeholder="Av. Corrientes"
+                    required
+                    className="h-12 bg-background pl-11"
+                    aria-label="Calle"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Input
+                    value={addressNumber}
+                    onChange={(e) => onAddressNumberChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Nro."
+                    required
+                    inputMode="numeric"
+                    className="h-12 bg-background text-center"
+                    aria-label="Número"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">La localidad la elegís en el paso siguiente.</p>
+            </div>
           </div>
 
           {/* CUIT */}
-          <FormField icon={CreditCard} label="CUIT (opcional)">
-            <Input
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">CUIT (opcional)</Label>
+            <CuitInput
               value={cuit}
-              onChange={(e) => onCuitChange(e.target.value)}
-              placeholder="20-12345678-9"
-              className="h-12 bg-background pl-11"
+              onChange={onCuitChange}
             />
-          </FormField>
+          </div>
 
           {/* Tipo de comercio (comercio only) / Pedido mínimo (distribuidora only) */}
           {isDistributor ? (

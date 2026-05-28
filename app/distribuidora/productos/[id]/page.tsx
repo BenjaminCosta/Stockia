@@ -3,15 +3,10 @@
 import { useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Upload, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowLeft, Save, Trash2 } from 'lucide-react'
 import { LoadingButton } from '@/components/ui/LoadingButton'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -19,22 +14,39 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { categories } from '@/lib/mock-data'
-import { useProducts } from '@/hooks/use-data'
+import { useProduct } from '@/hooks/use-data'
 import { CategoryIcon } from '@/components/category-icon'
 import { useApp } from '@/lib/app-context'
 import { updateProduct, deleteProduct } from '@/lib/data/products.service'
+import { ImageUploader } from '@/components/ui/ImageUploader'
+import { useImageUpload } from '@/hooks/use-image-upload'
 
 function EditProductoContent({ id }: { id: string }) {
   const router = useRouter()
   const { currentUser } = useApp()
-  const { data: products } = useProducts()
-  const product = products.find(p => p.id === id)
-  
+  const { data: product } = useProduct(id)
+
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  const [name, setName] = useState(product?.name || '')
+  const [category, setCategory] = useState(product?.category || '')
+  const [price, setPrice] = useState(product?.price?.toString() || '')
+  const [stock, setStock] = useState(product?.stock?.toString() || '')
+  const [description, setDescription] = useState(product?.description || '')
+  const [active, setActive] = useState(product?.active ?? true)
+  const [isOffer, setIsOffer] = useState(product?.isOffer ?? false)
+
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(product?.imageUrl ?? null)
+  const imageUpload = useImageUpload({
+    type: 'product',
+    ownerId: currentUser?.id ?? '',
+  })
+
+  const activeImageUrl = imageUpload.imageUrl ?? existingImageUrl
 
   const handleDelete = async () => {
-    if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return
     setIsDeleting(true)
     try {
       await deleteProduct(id)
@@ -44,13 +56,6 @@ function EditProductoContent({ id }: { id: string }) {
       router.push('/distribuidora/productos')
     }
   }
-  const [name, setName] = useState(product?.name || '')
-  const [category, setCategory] = useState(product?.category || '')
-  const [price, setPrice] = useState(product?.price?.toString() || '')
-  const [stock, setStock] = useState(product?.stock?.toString() || '')
-  const [description, setDescription] = useState(product?.description || '')
-  const [active, setActive] = useState(product?.active ?? true)
-  const [isOffer, setIsOffer] = useState(product?.isOffer ?? false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,6 +69,7 @@ function EditProductoContent({ id }: { id: string }) {
         description,
         status: active ? 'active' : 'paused',
         isOffer,
+        ...(activeImageUrl ? { imageUrl: activeImageUrl } : {}),
       })
     } catch (err) {
       console.error('[edit-producto] updateProduct failed', err)
@@ -76,8 +82,8 @@ function EditProductoContent({ id }: { id: string }) {
   if (!product) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <p className="text-muted-foreground">Producto no encontrado</p>
-        <Link href="/distribuidora/productos" className="text-primary mt-2">
+        <p className="text-[#7A839C]">Producto no encontrado</p>
+        <Link href="/distribuidora/productos" className="text-[#0B1A45] font-semibold mt-2 hover:underline">
           Volver a productos
         </Link>
       </div>
@@ -86,162 +92,209 @@ function EditProductoContent({ id }: { id: string }) {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
-        <div className="flex items-center justify-between h-14 px-4 max-w-2xl mx-auto lg:px-8">
-          <div className="flex items-center">
-            <Link href="/distribuidora/productos" className="p-2 -ml-2 hover:bg-muted rounded-lg transition-colors">
-              <ArrowLeft className="h-5 w-5 text-foreground" />
-            </Link>
-            <h1 className="font-heading font-semibold text-lg ml-2 text-foreground">Editar producto</h1>
+      {/* Delete confirm overlay */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+          <div className="bg-white rounded-t-3xl md:rounded-3xl shadow-2xl w-full md:max-w-sm p-6">
+            <h3 className="font-heading font-bold text-lg text-[#0B1A45] mb-1">¿Eliminar producto?</h3>
+            <p className="text-sm text-[#7A839C] mb-6">Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 h-12 rounded-xl border border-[#DFE1E8]/80 bg-[#F7F8FA] text-sm font-semibold text-[#5F6880] hover:bg-[#EFF0F3] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 h-12 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold disabled:opacity-50 transition-colors"
+              >
+                {isDeleting ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={handleDelete}
-            disabled={isDeleting}
+        </div>
+      )}
+
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-[#DFE1E8]/80">
+        <div className="flex items-center h-13 px-4 max-w-2xl mx-auto gap-3">
+          <Link
+            href="/distribuidora/productos"
+            className="h-9 w-9 rounded-xl bg-[#F7F8FA] border border-[#DFE1E8]/80 flex items-center justify-center text-[#5F6880] hover:bg-[#EFF0F3] transition-colors shrink-0"
           >
-            <Trash2 className="h-5 w-5" />
-          </Button>
+            <ArrowLeft className="h-4.5 w-4.5" />
+          </Link>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">Inventario</p>
+            <h1 className="font-heading font-bold text-lg tracking-tight text-[#0B1A45] leading-tight truncate">{product.name}</h1>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="h-9 w-9 rounded-xl bg-red-50 border border-red-200/60 flex items-center justify-center text-red-500 hover:bg-red-100 transition-colors shrink-0"
+            aria-label="Eliminar producto"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         </div>
       </header>
 
       {/* Form */}
-      <main className="flex-1 p-4 max-w-2xl mx-auto w-full lg:p-8">
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="font-heading text-foreground">Información del producto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Current image */}
-              <div className="space-y-2">
-                <Label>Imagen del producto</Label>
-                <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                  <CategoryIcon category={product.category} className="mx-auto mb-2 h-14 w-14 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Clic para cambiar imagen
-                  </p>
-                </div>
-              </div>
+      <main className="flex-1 px-4 py-5 max-w-2xl mx-auto w-full pb-10">
+        <form onSubmit={handleSubmit} className="space-y-4">
 
-              {/* Active toggle */}
-              <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
-                <div>
-                  <p className="font-medium text-foreground">Producto activo</p>
-                  <p className="text-sm text-muted-foreground">Visible para los comercios</p>
-                </div>
-                <Switch checked={active} onCheckedChange={setActive} />
-              </div>
+          {/* Image upload */}
+          <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.05)] p-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-3">Imagen</p>
+            <ImageUploader
+              previewUrl={imageUpload.previewUrl ?? existingImageUrl}
+              progress={imageUpload.progress}
+              isUploading={imageUpload.isUploading}
+              error={imageUpload.error}
+              onFileSelect={imageUpload.upload}
+              onRemove={() => {
+                imageUpload.reset()
+                setExistingImageUrl(null)
+              }}
+              label="Imagen del producto"
+              hint="PNG, JPG o WebP hasta 5 MB"
+            />
+          </div>
 
-              {/* Offer toggle */}
-              <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
-                <div>
-                  <p className="font-medium text-foreground">En oferta</p>
-                  <p className="text-sm text-muted-foreground">Aparece destacado en la sección Ofertas</p>
-                </div>
-                <Switch checked={isOffer} onCheckedChange={setIsOffer} />
-              </div>
+          {/* Main info */}
+          <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.05)] p-5 space-y-4">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">Información</p>
 
-              {/* Name */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre del producto</Label>
-                <Input
-                  id="name"
-                  placeholder="Ej: Coca-Cola 2.25L"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="bg-background"
-                  required
-                />
-              </div>
+            <div>
+              <label htmlFor="name" className="block text-xs font-bold text-[#5F6880] mb-1.5">
+                Nombre del producto <span className="text-red-400">*</span>
+              </label>
+              <input
+                id="name"
+                type="text"
+                placeholder="Ej: Coca-Cola 2.25L"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#0B1A45] placeholder:text-[#7A839C] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors"
+              />
+            </div>
 
-              {/* Category */}
-              <div className="space-y-2">
-                <Label htmlFor="category">Categoría</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Seleccionar categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.name}>
-                        <span className="flex items-center gap-2">
-                          <CategoryIcon category={cat.name} className="h-4 w-4" />
-                          {cat.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <label htmlFor="category" className="block text-xs font-bold text-[#5F6880] mb-1.5">
+                Categoría <span className="text-red-400">*</span>
+              </label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="w-full bg-[#F7F8FA] border-[#DFE1E8]/80 rounded-xl h-11 text-sm font-semibold text-[#0B1A45] focus:ring-[#0B1A45]/20">
+                  <SelectValue placeholder="Seleccionar categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>
+                      <span className="flex items-center gap-2">
+                        <CategoryIcon category={cat.name} className="h-4 w-4" />
+                        {cat.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              {/* Price and Stock */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Precio</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      id="price"
-                      type="number"
-                      placeholder="0"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      className="pl-7 bg-background"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stock</Label>
-                  <Input
-                    id="stock"
+            <div>
+              <label htmlFor="description" className="block text-xs font-bold text-[#5F6880] mb-1.5">
+                Descripción
+              </label>
+              <textarea
+                id="description"
+                placeholder="Descripción del producto..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#0B1A45] placeholder:text-[#7A839C] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors resize-none"
+              />
+            </div>
+          </div>
+
+          {/* Price & Stock */}
+          <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.05)] p-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-4">Precio y stock</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="price" className="block text-xs font-bold text-[#5F6880] mb-1.5">
+                  Precio <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7A839C] text-sm font-bold">$</span>
+                  <input
+                    id="price"
                     type="number"
                     placeholder="0"
-                    value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                    className="bg-background"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
                     required
+                    className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl pl-8 pr-4 py-2.5 text-sm font-semibold text-[#0B1A45] placeholder:text-[#7A839C] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors"
                   />
                 </div>
               </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Descripción del producto..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="bg-background min-h-[100px]"
+              <div>
+                <label htmlFor="stock" className="block text-xs font-bold text-[#5F6880] mb-1.5">
+                  Stock <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="stock"
+                  type="number"
+                  placeholder="0"
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                  required
+                  className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#0B1A45] placeholder:text-[#7A839C] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors"
                 />
               </div>
+            </div>
+          </div>
 
-              {/* Submit */}
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => router.back()}
-                >
-                  Cancelar
-                </Button>
-                <LoadingButton
-                  type="submit"
-                  className="flex-1"
-                  loading={isLoading}
-                  loadingLabel="Guardando cambios"
-                >
-                  Guardar cambios
-                </LoadingButton>
+          {/* Toggles */}
+          <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.05)] p-5 space-y-4">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">Visibilidad</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#0B1A45]">Producto activo</p>
+                <p className="text-xs text-[#7A839C] mt-0.5">Visible para los comercios</p>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+              <Switch checked={active} onCheckedChange={setActive} className="data-[state=checked]:bg-[#0B1A45]" />
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-[#DFE1E8]/60">
+              <div>
+                <p className="text-sm font-semibold text-[#0B1A45]">En oferta</p>
+                <p className="text-xs text-[#7A839C] mt-0.5">Aparece destacado en la sección Ofertas</p>
+              </div>
+              <Switch checked={isOffer} onCheckedChange={setIsOffer} className="data-[state=checked]:bg-[#0B1A45]" />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex-1 h-12 rounded-xl border border-[#DFE1E8]/80 bg-[#F7F8FA] text-sm font-semibold text-[#5F6880] hover:bg-[#EFF0F3] transition-colors"
+            >
+              Cancelar
+            </button>
+            <LoadingButton
+              type="submit"
+              className="flex-1 h-12 rounded-xl bg-[#0B1A45] hover:bg-[#14265f] text-white text-sm font-bold shadow-sm transition-colors gap-2"
+              loading={isLoading}
+              loadingLabel="Guardando..."
+            >
+              <Save className="h-4 w-4" />
+              Guardar cambios
+            </LoadingButton>
+          </div>
+        </form>
       </main>
     </div>
   )

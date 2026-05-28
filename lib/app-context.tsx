@@ -14,7 +14,7 @@ import { getUserById, getCommerceById } from './data/users.service'
 import { getDistributorById } from './data/distributors.service'
 import { setSessionCookie, clearSessionCookie } from './cookies'
 import { UserRole, Comercio, Distribuidora, Cart, Product, Order } from './types'
-import { useComercioOrders } from '@/hooks/use-data'
+import { useComercioOrders, useDistribuidoraOrders } from '@/hooks/use-data'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,6 +61,10 @@ interface AppContextType {
   // Orders (commerce) — shared single listener
   commerceOrders: Order[]
   ordersLoading: boolean
+
+  // Orders (distribuidora) — shared single listener
+  distribuidoraOrders: Order[]
+  distribuidoraOrdersLoading: boolean
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -192,9 +196,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Cache userDoc from login() to avoid duplicate Firestore read in onAuthStateChanged
   const loginCacheRef = useRef<{ uid: string; userDoc: Record<string, unknown> } | null>(null)
 
-  // Single shared orders listener for the whole app
+  // Single shared orders listeners for the whole app
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
+  const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
   const { data: commerceOrders, loading: ordersLoading } = useComercioOrders(comercio?.id || '')
+  const { data: distribuidoraOrders, loading: distribuidoraOrdersLoading } = useDistribuidoraOrders(distribuidora?.id || '')
 
   // Hydrate wishlist from localStorage on mount
   useEffect(() => {
@@ -393,12 +399,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isInWishlist,
     commerceOrders,
     ordersLoading,
+    distribuidoraOrders,
+    distribuidoraOrdersLoading,
   }), [
     isAuthenticated, authLoading, userRole, currentUser, firebaseUser,
     login, logout, cart, addToCart, removeFromCart, updateCartItemQuantity,
     clearCart, getCartTotal, getCartItemCount, wishlist,
     addToWishlist, removeFromWishlist, toggleWishlist, isInWishlist,
-    commerceOrders, ordersLoading,
+    commerceOrders, ordersLoading, distribuidoraOrders, distribuidoraOrdersLoading,
   ])
 
   return (

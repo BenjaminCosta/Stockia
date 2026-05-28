@@ -17,6 +17,7 @@ import { StarDisplay } from '@/components/star-rating'
 import { SkeletonBlock } from '@/components/ui/SkeletonCard'
 import { LocationSelector, LocationSelectorValue } from '@/components/location-selector'
 import { normalizeLocationInput } from '@/lib/locations/location-utils'
+import { AvatarUploader } from '@/components/ui/AvatarUploader'
 
 // ─── Editable info section ─────────────────────────────────────────────────────
 
@@ -318,9 +319,13 @@ export default function CuentaPage() {
 
         <div className="relative z-10 mx-auto flex max-w-5xl items-start justify-between">
           <div className="flex items-center gap-4 md:gap-6">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-white font-heading text-2xl font-bold text-[#080f2b] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_16px_34px_rgba(0,0,0,0.22)] md:h-24 md:w-24 md:rounded-3xl md:text-4xl">
-              {initials}
-            </div>
+            <AvatarUploader
+              ownerId={comercio?.id ?? ''}
+              type="comercio"
+              currentLogoUrl={comercio?.logoUrl}
+              initials={initials}
+              className="h-16 w-16 md:h-24 md:w-24 rounded-2xl md:rounded-3xl text-2xl md:text-4xl"
+            />
             <div className="min-w-0">
               <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-lima/60 md:text-xs">
                 Cuenta comercio

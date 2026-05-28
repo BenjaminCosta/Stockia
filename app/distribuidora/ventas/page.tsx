@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { TrendingUp, ShoppingBag, Receipt, Package, AlertTriangle, Clock, CheckCircle2, XCircle, Percent } from 'lucide-react'
 import { formatCurrency } from '@/lib/mock-data'
 import { StatusBadge } from '@/components/status-badge'
 import { SalesDashboardSkeleton } from '@/components/ui/SkeletonCard'
 import { useApp } from '@/lib/app-context'
-import { useDistribuidoraOrders } from '@/hooks/use-data'
 import { Distribuidora, type Order } from '@/lib/types'
 import { getCommissionsByDistributor, type FirestoreCommission } from '@/lib/data/commissions.service'
 
@@ -53,13 +52,13 @@ function CommissionSection({
   const monthTotal = currentMonth.reduce((s, c) => s + c.commissionAmount, 0)
   const paidTotal = commissions.filter(c => c.status === 'paid').reduce((s, c) => s + c.commissionAmount, 0)
 
-  const recent = [...commissions]
+  const recent = useMemo(() => [...commissions]
     .sort((a, b) => {
       const da = (a.createdAt as any)?.toDate?.()?.getTime?.() ?? new Date(String(a.createdAt)).getTime()
       const db = (b.createdAt as any)?.toDate?.()?.getTime?.() ?? new Date(String(b.createdAt)).getTime()
       return db - da
     })
-    .slice(0, 5)
+    .slice(0, 5), [commissions])
 
   const statusIcon = (s: string) => {
     if (s === 'paid') return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
@@ -73,7 +72,7 @@ function CommissionSection({
   }
 
   return (
-    <section className="rounded-4xl border border-[#DFE1E8]/80 bg-white p-5 shadow-[0_10px_30px_rgba(11,26,69,0.07)] md:p-6">
+    <section className="rounded-3xl border border-[#DFE1E8]/80 bg-white p-5 shadow-[0_10px_30px_rgba(11,26,69,0.06)] md:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">Comisiones</p>
@@ -155,13 +154,11 @@ function CommissionSection({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function VentasPage() {
-  const { currentUser } = useApp()
+  const { currentUser, distribuidoraOrders: orders, distribuidoraOrdersLoading: ordersLoading } = useApp()
   const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
   const distId = distribuidora?.id || ''
   const commissionRate = distribuidora?.commissionRate ?? 0.015
   const commissionStatus = distribuidora?.commissionStatus ?? 'ok'
-
-  const { data: orders, loading: ordersLoading } = useDistribuidoraOrders(distId)
   const [commissions, setCommissions] = useState<(FirestoreCommission & { id: string })[]>([])
   const [commissionsLoading, setCommissionsLoading] = useState(true)
 
@@ -191,17 +188,17 @@ export default function VentasPage() {
     }
   }, [distId])
 
-  const kpis = computeKPIs(orders)
-  const topProducts = computeTopProducts(orders)
-  const recentOrders = [...orders]
+  const kpis = useMemo(() => computeKPIs(orders), [orders])
+  const topProducts = useMemo(() => computeTopProducts(orders), [orders])
+  const recentOrders = useMemo(() => [...orders]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 6)
+    .slice(0, 6), [orders])
 
   const isBlocked = commissionStatus === 'blocked'
 
   return (
-    <div className="flex min-h-screen flex-col bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
-      <header className="sticky top-0 z-20 border-b border-[#DFE1E8]/80 bg-white/95 px-4 pb-4 pt-5 backdrop-blur-sm md:px-8 md:pt-6">
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-20 border-b border-[#DFE1E8]/80 bg-white/95 px-4 pb-4 pt-4 backdrop-blur-sm md:px-8 md:pt-6">
         <div className="max-w-5xl mx-auto">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">Panel comercial</p>
           <div className="mt-1 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -252,12 +249,12 @@ export default function VentasPage() {
                   { label: 'Ticket promedio', value: formatCurrency(kpis.avg), icon: Receipt, accent: 'text-[#0B1A45]', bg: 'bg-[#F7F8FA]' },
                   { label: 'Unidades vendidas', value: String(kpis.units), icon: Package, accent: 'text-[#4A662E]', bg: 'bg-[#F4FBE7]' },
                 ].map(({ label, value, icon: Icon, accent, bg }) => (
-                  <div key={label} className="bg-white rounded-2xl border border-[#DFE1E8]/70 p-4">
-                    <div className={`h-10 w-10 rounded-xl ${bg} flex items-center justify-center mb-3`}>
-                      <Icon className={`h-4.5 w-4.5 ${accent}`} />
+                  <div key={label} className="bg-[#FAFBFC] rounded-2xl border border-[#DFE1E8]/70 p-4">
+                    <div className={`h-9 w-9 rounded-xl ${bg} flex items-center justify-center mb-3`}>
+                      <Icon className={`h-4 w-4 ${accent}`} />
                     </div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">{label}</p>
-                    <p className="mt-2 font-heading font-bold text-xl md:text-2xl text-[#0B1A45]">{value}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">{label}</p>
+                    <p className="mt-1.5 font-heading font-bold text-xl md:text-2xl text-[#0B1A45]">{value}</p>
                   </div>
                 ))}
               </div>

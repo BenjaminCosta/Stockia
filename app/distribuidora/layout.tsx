@@ -18,7 +18,7 @@ export default function DistribuidoraLayout({
           <DistribuidoraSidebar />
           <DistribuidoraTopHeader />
           <div className="lg:pl-64">
-            <div className="pt-12 lg:pt-0 pb-20 lg:pb-0">
+            <div className="pt-10 lg:pt-0 pb-20 lg:pb-0">
               {children}
             </div>
           </div>

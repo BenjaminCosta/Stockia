@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Truck, MapPin, Phone, Mail, FileText, Shield, ChevronRight, LogOut, Edit, Settings, TrendingUp, Package, Users, MessageSquare, Save, X, Star } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { Distribuidora } from '@/lib/types'
 import { formatCurrency } from '@/lib/mock-data'
 import { FeedbackModal } from '@/components/FeedbackModal'
-import { useProducts, useDistribuidoraOrders } from '@/hooks/use-data'
+import { useProducts } from '@/hooks/use-data'
 import { updateDocument } from '@/lib/firebase/firestore'
 import { COLLECTIONS } from '@/lib/firebase/collections'
 import { getDistributorRatingSummary } from '@/lib/data/reviews.service'
@@ -18,6 +18,7 @@ import Link from 'next/link'
 import { LocationSelector, LocationSelectorValue } from '@/components/location-selector'
 import { normalizeLocationInput } from '@/lib/locations/location-utils'
 import { SkeletonBlock } from '@/components/ui/SkeletonCard'
+import { AvatarUploader } from '@/components/ui/AvatarUploader'
 
 // ─── Editable company info ─────────────────────────────────────────────────────
 
@@ -168,14 +169,17 @@ function DistribuidoraReviewsSection({ distId }: { distId: string }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
     Promise.all([
       getReviewsByDistributor(distId),
       getDistributorRatingSummary(distId),
     ]).then(([revs, sum]) => {
-      setReviews(revs.slice(0, 3)) // show only the 3 most recent
+      if (!mounted) return
+      setReviews(revs.slice(0, 3))
       setSummary(sum)
       setLoading(false)
     })
+    return () => { mounted = false }
   }, [distId])
 
   if (loading) return (
@@ -265,25 +269,28 @@ export default function PerfilDistribuidoraPage() {
   const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
 
   const companyName = distribuidora?.companyName || 'Mi distribuidora'
-  const initials = companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const city = distribuidora?.location?.city || ''
   const province = distribuidora?.location?.province || ''
+  const initials = useMemo(
+    () => companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+    [companyName]
+  )
 
   const { data: products } = useProducts(distribuidora?.id || 'dist-1')
-  const { data: orders } = useDistribuidoraOrders(distribuidora?.id || 'dist-1')
-  const todaySales = orders.reduce((sum: number, o: any) => sum + o.total, 0)
+  const { distribuidoraOrders: orders } = useApp()
+  const todaySales = useMemo(() => orders.reduce((sum, o) => sum + o.total, 0), [orders])
 
   const handleLogout = () => {
     logout()
     router.push('/login')
   }
 
-  const configFields = [
+  const configFields = useMemo(() => [
     { label: 'Pedido mínimo',     value: distribuidora?.minOrder ? formatCurrency(distribuidora.minOrder) : '$15.000' },
     { label: 'Tiempo de entrega', value: distribuidora?.deliveryTimeLabel || '48 horas hábiles' },
     { label: 'Zonas de entrega',  value: distribuidora?.deliveryZones?.join(' · ') || (city ? `${city}, ${province || 'Argentina'}` : 'Sin zonas configuradas') },
     { label: 'Horario de pedidos',value: distribuidora?.deliveryHours || 'Lunes a Viernes · 8 a 17hs' },
-  ]
+  ], [distribuidora, city, province])
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -305,9 +312,13 @@ export default function PerfilDistribuidoraPage() {
 
         <div className="relative z-10 mx-auto flex max-w-5xl items-start justify-between">
           <div className="flex items-center gap-4 md:gap-6">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-white font-heading text-2xl font-bold text-[#080f2b] shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_16px_34px_rgba(0,0,0,0.22)] md:h-24 md:w-24 md:rounded-3xl md:text-4xl">
-              {initials}
-            </div>
+            <AvatarUploader
+              ownerId={distribuidora?.id ?? ''}
+              type="distribuidora"
+              currentLogoUrl={distribuidora?.logoUrl}
+              initials={initials}
+              className="h-16 w-16 md:h-24 md:w-24 rounded-2xl md:rounded-3xl text-2xl md:text-4xl"
+            />
             <div className="min-w-0">
               <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-lima/60 md:text-xs">
                 Cuenta distribuidora
