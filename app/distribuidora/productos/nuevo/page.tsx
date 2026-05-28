@@ -3,13 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Upload } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowLeft, Package } from 'lucide-react'
 import { LoadingButton } from '@/components/ui/LoadingButton'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -22,6 +17,8 @@ import { categories } from '@/lib/mock-data'
 import { CategoryIcon } from '@/components/category-icon'
 import { useApp } from '@/lib/app-context'
 import { createProduct } from '@/lib/data/products.service'
+import { ImageUploader } from '@/components/ui/ImageUploader'
+import { useImageUpload } from '@/hooks/use-image-upload'
 
 export default function NuevoProductoPage() {
   const router = useRouter()
@@ -34,6 +31,11 @@ export default function NuevoProductoPage() {
   const [stock, setStock] = useState('')
   const [description, setDescription] = useState('')
   const [isOffer, setIsOffer] = useState(false)
+
+  const imageUpload = useImageUpload({
+    type: 'product',
+    ownerId: currentUser?.id ?? '',
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,6 +51,7 @@ export default function NuevoProductoPage() {
         stock: parseInt(stock, 10) || 0,
         status: 'active',
         isOffer,
+        ...(imageUpload.imageUrl ? { imageUrl: imageUpload.imageUrl } : {}),
       })
     } catch (err) {
       console.error('[nuevo-producto] createProduct failed', err)
@@ -61,144 +64,166 @@ export default function NuevoProductoPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
-        <div className="flex items-center h-14 px-4 max-w-2xl mx-auto lg:px-8">
-          <Link href="/distribuidora/productos" className="p-2 -ml-2 hover:bg-muted rounded-lg transition-colors">
-            <ArrowLeft className="h-5 w-5 text-foreground" />
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-[#DFE1E8]/80">
+        <div className="flex items-center h-13 px-4 max-w-2xl mx-auto gap-3">
+          <Link
+            href="/distribuidora/productos"
+            className="h-9 w-9 rounded-xl bg-[#F7F8FA] border border-[#DFE1E8]/80 flex items-center justify-center text-[#5F6880] hover:bg-[#EFF0F3] transition-colors shrink-0"
+          >
+            <ArrowLeft className="h-4.5 w-4.5" />
           </Link>
-          <h1 className="font-heading font-semibold text-lg ml-2 text-foreground">Cargar producto</h1>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">Inventario</p>
+            <h1 className="font-heading font-bold text-lg tracking-tight text-[#0B1A45] leading-tight">Cargar producto</h1>
+          </div>
         </div>
       </header>
 
       {/* Form */}
-      <main className="flex-1 p-4 max-w-2xl mx-auto w-full lg:p-8">
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="font-heading text-foreground">Información del producto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Image upload */}
-              <div className="space-y-2">
-                <Label>Imagen del producto</Label>
-                <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Arrastrá una imagen o hacé clic para subir
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    PNG, JPG hasta 5MB
-                  </p>
-                </div>
-              </div>
+      <main className="flex-1 px-4 py-5 max-w-2xl mx-auto w-full pb-10">
+        <form onSubmit={handleSubmit} className="space-y-4">
 
-              {/* Offer toggle */}
-              <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
-                <div>
-                  <p className="font-medium text-foreground">En oferta</p>
-                  <p className="text-sm text-muted-foreground">Aparece destacado en la sección Ofertas</p>
-                </div>
-                <Switch checked={isOffer} onCheckedChange={setIsOffer} />
-              </div>
+          {/* Image upload */}
+          <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.05)] p-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-3">Imagen</p>
+            <ImageUploader
+              previewUrl={imageUpload.previewUrl}
+              progress={imageUpload.progress}
+              isUploading={imageUpload.isUploading}
+              error={imageUpload.error}
+              onFileSelect={imageUpload.upload}
+              onRemove={imageUpload.reset}
+            />
+          </div>
 
-              {/* Name */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre del producto</Label>
-                <Input
-                  id="name"
-                  placeholder="Ej: Coca-Cola 2.25L"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="bg-background"
-                  required
-                />
-              </div>
+          {/* Main info */}
+          <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.05)] p-5 space-y-4">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">Información</p>
 
-              {/* Category */}
-              <div className="space-y-2">
-                <Label htmlFor="category">Categoría</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Seleccionar categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.name}>
-                        <span className="flex items-center gap-2">
-                          <CategoryIcon category={cat.name} className="h-4 w-4" />
-                          {cat.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Name */}
+            <div>
+              <label htmlFor="name" className="block text-xs font-bold text-[#5F6880] mb-1.5">
+                Nombre del producto <span className="text-red-400">*</span>
+              </label>
+              <input
+                id="name"
+                type="text"
+                placeholder="Ej: Coca-Cola 2.25L"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#0B1A45] placeholder:text-[#7A839C] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors"
+              />
+            </div>
 
-              {/* Price and Stock */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Precio</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      id="price"
-                      type="number"
-                      placeholder="0"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      className="pl-7 bg-background"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stock</Label>
-                  <Input
-                    id="stock"
+            {/* Category */}
+            <div>
+              <label htmlFor="category" className="block text-xs font-bold text-[#5F6880] mb-1.5">
+                Categoría <span className="text-red-400">*</span>
+              </label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="w-full bg-[#F7F8FA] border-[#DFE1E8]/80 rounded-xl h-11 text-sm font-semibold text-[#0B1A45] focus:ring-[#0B1A45]/20">
+                  <SelectValue placeholder="Seleccionar categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>
+                      <span className="flex items-center gap-2">
+                        <CategoryIcon category={cat.name} className="h-4 w-4" />
+                        {cat.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label htmlFor="description" className="block text-xs font-bold text-[#5F6880] mb-1.5">
+                Descripción
+              </label>
+              <textarea
+                id="description"
+                placeholder="Descripción del producto..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#0B1A45] placeholder:text-[#7A839C] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors resize-none"
+              />
+            </div>
+          </div>
+
+          {/* Price & Stock */}
+          <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.05)] p-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-4">Precio y stock</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="price" className="block text-xs font-bold text-[#5F6880] mb-1.5">
+                  Precio <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7A839C] text-sm font-bold">$</span>
+                  <input
+                    id="price"
                     type="number"
                     placeholder="0"
-                    value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                    className="bg-background"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
                     required
+                    className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl pl-8 pr-4 py-2.5 text-sm font-semibold text-[#0B1A45] placeholder:text-[#7A839C] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors"
                   />
                 </div>
               </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Descripción del producto..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="bg-background min-h-[100px]"
+              <div>
+                <label htmlFor="stock" className="block text-xs font-bold text-[#5F6880] mb-1.5">
+                  Stock <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="stock"
+                  type="number"
+                  placeholder="0"
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                  required
+                  className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#0B1A45] placeholder:text-[#7A839C] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors"
                 />
               </div>
+            </div>
+          </div>
 
-              {/* Submit */}
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => router.back()}
-                >
-                  Cancelar
-                </Button>
-                <LoadingButton
-                  type="submit"
-                  className="flex-1"
-                  loading={isLoading}
-                  loadingLabel="Guardando producto"
-                >
-                  Guardar producto
-                </LoadingButton>
+          {/* Toggles */}
+          <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.05)] p-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-4">Visibilidad</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#0B1A45]">En oferta</p>
+                <p className="text-xs text-[#7A839C] mt-0.5">Aparece destacado en la sección Ofertas</p>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+              <Switch checked={isOffer} onCheckedChange={setIsOffer} className="data-[state=checked]:bg-[#0B1A45]" />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex-1 h-12 rounded-xl border border-[#DFE1E8]/80 bg-[#F7F8FA] text-sm font-semibold text-[#5F6880] hover:bg-[#EFF0F3] transition-colors"
+            >
+              Cancelar
+            </button>
+            <LoadingButton
+              type="submit"
+              className="flex-1 h-12 rounded-xl bg-[#0B1A45] hover:bg-[#14265f] text-white text-sm font-bold shadow-sm transition-colors gap-2"
+              loading={isLoading}
+              loadingLabel="Guardando..."
+            >
+              <Package className="h-4 w-4" />
+              Guardar producto
+            </LoadingButton>
+          </div>
+        </form>
       </main>
     </div>
   )

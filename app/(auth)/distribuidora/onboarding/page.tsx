@@ -10,7 +10,7 @@ const steps = [
   {
     icon: <Truck className="h-10 w-10" />,
     title: 'Tu distribuidora ya está en StockIA',
-    description: 'Llegá a almacenes, kioscos y minimercados de toda la zona sur del Gran Buenos Aires.',
+    description: 'Llegá a almacenes, kioscos y minimercados de las localidades donde repartís.',
   },
   {
     icon: <Package className="h-10 w-10" />,

@@ -3,7 +3,8 @@
 import { Fragment, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Check, ChevronRight, ShoppingBag, Trash2 } from 'lucide-react'
+import { Check, ChevronRight, ShoppingBag, Trash2 } from 'lucide-react'
+import { ComercioPageHeader } from '@/components/comercio-page-header'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
 import { useDistributors } from '@/hooks/use-data'
@@ -21,7 +22,7 @@ function FlowSteps({ step }: { step: 1 | 2 | 3 }) {
     { n: 3, label: 'Confirmado' },
   ]
   return (
-    <div className="flex items-center max-w-[220px]">
+    <div className="flex items-center max-w-55">
       {steps.map((s, i) => (
         <Fragment key={s.n}>
           <div className="flex flex-col items-center gap-1">
@@ -101,18 +102,7 @@ export default function CarritoPage() {
     return (
       <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
         <div className="max-w-5xl mx-auto px-4 py-6 md:px-8 md:py-8">
-          <header className="mb-8 flex items-center gap-4">
-            <Link
-              href="/comercio"
-              className="h-10 w-10 rounded-full bg-white border border-[#DFE1E8] flex items-center justify-center text-[#0B1A45] hover:bg-gray-50 transition-colors active:scale-95 shadow-sm"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pedido</p>
-              <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground">Carrito</h1>
-            </div>
-          </header>
+          <ComercioPageHeader label="Pedido" title="Carrito" />
           <EmptyState
             icon={ShoppingBag}
             title="Tu carrito está vacío"
@@ -148,22 +138,11 @@ export default function CarritoPage() {
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-44 md:pb-12">
       <div className="max-w-5xl mx-auto px-4 py-6 md:px-8 md:py-8">
 
-        {/* Header */}
-        <header className="mb-5 md:mb-8 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/comercio"
-              className="h-10 w-10 rounded-full bg-white border border-[#DFE1E8] flex items-center justify-center text-[#0B1A45] hover:bg-gray-50 transition-colors active:scale-95 shadow-sm"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pedido</p>
-              <h1 className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground md:text-3xl">Carrito</h1>
-            </div>
-          </div>
-          <FlowSteps step={1} />
-        </header>
+        <ComercioPageHeader
+          label="Pedido"
+          title="Carrito"
+          actions={<FlowSteps step={1} />}
+        />
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
 

@@ -95,6 +95,46 @@ export function ProductCardSkeleton({ count = 6, className }: SkeletonListProps)
   )
 }
 
+export function InventoryTableSkeleton({ count = 6, className }: SkeletonListProps) {
+  return (
+    <div
+      className={cn('overflow-hidden rounded-2xl border border-[#DFE1E8] bg-white shadow-[0_12px_34px_rgba(11,26,69,0.06)]', className)}
+      aria-busy="true"
+      aria-label="Cargando catalogo"
+    >
+      <div className="hidden grid-cols-12 gap-4 border-b border-[#DFE1E8] bg-[#F7F8FA] p-4 md:grid">
+        <SkeletonBlock className="col-span-4 h-3 w-24" />
+        <SkeletonBlock className="col-span-2 h-3 w-20" />
+        <SkeletonBlock className="col-span-2 h-3 w-16" />
+        <SkeletonBlock className="col-span-2 h-3 w-16" />
+        <SkeletonBlock className="col-span-1 h-3 w-12" />
+        <SkeletonBlock className="col-span-1 h-3 w-10 justify-self-end" />
+      </div>
+      <div className="grid gap-4 p-4 md:gap-0 md:p-0">
+        {Array.from({ length: count }).map((_, index) => (
+          <div
+            key={index}
+            className="rounded-2xl border border-[#DFE1E8] bg-white p-5 shadow-sm md:grid md:grid-cols-12 md:items-center md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:border-t md:p-4 md:shadow-none"
+          >
+            <div className="col-span-4 mb-4 flex items-center gap-3 md:mb-0">
+              <SkeletonBlock className="h-10 w-10 shrink-0 rounded-xl" />
+              <div className="flex-1 space-y-2">
+                <SkeletonBlock className="h-4 w-4/5" />
+                <SkeletonBlock className="h-3 w-2/5 md:hidden" />
+              </div>
+            </div>
+            <SkeletonBlock className="col-span-2 hidden h-7 w-24 rounded-full md:block" />
+            <SkeletonBlock className="col-span-2 mb-3 h-12 rounded-xl md:mb-0 md:h-5 md:w-20" />
+            <SkeletonBlock className="col-span-2 mb-4 h-12 rounded-xl md:mb-0 md:h-5 md:w-16" />
+            <SkeletonBlock className="col-span-1 h-7 w-12 rounded-full md:justify-self-center" />
+            <SkeletonBlock className="col-span-1 hidden h-8 w-8 rounded-lg md:block md:justify-self-end" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function OrderCardSkeleton({ count = 4, className }: SkeletonListProps) {
   return (
     <div className={cn('space-y-3', className)} aria-busy="true" aria-label="Cargando pedidos">
@@ -152,6 +192,130 @@ export function DashboardCardSkeleton() {
             <SkeletonBlock className="h-6 w-12" />
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+export function DistribuidoraDashboardSkeleton() {
+  return (
+    <div className="space-y-5" aria-busy="true" aria-label="Cargando dashboard de distribuidora">
+      <div className="rounded-2xl border border-[#DFE1E8]/80 bg-white p-4 shadow-[0_1px_3px_rgba(11,26,69,0.05),0_16px_38px_rgba(11,26,69,0.08)] md:rounded-3xl md:p-6">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="space-y-3">
+            <SkeletonBlock className="h-3 w-28" />
+            <SkeletonBlock className="h-10 w-44" />
+          </div>
+          <SkeletonBlock className="h-7 w-20 rounded-full" />
+        </div>
+        <div className="grid grid-cols-3 gap-3 border-t border-[#DFE1E8]/70 pt-5">
+          {[0, 1, 2].map(item => (
+            <div key={item} className="space-y-2">
+              <SkeletonBlock className="h-3 w-20" />
+              <SkeletonBlock className="h-6 w-14" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+        {[0, 1].map(item => (
+          <div key={item} className="flex items-center gap-3 rounded-2xl border border-[#DFE1E8] bg-white p-4 shadow-sm">
+            <SkeletonBlock className="h-11 w-11 shrink-0 rounded-xl" />
+            <div className="flex-1 space-y-2">
+              <SkeletonBlock className="h-4 w-36" />
+              <SkeletonBlock className="h-3 w-48 max-w-full" />
+            </div>
+            <SkeletonBlock className="h-7 w-16 rounded-lg" />
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-3xl border border-[#DFE1E8]/80 bg-white p-5 shadow-[0_10px_30px_rgba(11,26,69,0.07)] md:p-6">
+        <div className="mb-5 flex items-center justify-between">
+          <SkeletonBlock className="h-6 w-40" />
+          <SkeletonBlock className="h-4 w-20" />
+        </div>
+        <OrderCardSkeleton count={3} />
+      </div>
+    </div>
+  )
+}
+
+export function ReviewsDashboardSkeleton() {
+  return (
+    <div className="space-y-4" aria-busy="true" aria-label="Cargando resenas">
+      <div className="rounded-3xl border border-[#DFE1E8] bg-white p-5 shadow-[0_14px_38px_rgba(11,26,69,0.06)]">
+        <div className="mb-5 flex items-center gap-5">
+          <SkeletonBlock className="h-20 w-20 shrink-0 rounded-2xl" />
+          <div className="flex-1 space-y-2.5">
+            {[0, 1, 2, 3].map(item => (
+              <SkeletonBlock key={item} className="h-4 w-full" />
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {[0, 1, 2, 3].map(item => (
+            <SkeletonBlock key={item} className="h-16 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {[0, 1, 2].map(item => (
+          <SkeletonBlock key={item} className="h-20 rounded-2xl bg-white" />
+        ))}
+      </div>
+      <div className="space-y-3">
+        {[0, 1, 2].map(item => (
+          <SkeletonBlock key={item} className="h-28 rounded-2xl bg-white" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function SalesDashboardSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Cargando ventas">
+      <section className="rounded-3xl border border-[#DFE1E8]/80 bg-white p-5 shadow-[0_10px_30px_rgba(11,26,69,0.07)] md:p-6">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="space-y-3">
+            <SkeletonBlock className="h-3 w-24" />
+            <SkeletonBlock className="h-10 w-44" />
+            <SkeletonBlock className="h-3 w-72 max-w-full" />
+          </div>
+          <SkeletonBlock className="h-7 w-32 rounded-full" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {[0, 1, 2, 3].map(item => (
+            <div key={item} className="rounded-2xl border border-[#DFE1E8]/70 bg-white p-4">
+              <SkeletonBlock className="mb-3 h-10 w-10 rounded-xl" />
+              <SkeletonBlock className="h-3 w-24" />
+              <SkeletonBlock className="mt-2 h-7 w-20" />
+            </div>
+          ))}
+        </div>
+      </section>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.35fr)_320px] lg:items-start">
+        <div className="space-y-6">
+          <DashboardCardSkeleton />
+          <div className="rounded-3xl border border-[#DFE1E8]/80 bg-white p-5 shadow-[0_10px_30px_rgba(11,26,69,0.07)] md:p-6">
+            <SkeletonBlock className="mb-5 h-6 w-40" />
+            <OrderCardSkeleton count={3} />
+          </div>
+        </div>
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-[#DFE1E8]/80 bg-white p-5 shadow-[0_10px_30px_rgba(11,26,69,0.07)]">
+            <SkeletonBlock className="h-3 w-28" />
+            <SkeletonBlock className="mt-2 h-6 w-48" />
+            <div className="mt-5 space-y-3">
+              {[0, 1, 2, 3].map(item => (
+                <SkeletonBlock key={item} className="h-14 rounded-2xl" />
+              ))}
+            </div>
+          </div>
+          <SkeletonBlock className="h-44 rounded-3xl bg-[#0B1A45]/20" />
+        </div>
       </div>
     </div>
   )

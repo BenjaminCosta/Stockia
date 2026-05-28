@@ -35,6 +35,15 @@ export function formatDistance(km: number): string {
   return `${km.toFixed(1)} km`
 }
 
+export function hasRealCoordinates(lat?: number | null, lng?: number | null): lat is number {
+  return typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat !== 0 &&
+    lng !== 0
+}
+
 /**
  * Return true if the distributor's coverage radius reaches the commerce location.
  */
@@ -47,7 +56,7 @@ export function isWithinCoverage(
 }
 
 /**
- * Normalize a city name to a URL-safe slug for reliable zone matching.
+ * Normalize a city name to a URL-safe slug for reliable locality matching.
  * Removes accents, lowercases, replaces spaces and special chars with hyphens.
  *
  * Examples:
@@ -55,11 +64,19 @@ export function isWithinCoverage(
  *   "Avellaneda"      → "avellaneda"
  *   "Quilmes"         → "quilmes"
  */
-export function normalizeCitySlug(city: string): string {
-  return city
+export function normalizeTextSlug(value: string): string {
+  return value
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // strip accent combining chars
     .replace(/[^a-z0-9]+/g, '-')     // non-alphanumeric runs → dash
     .replace(/^-|-$/g, '')           // trim leading/trailing dashes
+}
+
+export function normalizeCitySlug(city: string): string {
+  return normalizeTextSlug(city)
+}
+
+export function buildLocationKey(provinceSlug: string, citySlug: string): string {
+  return [provinceSlug, citySlug].filter(Boolean).join(':')
 }

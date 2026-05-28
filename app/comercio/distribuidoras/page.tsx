@@ -19,7 +19,7 @@ export default function DistribuidorasPage() {
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
   const loc = comercio?.location
   const commerceContext = loc
-    ? { lat: loc.lat, lng: loc.lng, citySlug: loc.citySlug }
+    ? { lat: loc.lat ?? undefined, lng: loc.lng ?? undefined, locationKey: loc.locationKey, citySlug: loc.citySlug }
     : undefined
 
   const { data: distributors, loading: isLoading } = useDistributors(commerceContext)

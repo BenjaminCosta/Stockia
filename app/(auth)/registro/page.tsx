@@ -11,21 +11,20 @@ import {
   Boxes,
   Building2,
   Check,
-  CreditCard,
   Eye,
   EyeOff,
   KeyRound,
   Mail,
   MapPin,
-  Phone,
   Route,
   ShieldCheck,
   Store,
   Truck,
 } from 'lucide-react'
+import { PhoneInput } from '@/components/ui/PhoneInput'
+import { CuitInput } from '@/components/ui/CuitInput'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '@/lib/firebase/client'
-import { normalizeCitySlug } from '@/lib/firebase/geo'
 import { upsertUser, upsertCommerce } from '@/lib/data/users.service'
 import { upsertDistributor } from '@/lib/data/distributors.service'
 import { setSessionCookie } from '@/lib/cookies'
@@ -33,6 +32,8 @@ import { LoadingButton } from '@/components/ui/LoadingButton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserRole } from '@/lib/types'
+import { LocationSelector, LocationSelectorValue } from '@/components/location-selector'
+import { isValidLocality, isValidProvince, normalizeLocationInput } from '@/lib/locations/location-utils'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -57,8 +58,6 @@ const COMMERCE_TYPES = [
   'Farmacia',
   'Otro',
 ]
-
-const zones = ['Avellaneda', 'Lanús', 'Quilmes', 'Lomas de Zamora', 'Berazategui']
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -112,17 +111,20 @@ export default function RegistroPage() {
 
   // Business data
   const [businessName, setBusinessName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
+  const [phone, setPhone] = useState('+54')
+  const [addressStreet, setAddressStreet] = useState('')
+  const [addressNumber, setAddressNumber] = useState('')
   const [cuit, setCuit] = useState('')
   const [businessType, setBusinessType] = useState('')       // comercio only
   const [minimumOrder, setMinimumOrder] = useState('')       // distribuidora only
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]) // distribuidora only
 
   // Location
-  const [cityZone, setCityZone] = useState('Avellaneda')
+  const [location, setLocation] = useState<LocationSelectorValue>({ province: '', city: '' })
   const [coverageRadius, setCoverageRadius] = useState('15')
-  const [deliveryZones, setDeliveryZones] = useState('Avellaneda, Lanús, Quilmes')
+  const [deliveryLocationDraft, setDeliveryLocationDraft] = useState<LocationSelectorValue>({ province: '', city: '' })
+  const [deliveryLocationKeys, setDeliveryLocationKeys] = useState<string[]>([])
+  const [deliveryLocationLabels, setDeliveryLocationLabels] = useState<Record<string, string>>({})
 
   const progress = `${(step / steps.length) * 100}%`
 
@@ -136,8 +138,8 @@ export default function RegistroPage() {
     step === 1 ? 'Conectá comercios locales con distribuidoras para pedir, vender y organizar operaciones B2B.'
     : step === 2 ? 'Esta selección define la navegación y las herramientas principales del prototipo.'
     : step === 3 ? 'Completá la información de acceso y los datos básicos del negocio.'
-    : role === 'distribuidora' ? 'Definí las zonas de reparto y los rubros que manejás.'
-    : 'Confirmá la zona para mostrar proveedores cercanos desde el inicio.'
+    : role === 'distribuidora' ? 'Definí las localidades de reparto y los rubros que manejás.'
+    : 'Confirmá tu localidad para mostrar proveedores desde el inicio.'
 
   const canContinue =
     (step === 1) ||
@@ -147,10 +149,14 @@ export default function RegistroPage() {
       password.length >= 6 &&
       password === confirmPassword &&
       businessName.trim().length > 0 &&
-      phone.trim().length > 0 &&
-      address.trim().length > 0
+      phone.trim().length > 2 &&
+      addressStreet.trim().length > 0 &&
+      addressNumber.trim().length > 0
     ) ||
-    (step === 4)
+    (step === 4 &&
+      isValidProvince(location.province) &&
+      isValidLocality(location.province, location.city)
+    )
 
   const handleContinue = async () => {
     if (!canContinue) return
@@ -169,6 +175,8 @@ export default function RegistroPage() {
       const name = businessName.trim() || email.split('@')[0]
 
       await upsertUser(uid, { name, email: email.trim(), role })
+      const normalizedLocation = normalizeLocationInput(location)
+      const address = `${addressStreet.trim()} ${addressNumber.trim()}`.trim()
 
       if (role === 'comercio') {
         await upsertCommerce(uid, {
@@ -176,30 +184,35 @@ export default function RegistroPage() {
           businessName: name,
           phone,
           address,
-          city: cityZone,
-          citySlug: normalizeCitySlug(cityZone),
-          zone: '',
-          province: 'Buenos Aires',
-          // lat/lng intentionally omitted — no geocoding yet.
-          // buildCurrentUser treats absent/0 coords as "no real location".
+          ...normalizedLocation,
           status: 'active',
           ...(cuit.trim() && { cuit: cuit.trim() }),
           ...(businessType && { businessType }),
         })
       } else {
+        const safeDeliveryLocationKeys = deliveryLocationKeys.length
+          ? deliveryLocationKeys
+          : [normalizedLocation.locationKey]
         await upsertDistributor(uid, {
           userId: uid,
           companyName: name,
           phone,
-          address,
-          city: cityZone,
-          province: 'Buenos Aires',
-          // lat/lng intentionally omitted — no geocoding yet.
+          address, // already built above
+          city: normalizedLocation.city,
+          citySlug: normalizedLocation.citySlug,
+          province: normalizedLocation.province,
+          provinceSlug: normalizedLocation.provinceSlug,
+          locationKey: normalizedLocation.locationKey,
+          lat: null,
+          lng: null,
+          location: normalizedLocation,
           coverageRadiusKm: parseFloat(coverageRadius) || 15,
           minimumOrder: parseFloat(minimumOrder) || 0,
           categories: selectedCategories,
           status: 'active',
-          deliveryZones: deliveryZones.split(',').map(z => z.trim()).filter(Boolean),
+          deliveryZones: safeDeliveryLocationKeys.map(key => deliveryLocationLabels[key] ?? key),
+          deliveryLocationKeys: safeDeliveryLocationKeys,
+          deliveryZoneKeys: safeDeliveryLocationKeys,
           ...(cuit.trim() && { cuit: cuit.trim() }),
         })
       }
@@ -227,17 +240,19 @@ export default function RegistroPage() {
     )
   }
 
-  const selectZone = (zone: string) => {
-    if (role === 'distribuidora') {
-      const selectedZones = deliveryZones.split(',').map(item => item.trim()).filter(Boolean)
-      setDeliveryZones(
-        selectedZones.includes(zone)
-          ? selectedZones.filter(item => item !== zone).join(', ')
-          : [...selectedZones, zone].join(', ')
-      )
-      return
-    }
-    setCityZone(zone)
+  const addDeliveryLocation = () => {
+    if (!isValidProvince(deliveryLocationDraft.province) || !isValidLocality(deliveryLocationDraft.province, deliveryLocationDraft.city)) return
+    const normalized = normalizeLocationInput(deliveryLocationDraft)
+    setDeliveryLocationKeys(prev => prev.includes(normalized.locationKey) ? prev : [...prev, normalized.locationKey])
+    setDeliveryLocationLabels(prev => ({
+      ...prev,
+      [normalized.locationKey]: `${normalized.city}, ${normalized.province}`,
+    }))
+    setDeliveryLocationDraft({ province: '', city: '' })
+  }
+
+  const removeDeliveryLocation = (locationKey: string) => {
+    setDeliveryLocationKeys(prev => prev.filter(key => key !== locationKey))
   }
 
   return (
@@ -314,7 +329,8 @@ export default function RegistroPage() {
                 confirmPassword={confirmPassword}
                 businessName={businessName}
                 phone={phone}
-                address={address}
+                addressStreet={addressStreet}
+                addressNumber={addressNumber}
                 cuit={cuit}
                 businessType={businessType}
                 minimumOrder={minimumOrder}
@@ -323,7 +339,8 @@ export default function RegistroPage() {
                 onConfirmPasswordChange={setConfirmPassword}
                 onBusinessNameChange={setBusinessName}
                 onPhoneChange={setPhone}
-                onAddressChange={setAddress}
+                onAddressStreetChange={setAddressStreet}
+                onAddressNumberChange={setAddressNumber}
                 onCuitChange={setCuit}
                 onBusinessTypeChange={setBusinessType}
                 onMinimumOrderChange={setMinimumOrder}
@@ -333,13 +350,17 @@ export default function RegistroPage() {
             {step === 4 && (
               <LocationStep
                 role={role}
-                cityZone={cityZone}
+                location={location}
+                onLocationChange={setLocation}
                 coverageRadius={coverageRadius}
-                deliveryZones={deliveryZones}
+                deliveryLocationDraft={deliveryLocationDraft}
+                deliveryLocationKeys={deliveryLocationKeys}
+                deliveryLocationLabels={deliveryLocationLabels}
                 selectedCategories={selectedCategories}
                 onCoverageRadiusChange={setCoverageRadius}
-                onDeliveryZonesChange={setDeliveryZones}
-                onSelectZone={selectZone}
+                onDeliveryLocationDraftChange={setDeliveryLocationDraft}
+                onAddDeliveryLocation={addDeliveryLocation}
+                onRemoveDeliveryLocation={removeDeliveryLocation}
                 onCategoryToggle={toggleCategory}
               />
             )}
@@ -445,7 +466,7 @@ function RoleStep({ role, onSelect }: { role: UserRole | null; onSelect: (role: 
         icon={Store}
         title="Comercio"
         text="Quiero comprar productos para mi negocio"
-        detail="Kioscos, almacenes, minimercados y tiendas de barrio."
+        detail="Kioscos, almacenes, minimercados y tiendas locales."
         onClick={() => onSelect('comercio')}
       />
       <RoleCard
@@ -498,9 +519,9 @@ function RoleCard({
 function BusinessDataStep({
   role,
   email, password, confirmPassword,
-  businessName, phone, address, cuit, businessType, minimumOrder,
+  businessName, phone, addressStreet, addressNumber, cuit, businessType, minimumOrder,
   onEmailChange, onPasswordChange, onConfirmPasswordChange,
-  onBusinessNameChange, onPhoneChange, onAddressChange,
+  onBusinessNameChange, onPhoneChange, onAddressStreetChange, onAddressNumberChange,
   onCuitChange, onBusinessTypeChange, onMinimumOrderChange,
 }: {
   role: UserRole | null
@@ -509,7 +530,8 @@ function BusinessDataStep({
   confirmPassword: string
   businessName: string
   phone: string
-  address: string
+  addressStreet: string
+  addressNumber: string
   cuit: string
   businessType: string
   minimumOrder: string
@@ -518,18 +540,22 @@ function BusinessDataStep({
   onConfirmPasswordChange: (v: string) => void
   onBusinessNameChange: (v: string) => void
   onPhoneChange: (v: string) => void
-  onAddressChange: (v: string) => void
+  onAddressStreetChange: (v: string) => void
+  onAddressNumberChange: (v: string) => void
   onCuitChange: (v: string) => void
   onBusinessTypeChange: (v: string) => void
   onMinimumOrderChange: (v: string) => void
 }) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [emailTouched, setEmailTouched] = useState(false)
 
   const isDistributor = role === 'distribuidora'
   const strength = getPasswordStrength(password)
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword
   const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const showEmailFeedback = emailTouched && email.trim().length > 0
 
   const strengthColor =
     strength.level === 1 ? 'bg-red-400' :
@@ -552,16 +578,29 @@ function BusinessDataStep({
 
         <div className="grid gap-4 md:grid-cols-2">
           {/* Email */}
-          <FormField icon={Mail} label="Email *">
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => onEmailChange(e.target.value)}
-              placeholder="tu@email.com"
-              required
-              className="h-12 bg-background pl-11"
-            />
-          </FormField>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">Email *</Label>
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => onEmailChange(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
+                placeholder="tu@email.com"
+                required
+                className={`h-12 bg-background pl-11 ${showEmailFeedback && emailValid ? 'border-emerald-500 focus-visible:ring-emerald-500/30' : showEmailFeedback && !emailValid ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
+              />
+            </div>
+            {showEmailFeedback && emailValid && (
+              <p className="flex items-center gap-1 text-xs font-medium text-emerald-600">
+                <Check className="h-3 w-3" /> Email válido
+              </p>
+            )}
+            {showEmailFeedback && !emailValid && (
+              <p className="text-xs font-medium text-destructive">Formato de email inválido</p>
+            )}
+          </div>
 
           {/* Password */}
           <div className="space-y-2">
@@ -658,38 +697,55 @@ function BusinessDataStep({
           </FormField>
 
           {/* Phone */}
-          <FormField icon={Phone} label="Teléfono *">
-            <Input
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">Teléfono *</Label>
+            <PhoneInput
               value={phone}
-              onChange={(e) => onPhoneChange(e.target.value)}
-              placeholder="+54 11 1234-5678"
+              onChange={onPhoneChange}
               required
-              className="h-12 bg-background pl-11"
             />
-          </FormField>
+          </div>
 
-          {/* Address — full width */}
+          {/* Address — street + number */}
           <div className="md:col-span-2">
-            <FormField icon={MapPin} label="Dirección *">
-              <Input
-                value={address}
-                onChange={(e) => onAddressChange(e.target.value)}
-                placeholder="Calle, número y localidad"
-                required
-                className="h-12 bg-background pl-11"
-              />
-            </FormField>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Dirección *</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-3">
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={addressStreet}
+                    onChange={(e) => onAddressStreetChange(e.target.value)}
+                    placeholder="Av. Corrientes"
+                    required
+                    className="h-12 bg-background pl-11"
+                    aria-label="Calle"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Input
+                    value={addressNumber}
+                    onChange={(e) => onAddressNumberChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Nro."
+                    required
+                    inputMode="numeric"
+                    className="h-12 bg-background text-center"
+                    aria-label="Número"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">La localidad la elegís en el paso siguiente.</p>
+            </div>
           </div>
 
           {/* CUIT */}
-          <FormField icon={CreditCard} label="CUIT (opcional)">
-            <Input
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">CUIT (opcional)</Label>
+            <CuitInput
               value={cuit}
-              onChange={(e) => onCuitChange(e.target.value)}
-              placeholder="20-12345678-9"
-              className="h-12 bg-background pl-11"
+              onChange={onCuitChange}
             />
-          </FormField>
+          </div>
 
           {/* Tipo de comercio (comercio only) / Pedido mínimo (distribuidora only) */}
           {isDistributor ? (
@@ -732,27 +788,34 @@ function BusinessDataStep({
 
 function LocationStep({
   role,
-  cityZone,
+  location,
+  onLocationChange,
   coverageRadius,
-  deliveryZones,
+  deliveryLocationDraft,
+  deliveryLocationKeys,
+  deliveryLocationLabels,
   selectedCategories,
   onCoverageRadiusChange,
-  onDeliveryZonesChange,
-  onSelectZone,
+  onDeliveryLocationDraftChange,
+  onAddDeliveryLocation,
+  onRemoveDeliveryLocation,
   onCategoryToggle,
 }: {
   role: UserRole | null
-  cityZone: string
+  location: LocationSelectorValue
+  onLocationChange: (value: LocationSelectorValue) => void
   coverageRadius: string
-  deliveryZones: string
+  deliveryLocationDraft: LocationSelectorValue
+  deliveryLocationKeys: string[]
+  deliveryLocationLabels: Record<string, string>
   selectedCategories: string[]
   onCoverageRadiusChange: (v: string) => void
-  onDeliveryZonesChange: (v: string) => void
-  onSelectZone: (zone: string) => void
+  onDeliveryLocationDraftChange: (value: LocationSelectorValue) => void
+  onAddDeliveryLocation: () => void
+  onRemoveDeliveryLocation: (locationKey: string) => void
   onCategoryToggle: (cat: string) => void
 }) {
   const isDistributor = role === 'distribuidora'
-  const selectedZones = deliveryZones.split(',').map(item => item.trim()).filter(Boolean)
 
   return (
     <div className="space-y-8">
@@ -771,7 +834,13 @@ function LocationStep({
 
         <div className="grid gap-6 md:grid-cols-[1fr_320px]">
           <div className="space-y-4">
-            {isDistributor ? (
+            <LocationSelector
+              value={location}
+              onChange={onLocationChange}
+              compact
+            />
+
+            {isDistributor && (
               <>
                 <FormField icon={Route} label="Radio de entrega (km)">
                   <Input
@@ -781,40 +850,40 @@ function LocationStep({
                     className="h-12 bg-background pl-11"
                   />
                 </FormField>
-                <FormField icon={MapPin} label="Zonas donde reparte">
-                  <Input
-                    value={deliveryZones}
-                    onChange={(e) => onDeliveryZonesChange(e.target.value)}
-                    placeholder="Ej: Quilmes, Avellaneda, Lanús"
-                    className="h-12 bg-background pl-11"
-                  />
-                </FormField>
-              </>
-            ) : (
-              <FormField icon={MapPin} label="Ubicación principal">
-                <Input value={cityZone} readOnly className="h-12 bg-background pl-11" />
-              </FormField>
-            )}
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {zones.map((zone) => {
-                const selected = isDistributor ? selectedZones.includes(zone) : cityZone.includes(zone)
-                return (
+                <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                  <p className="mb-3 text-sm font-semibold text-foreground">Localidades de reparto</p>
+                  <LocationSelector
+                    value={deliveryLocationDraft}
+                    onChange={onDeliveryLocationDraftChange}
+                    compact
+                  />
                   <button
                     type="button"
-                    key={zone}
-                    onClick={() => onSelectZone(zone)}
-                    className={`rounded-xl border px-3 py-3 text-sm font-medium transition-all ${
-                      selected
-                        ? 'border-primary bg-accent text-primary'
-                        : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground'
-                    }`}
+                    onClick={onAddDeliveryLocation}
+                    className="mt-3 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
                   >
-                    {zone}
+                    Agregar localidad
                   </button>
-                )
-              })}
-            </div>
+
+                  {deliveryLocationKeys.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {deliveryLocationKeys.map(key => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => onRemoveDeliveryLocation(key)}
+                          className="rounded-full border border-primary/20 bg-accent px-3 py-1.5 text-xs font-semibold text-primary"
+                          title="Quitar localidad"
+                        >
+                          {deliveryLocationLabels[key] ?? key} ×
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="rounded-2xl border border-border bg-muted/40 p-5">
@@ -822,15 +891,17 @@ function LocationStep({
               {isDistributor ? <Truck className="h-6 w-6" /> : <Store className="h-6 w-6" />}
             </div>
             <h3 className="font-heading text-lg font-semibold text-foreground">
-              {isDistributor ? 'Tus zonas visibles' : 'Proveedores cerca'}
+              {isDistributor ? 'Tus localidades visibles' : 'Proveedores cerca'}
             </h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {isDistributor
-                ? `Los comercios dentro de ${coverageRadius || 'tu radio'} km van a poder encontrarte.`
-                : 'Al finalizar, vas a ver distribuidoras ordenadas por cercanía.'}
+                ? 'Los comercios de tus localidades cubiertas van a poder encontrarte.'
+                : 'Al finalizar, vas a ver distribuidoras que entregan en tu localidad.'}
             </p>
             <div className="mt-4 rounded-xl bg-card p-3 text-sm text-muted-foreground">
-              {isDistributor ? deliveryZones || 'Sin zonas seleccionadas' : cityZone || 'Ubicación pendiente'}
+              {isDistributor
+                ? (deliveryLocationKeys.length ? deliveryLocationKeys.map(key => deliveryLocationLabels[key] ?? key).join(' · ') : 'Se usará tu localidad base si no agregás otras')
+                : [location.city, location.province].filter(Boolean).join(', ') || 'Ubicación pendiente'}
             </div>
           </div>
         </div>

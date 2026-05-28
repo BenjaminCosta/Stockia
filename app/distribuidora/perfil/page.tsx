@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Truck, MapPin, Phone, Mail, FileText, Bell, Shield, ChevronRight, LogOut, Edit, Settings, TrendingUp, Package, Users, MessageSquare, Save, X, Star } from 'lucide-react'
+import { Truck, MapPin, Phone, Mail, FileText, Shield, ChevronRight, LogOut, Edit, Settings, TrendingUp, Package, Users, MessageSquare, Save, X, Star } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { Distribuidora } from '@/lib/types'
-import { Switch } from '@/components/ui/switch'
 import { formatCurrency } from '@/lib/mock-data'
 import { FeedbackModal } from '@/components/FeedbackModal'
-import { useProducts, useDistribuidoraOrders } from '@/hooks/use-data'
+import { useProducts } from '@/hooks/use-data'
 import { updateDocument } from '@/lib/firebase/firestore'
 import { COLLECTIONS } from '@/lib/firebase/collections'
 import { getDistributorRatingSummary } from '@/lib/data/reviews.service'
@@ -16,13 +15,10 @@ import { getReviewsByDistributor } from '@/lib/data/reviews.service'
 import type { Review } from '@/lib/types'
 import { StarDisplay } from '@/components/star-rating'
 import Link from 'next/link'
-
-const notifications = [
-  { label: 'Nuevos pedidos', sub: 'Recibí una alerta cuando entra un pedido nuevo', defaultOn: true },
-  { label: 'Cambios de estado', sub: 'Confirmaciones de pago y actualizaciones de entrega', defaultOn: true },
-  { label: 'Stock bajo', sub: 'Te avisamos cuando un producto queda con poco stock', defaultOn: true },
-  { label: 'Novedades de StockIA', sub: 'Actualizaciones de la plataforma y nuevas funciones', defaultOn: false },
-]
+import { LocationSelector, LocationSelectorValue } from '@/components/location-selector'
+import { normalizeLocationInput } from '@/lib/locations/location-utils'
+import { SkeletonBlock } from '@/components/ui/SkeletonCard'
+import { AvatarUploader } from '@/components/ui/AvatarUploader'
 
 // ─── Editable company info ─────────────────────────────────────────────────────
 
@@ -34,6 +30,9 @@ function EditableCompanySection({ distribuidora }: { distribuidora: Distribuidor
     companyName: distribuidora?.companyName || '',
     phone: distribuidora?.phone || '',
     address: distribuidora?.address || '',
+  })
+  const [location, setLocation] = useState<LocationSelectorValue>({
+    province: distribuidora?.location?.province || '',
     city: distribuidora?.location?.city || '',
   })
 
@@ -42,6 +41,9 @@ function EditableCompanySection({ distribuidora }: { distribuidora: Distribuidor
       companyName: distribuidora?.companyName || '',
       phone: distribuidora?.phone || '',
       address: distribuidora?.address || '',
+    })
+    setLocation({
+      province: distribuidora?.location?.province || '',
       city: distribuidora?.location?.city || '',
     })
   }, [distribuidora])
@@ -50,11 +52,19 @@ function EditableCompanySection({ distribuidora }: { distribuidora: Distribuidor
     if (!distribuidora?.id) return
     setSaving(true)
     try {
+      const normalizedLocation = normalizeLocationInput(location)
       await updateDocument(COLLECTIONS.distributors, distribuidora.id, {
         companyName: form.companyName,
         phone: form.phone,
         address: form.address,
-        city: form.city,
+        city: normalizedLocation.city,
+        citySlug: normalizedLocation.citySlug,
+        province: normalizedLocation.province,
+        provinceSlug: normalizedLocation.provinceSlug,
+        locationKey: normalizedLocation.locationKey,
+        lat: null,
+        lng: null,
+        location: normalizedLocation,
       })
       setSaved(true)
       setEditing(false)
@@ -70,7 +80,6 @@ function EditableCompanySection({ distribuidora }: { distribuidora: Distribuidor
     { key: 'companyName', label: 'Nombre de fantasía', icon: <Truck className="h-5 w-5" />, type: 'text' },
     { key: 'phone',       label: 'Teléfono',            icon: <Phone className="h-5 w-5" />, type: 'tel' },
     { key: 'address',     label: 'Dirección',            icon: <MapPin className="h-5 w-5" />, type: 'text' },
-    { key: 'city',        label: 'Ciudad',               icon: <MapPin className="h-5 w-5" />, type: 'text' },
   ] as const
 
   const staticFields = [
@@ -121,6 +130,23 @@ function EditableCompanySection({ distribuidora }: { distribuidora: Distribuidor
             </div>
           </div>
         ))}
+        <div className="md:col-span-2 rounded-2xl border border-gray-100 bg-gray-50/50 p-4">
+          {editing ? (
+            <LocationSelector value={location} onChange={setLocation} compact />
+          ) : (
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-xl bg-white shadow-sm text-primary flex items-center justify-center shrink-0">
+                <MapPin className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ubicación base</p>
+                <p className="font-bold text-sm text-foreground truncate">
+                  {[location.city, location.province].filter(Boolean).join(', ') || '—'}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
         {staticFields.map((f, i) => (
           <div key={i} className="flex items-start gap-4 p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
             <div className="h-10 w-10 rounded-xl bg-white shadow-sm text-primary flex items-center justify-center shrink-0">{f.icon}</div>
@@ -143,20 +169,35 @@ function DistribuidoraReviewsSection({ distId }: { distId: string }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
     Promise.all([
       getReviewsByDistributor(distId),
       getDistributorRatingSummary(distId),
     ]).then(([revs, sum]) => {
-      setReviews(revs.slice(0, 3)) // show only the 3 most recent
+      if (!mounted) return
+      setReviews(revs.slice(0, 3))
       setSummary(sum)
       setLoading(false)
     })
+    return () => { mounted = false }
   }, [distId])
 
   if (loading) return (
-    <div className="bg-white rounded-3xl shadow-sm border border-border p-6">
-      <div className="h-4 w-32 bg-gray-100 rounded animate-pulse mb-4" />
-      <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-16 bg-gray-50 rounded-2xl animate-pulse" />)}</div>
+    <div className="rounded-3xl border border-[#DFE1E8] bg-white p-6 shadow-[0_14px_38px_rgba(11,26,69,0.06)]" aria-busy="true" aria-label="Cargando resenas">
+      <SkeletonBlock className="mb-5 h-4 w-36" />
+      <div className="mb-4 flex items-center gap-4 rounded-2xl bg-[#F7F8FA] p-4">
+        <SkeletonBlock className="h-16 w-16 shrink-0 rounded-2xl" />
+        <div className="grid flex-1 grid-cols-2 gap-2">
+          {[0, 1, 2, 3].map(item => (
+            <SkeletonBlock key={item} className="h-12 rounded-xl bg-white" />
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {[0, 1].map(item => (
+          <SkeletonBlock key={item} className="h-20 rounded-2xl" />
+        ))}
+      </div>
     </div>
   )
 
@@ -228,50 +269,71 @@ export default function PerfilDistribuidoraPage() {
   const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
 
   const companyName = distribuidora?.companyName || 'Mi distribuidora'
-  const initials = companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-  const city = distribuidora?.location?.city || 'Quilmes'
+  const city = distribuidora?.location?.city || ''
+  const province = distribuidora?.location?.province || ''
+  const initials = useMemo(
+    () => companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+    [companyName]
+  )
 
   const { data: products } = useProducts(distribuidora?.id || 'dist-1')
-  const { data: orders } = useDistribuidoraOrders(distribuidora?.id || 'dist-1')
-  const todaySales = orders.reduce((sum: number, o: any) => sum + o.total, 0)
+  const { distribuidoraOrders: orders } = useApp()
+  const todaySales = useMemo(() => orders.reduce((sum, o) => sum + o.total, 0), [orders])
 
   const handleLogout = () => {
     logout()
     router.push('/login')
   }
 
-  const configFields = [
+  const configFields = useMemo(() => [
     { label: 'Pedido mínimo',     value: distribuidora?.minOrder ? formatCurrency(distribuidora.minOrder) : '$15.000' },
     { label: 'Tiempo de entrega', value: distribuidora?.deliveryTimeLabel || '48 horas hábiles' },
-    { label: 'Zonas de entrega',  value: distribuidora?.deliveryZones?.join(' · ') || `${city} · Avellaneda · Lanús` },
+    { label: 'Zonas de entrega',  value: distribuidora?.deliveryZones?.join(' · ') || (city ? `${city}, ${province || 'Argentina'}` : 'Sin zonas configuradas') },
     { label: 'Horario de pedidos',value: distribuidora?.deliveryHours || 'Lunes a Viernes · 8 a 17hs' },
-  ]
+  ], [distribuidora, city, province])
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Dark hero header */}
-      <div className="bg-primary pt-8 pb-20 md:pb-24 px-4 md:px-8 relative md:rounded-b-3xl md:mt-4 md:mx-4 overflow-hidden shadow-lg">
-        <svg className="absolute inset-0 w-full h-full opacity-[0.06]" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="88%" cy="25%" r="90" fill="none" stroke="white" strokeWidth="5" />
-          <rect x="3%" y="60%" width="80" height="80" fill="none" stroke="white" strokeWidth="4" transform="rotate(20)" />
+      <div className="relative overflow-hidden bg-[#080f2b] px-4 pb-20 pt-7 shadow-[0_18px_52px_rgba(8,15,43,0.18)] md:mx-4 md:mt-4 md:rounded-b-[1.75rem] md:px-8 md:pb-24 md:pt-8">
+        <div className="absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#0B1A45] opacity-80 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-12 -right-12 h-48 w-48 rounded-full bg-[#0B1A45]/60 blur-2xl pointer-events-none" />
+        <div className="absolute right-1/4 top-0 h-32 w-32 rounded-full bg-lima/4 blur-3xl pointer-events-none" />
+
+        <svg className="absolute inset-0 h-full w-full opacity-[0.04] pointer-events-none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <circle cx="92%" cy="-10%" r="38%" fill="none" stroke="white" strokeWidth="32" />
+          <circle cx="8%" cy="110%" r="22%" fill="none" stroke="white" strokeWidth="20" />
+          <line x1="0" y1="100%" x2="100%" y2="0" stroke="white" strokeWidth="0.8" opacity="0.6" />
+          <line x1="0" y1="70%" x2="70%" y2="0" stroke="white" strokeWidth="0.5" opacity="0.4" />
+          <circle cx="15%" cy="30%" r="1.5" fill="white" opacity="0.5" />
+          <circle cx="22%" cy="55%" r="1" fill="white" opacity="0.3" />
         </svg>
-        <div className="max-w-5xl mx-auto relative z-10 flex items-start justify-between">
+
+        <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle,rgba(255,255,255,1)_1px,transparent_1px)] bg-size-[18px_18px] pointer-events-none" />
+
+        <div className="relative z-10 mx-auto flex max-w-5xl items-start justify-between">
           <div className="flex items-center gap-4 md:gap-6">
-            <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl md:rounded-3xl bg-primary flex items-center justify-center font-heading font-bold text-2xl md:text-3xl text-white shrink-0 border border-white/10 shadow-inner">
-              {initials}
-            </div>
-            <div>
-              <h1 className="font-heading font-bold text-xl md:text-3xl text-white leading-tight">{companyName}</h1>
-              <div className="flex items-center gap-1.5 text-white/70 text-sm md:text-base font-medium mt-2 bg-white/10 px-3 py-1 rounded-full w-max">
-                <MapPin className="h-3.5 w-3.5" /> {city}, Buenos Aires
+            <AvatarUploader
+              ownerId={distribuidora?.id ?? ''}
+              type="distribuidora"
+              currentLogoUrl={distribuidora?.logoUrl}
+              initials={initials}
+              className="h-16 w-16 md:h-24 md:w-24 rounded-2xl md:rounded-3xl text-2xl md:text-4xl"
+            />
+            <div className="min-w-0">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-lima/60 md:text-xs">
+                Cuenta distribuidora
+              </p>
+              <h1 className="font-heading text-xl font-bold leading-tight tracking-tight text-white md:text-4xl">{companyName}</h1>
+              <div className="mt-2 flex w-max max-w-full items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-medium text-white/70 md:text-base">
+                <MapPin className="h-3.5 w-3.5" /> {[city, province].filter(Boolean).join(', ') || 'Argentina'}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Floating content */}
       <div className="px-4 md:px-8 -mt-8 md:-mt-12 relative z-10 pb-12 max-w-5xl mx-auto w-full">
+
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
 
           {/* Left column */}
@@ -384,27 +446,6 @@ export default function PerfilDistribuidoraPage() {
 
             {/* Reviews */}
             {distribuidora?.id && <DistribuidoraReviewsSection distId={distribuidora.id} />}
-
-            {/* Notifications */}
-            <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-6">Notificaciones</h2>
-              <div className="space-y-6">
-                {notifications.map((item, i) => (
-                  <div key={i} className={`flex items-center justify-between gap-4 ${i !== 0 ? 'pt-6 border-t border-gray-100' : ''}`}>
-                    <div className="flex gap-4 items-start">
-                      <div className="h-10 w-10 rounded-xl bg-gray-50 items-center justify-center shrink-0 hidden md:flex">
-                        <Bell className="h-5 w-5 text-gray-500" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-base text-foreground">{item.label}</p>
-                        <p className="text-sm text-muted-foreground mt-1 max-w-md">{item.sub}</p>
-                      </div>
-                    </div>
-                    <Switch defaultChecked={item.defaultOn} className="data-[state=checked]:bg-primary shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>

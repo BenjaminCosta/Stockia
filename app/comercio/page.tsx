@@ -145,7 +145,7 @@ export default function ComercioHomePage() {
   const currentLocation = comercio?.location
 
   const commerceContext = currentLocation
-    ? { lat: currentLocation.lat, lng: currentLocation.lng, citySlug: currentLocation.citySlug }
+    ? { lat: currentLocation.lat ?? undefined, lng: currentLocation.lng ?? undefined, locationKey: currentLocation.locationKey, citySlug: currentLocation.citySlug }
     : undefined
   const { data: distributors, loading: isLoading } = useDistributors(commerceContext)
   const { data: products } = useProducts()
@@ -224,7 +224,7 @@ export default function ComercioHomePage() {
             {currentLocation && (
               <div className="mt-1.5 flex items-center text-xs font-medium text-muted-foreground">
                 <MapPin className="mr-1 h-3 w-3 text-primary" />
-                <span>{[currentLocation.city, currentLocation.zone].filter(Boolean).join(', ')}</span>
+                <span>{[currentLocation.city, currentLocation.province].filter(Boolean).join(', ')}</span>
               </div>
             )}
           </div>

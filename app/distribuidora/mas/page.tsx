@@ -11,21 +11,21 @@ const moreItems = [
     label: 'Zonas de entrega',
     description: 'Áreas, cobertura y condiciones',
     icon: MapPinned,
-    iconBg: 'bg-amber-50 text-amber-600',
+    iconBg: 'bg-[#F1FFD1] text-[#4A662E]',
   },
   {
     href: '/distribuidora/resenas',
     label: 'Reseñas',
     description: 'Opiniones y reputación comercial',
     icon: Star,
-    iconBg: 'bg-purple-50 text-purple-600',
+    iconBg: 'bg-[#F1FFD1] text-[#89B317]',
   },
   {
     href: '/distribuidora/perfil',
     label: 'Cuenta',
     description: 'Datos de empresa y preferencias',
     icon: CircleUserRound,
-    iconBg: 'bg-blue-50 text-blue-600',
+    iconBg: 'bg-[#0B1A45]/8 text-[#0B1A45]',
   },
 ]
 
@@ -57,9 +57,9 @@ export default function DistribuidoraMasPage() {
       </div>
 
       <div className="px-4 -mt-4 pb-8 lg:mt-0 lg:mx-auto lg:max-w-2xl lg:pt-8">
-        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-          <div className="border-b border-gray-50 px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Gestión</p>
+        <div className="overflow-hidden rounded-2xl border border-[#DFE1E8]/80 bg-white shadow-[0_1px_3px_rgba(11,26,69,0.05)]">
+          <div className="border-b border-[#DFE1E8]/60 px-4 py-2.5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">Gestión</p>
           </div>
           {moreItems.map((item, i) => {
             const Icon = item.icon
@@ -67,7 +67,7 @@ export default function DistribuidoraMasPage() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-4 px-4 py-4 transition-colors hover:bg-gray-50 active:bg-gray-100${i < moreItems.length - 1 ? ' border-b border-gray-50' : ''}`}
+                className={`flex items-center gap-4 px-4 py-4 transition-colors hover:bg-[#F7F8FA] active:bg-[#EFF0F3]${i < moreItems.length - 1 ? ' border-b border-[#DFE1E8]/60' : ''}`}
               >
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.iconBg}`}>
                   <Icon className="h-5 w-5" strokeWidth={1.75} />
@@ -82,7 +82,7 @@ export default function DistribuidoraMasPage() {
           })}
         </div>
 
-        <div className="mt-3 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="mt-3 overflow-hidden rounded-2xl border border-[#DFE1E8]/80 bg-white shadow-[0_1px_3px_rgba(11,26,69,0.05)]">
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-red-50 active:bg-red-100"

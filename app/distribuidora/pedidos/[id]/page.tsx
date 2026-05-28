@@ -3,8 +3,9 @@
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Phone, Package, Clock, CheckCircle, Truck, X, AlertTriangle, Handshake, CreditCard, BadgePercent, Star } from 'lucide-react'
-import { formatCurrency, mockComercios, getEstimatedDeliveryDate } from '@/lib/mock-data'
+import { formatCurrency, getEstimatedDeliveryDate } from '@/lib/mock-data'
 import { useOrder, useDistributor } from '@/hooks/use-data'
+import { getCommerceById, type FirestoreCommerce } from '@/lib/data/users.service'
 import { updateOrderStatus } from '@/lib/data/orders.service'
 import type { OrderStatus as FSOrderStatus } from '@/lib/data/orders.service'
 import { LoadingButton } from '@/components/ui/LoadingButton'
@@ -13,6 +14,7 @@ import { CommerceReviewModal } from '@/components/CommerceReviewModal'
 import { FeedbackModal } from '@/components/FeedbackModal'
 import { useApp } from '@/lib/app-context'
 import type { Distribuidora } from '@/lib/types'
+import { OrderDetailSkeleton } from '@/components/ui/SkeletonCard'
 
 // ─── Status system ────────────────────────────────────────────────────────────
 
@@ -118,17 +120,21 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
   const { data: distribuidora } = useDistributor(order?.distribuidoraId || '')
   const [currentFSStatus, setCurrentFSStatus] = useState<DistribStatus>('pending_confirmation')
   const [isUpdating, setIsUpdating] = useState(false)
+  const [comercioData, setComercioData] = useState<(FirestoreCommerce & { id: string }) | null>(null)
   const [cancellationModal, setCancellationModal] = useState<'cancelled' | 'not_delivered' | null>(null)
   const [showSuccessMsg, setShowSuccessMsg] = useState<string | null>(null)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [showFeedbackAfterReview, setShowFeedbackAfterReview] = useState(false)
   const [alreadyReviewed, setAlreadyReviewed] = useState<boolean | null>(null)
 
-  // Sync status when order loads
+  // Sync status when order loads + fetch real commerce data
   useEffect(() => {
     if (order) {
       const fs = order.firestoreStatus as DistribStatus | undefined
       setCurrentFSStatus(fs ?? toFirestoreStatus(order.status))
+      if (order.comercioId) {
+        getCommerceById(order.comercioId).then(c => setComercioData(c))
+      }
     }
   }, [order])
 
@@ -142,11 +148,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
   }, [order])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      </div>
-    )
+    return <OrderDetailSkeleton />
   }
 
   if (!order) {
@@ -158,7 +160,6 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
     )
   }
 
-  const comercio = mockComercios.find(c => c.id === order.comercioId)
   const estimatedDelivery = distribuidora
     ? getEstimatedDeliveryDate((distribuidora as any).deliveryTimeHours)
     : 'Próximos días hábiles'
@@ -167,7 +168,8 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
   const isExternal = order.paymentMethod === 'external'
   const isTerminal = currentFSStatus === 'delivered' || currentFSStatus === 'cancelled' || currentFSStatus === 'not_delivered'
   const isContactVisible = !['pending_confirmation'].includes(currentFSStatus)
-  const commission = order.total * 0.015
+  const commissionRate = distribuidoraUser?.commissionRate ?? 0.015
+  const commission = order.total * commissionRate
 
   const handleStatusChange = async (nextStatus: DistribStatus, cancellationReason?: string) => {
     setIsUpdating(true)
@@ -228,10 +230,10 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
       )}
 
       {/* Sticky header */}
-      <div className="bg-white px-4 md:px-8 py-4 md:py-5 sticky top-0 z-20 shadow-sm flex items-center gap-3">
+      <div className="bg-white/95 backdrop-blur-sm px-4 md:px-8 py-3 md:py-4 sticky top-0 z-20 border-b border-[#DFE1E8]/80 flex items-center gap-3">
         <Link
           href="/distribuidora/pedidos"
-          className="h-10 w-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors"
+          className="h-9 w-9 rounded-xl bg-[#F7F8FA] border border-[#DFE1E8]/80 flex items-center justify-center text-[#5F6880] hover:bg-[#EFF0F3] transition-colors shrink-0"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
@@ -287,7 +289,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
             <BadgePercent className="h-5 w-5 text-emerald-600 shrink-0" />
             <div className="flex-1">
               <p className="font-semibold text-emerald-800 text-sm">Comisión generada</p>
-              <p className="text-xs text-emerald-700 mt-0.5">1.5% sobre {formatCurrency(order.total)}</p>
+              <p className="text-xs text-emerald-700 mt-0.5">{(commissionRate * 100).toFixed(1)}% sobre {formatCurrency(order.total)}</p>
             </div>
             <p className="font-heading font-bold text-emerald-700">{formatCurrency(commission)}</p>
           </div>
@@ -297,36 +299,37 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
 
           {/* Comercio card — contact hidden until confirmed */}
-          <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-border p-5 md:p-6">
-            <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-4">Comercio</h2>
+          <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-[#DFE1E8]/80 p-5 md:p-6">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-4">Comercio</h2>
             <div className="flex items-start gap-3 mb-4">
-              <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center font-bold text-gray-500 text-base shrink-0">
+              <div className="h-12 w-12 rounded-2xl bg-[#0B1A45] flex items-center justify-center font-bold text-white text-sm shrink-0">
                 {order.comercioName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
               </div>
               <div>
                 <p className="font-bold text-foreground text-base">{order.comercioName}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{order.zone}</p>
               </div>
             </div>
 
             {isContactVisible ? (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-gray-50 px-3 py-2 rounded-xl">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-[#F7F8FA] px-3 py-2 rounded-xl">
                   <MapPin className="h-3.5 w-3.5 shrink-0" />
-                  {comercio?.address || 'Av. Mitre 1234'}, {order.zone}
+                  {comercioData?.address || order.comercioName}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-gray-50 px-3 py-2 rounded-xl">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-[#F7F8FA] px-3 py-2 rounded-xl">
                   <Phone className="h-3.5 w-3.5 shrink-0" />
-                  {comercio?.phone || '+54 11 4567-8901'}
+                  {comercioData?.phone || 'Teléfono no informado'}
                 </div>
-                <a
-                  href={`https://wa.me/${(comercio?.phone || '').replace(/\D/g, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full mt-2 text-sm text-primary font-bold border-2 border-primary/20 px-4 py-2.5 rounded-xl hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2"
-                >
-                  <Phone className="h-4 w-4" /> Contactar por WhatsApp
-                </a>
+                {comercioData?.phone && (
+                  <a
+                    href={`https://wa.me/${comercioData.phone.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full mt-2 text-sm text-primary font-bold border-2 border-primary/20 px-4 py-2.5 rounded-xl hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2"
+                  >
+                    <Phone className="h-4 w-4" /> Contactar por WhatsApp
+                  </a>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-dashed border-gray-200">
@@ -337,8 +340,8 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
           </div>
 
           {/* Entrega card */}
-          <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-border p-5 md:p-6">
-            <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-4">Entrega</h2>
+          <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-[#DFE1E8]/80 p-5 md:p-6">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-4">Entrega</h2>
             <div className="flex items-start gap-3">
               <div className="h-11 w-11 bg-[#F1FFD1] text-[#4A662E] rounded-2xl flex items-center justify-center shrink-0">
                 <MapPin className="h-5 w-5" />
@@ -346,7 +349,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
               <div>
                 <p className="font-bold text-foreground text-sm">{order.comercioName}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {comercio?.address || 'Av. San Martín 450'}, {order.zone}
+                  {comercioData?.address || 'Dirección no informada'}
                 </p>
                 <div className="flex items-center gap-1.5 mt-3 text-xs font-medium text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg w-max capitalize">
                   <Clock className="h-3.5 w-3.5" /> Entrega: {estimatedDelivery}
@@ -355,7 +358,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
             </div>
 
             {/* Payment info */}
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="mt-4 pt-4 border-t border-[#DFE1E8]/60">
               {isExternal ? (
                 <div className="flex items-center gap-2 text-sm">
                   <Handshake className="h-4 w-4 text-amber-500 shrink-0" />
@@ -372,13 +375,13 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
         </div>
 
         {/* Products card */}
-        <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-border p-5 md:p-6">
-          <h2 className="font-bold text-foreground text-sm uppercase tracking-wider mb-4">
+        <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-[#DFE1E8]/80 p-5 md:p-6">
+          <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-4">
             Productos del pedido
           </h2>
           <div className="space-y-3">
             {order.items.map((item, i) => (
-              <div key={i} className={`flex justify-between items-start gap-4 ${i !== 0 ? 'pt-3 border-t border-gray-100' : ''}`}>
+              <div key={i} className={`flex justify-between items-start gap-4 ${i !== 0 ? 'pt-3 border-t border-[#DFE1E8]/60' : ''}`}>
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
                     <Package className="h-4 w-4 text-muted-foreground" />
@@ -392,14 +395,14 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
               </div>
             ))}
           </div>
-          <div className="border-t border-gray-100 mt-4 pt-4 space-y-2 text-sm">
+          <div className="border-t border-[#DFE1E8]/60 mt-4 pt-4 space-y-2 text-sm">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal</span><span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between font-medium text-muted-foreground">
               <span>Envío</span><span className="text-green-600 font-bold">Gratis</span>
             </div>
-            <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+            <div className="flex justify-between items-center pt-3 border-t border-[#DFE1E8]/60">
               <span className="font-bold text-foreground text-base">Total</span>
               <span className="font-heading font-bold text-2xl text-primary">{formatCurrency(order.total)}</span>
             </div>

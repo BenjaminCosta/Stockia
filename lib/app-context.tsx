@@ -8,12 +8,13 @@ import {
   type User as FirebaseUser,
 } from 'firebase/auth'
 import { auth } from './firebase/client'
-import { normalizeCitySlug } from './firebase/geo'
+import { buildLocationKey, hasRealCoordinates, normalizeCitySlug, normalizeTextSlug } from './firebase/geo'
+import { normalizeLocationInput } from './locations/location-utils'
 import { getUserById, getCommerceById } from './data/users.service'
 import { getDistributorById } from './data/distributors.service'
 import { setSessionCookie, clearSessionCookie } from './cookies'
 import { UserRole, Comercio, Distribuidora, Cart, Product, Order } from './types'
-import { useComercioOrders } from '@/hooks/use-data'
+import { useComercioOrders, useDistribuidoraOrders } from '@/hooks/use-data'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +61,10 @@ interface AppContextType {
   // Orders (commerce) — shared single listener
   commerceOrders: Order[]
   ordersLoading: boolean
+
+  // Orders (distribuidora) — shared single listener
+  distribuidoraOrders: Order[]
+  distribuidoraOrdersLoading: boolean
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -114,6 +119,10 @@ async function buildCurrentUser(
   if (role === 'comercio') {
     const profile = await getCommerceById(uid).catch(() => null)
     const city = profile?.city || ''
+    const province = profile?.province || 'Buenos Aires'
+    const provinceSlug = profile?.provinceSlug || normalizeTextSlug(province)
+    const citySlug = profile?.citySlug || normalizeCitySlug(city)
+    const locationKey = profile?.locationKey || profile?.zoneKey || buildLocationKey(provinceSlug, citySlug)
     return {
       id: uid,
       email,
@@ -125,11 +134,13 @@ async function buildCurrentUser(
       address: profile?.address || '',
       location: {
         // Treat 0 as "no real coords" (Null Island — always invalid for ARG)
-        lat: profile?.lat && profile.lat !== 0 ? profile.lat : undefined,
-        lng: profile?.lng && profile.lng !== 0 ? profile.lng : undefined,
+        lat: hasRealCoordinates(profile?.lat, profile?.lng) ? profile?.lat : null,
+        lng: hasRealCoordinates(profile?.lat, profile?.lng) ? profile?.lng : null,
+        province,
+        provinceSlug,
         city,
-        zone: profile?.zone || '',
-        citySlug: profile?.citySlug || normalizeCitySlug(city),
+        citySlug,
+        locationKey,
       },
       createdAt: '',
     }
@@ -137,6 +148,10 @@ async function buildCurrentUser(
   const profile = await getDistributorById(uid).catch(() => null)
   const distLat = (profile as any)?.location?.lat
   const distLng = (profile as any)?.location?.lng
+  const normalizedDistLocation = normalizeLocationInput({
+    province: (profile as any)?.location?.province || 'Buenos Aires',
+    city: (profile as any)?.location?.city || '',
+  })
   return {
     id: uid,
     email,
@@ -151,12 +166,14 @@ async function buildCurrentUser(
     deliveryTimeLabel: (profile as any)?.deliveryTimeLabel || '',
     deliveryTimeHours: (profile as any)?.deliveryTimeHours ?? 24,
     deliveryZones: (profile as any)?.deliveryZones ?? [],
+    deliveryLocationKeys: (profile as any)?.deliveryLocationKeys ?? (profile as any)?.deliveryZoneKeys ?? [],
+    deliveryZoneKeys: (profile as any)?.deliveryZoneKeys ?? [],
     deliveryHours: (profile as any)?.deliveryHours || '',
     location: {
       // Treat 0 as "no real coords"
-      lat: distLat && distLat !== 0 ? distLat : undefined,
-      lng: distLng && distLng !== 0 ? distLng : undefined,
-      city: (profile as any)?.location?.city || '',
+      ...normalizedDistLocation,
+      lat: hasRealCoordinates(distLat, distLng) ? distLat : null,
+      lng: hasRealCoordinates(distLat, distLng) ? distLng : null,
     },
     commissionRate: (profile as any)?.commissionRate ?? 0.015,
     commissionStatus: (profile as any)?.commissionStatus ?? 'ok',
@@ -179,9 +196,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Cache userDoc from login() to avoid duplicate Firestore read in onAuthStateChanged
   const loginCacheRef = useRef<{ uid: string; userDoc: Record<string, unknown> } | null>(null)
 
-  // Single shared orders listener for the whole app
+  // Single shared orders listeners for the whole app
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
+  const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
   const { data: commerceOrders, loading: ordersLoading } = useComercioOrders(comercio?.id || '')
+  const { data: distribuidoraOrders, loading: distribuidoraOrdersLoading } = useDistribuidoraOrders(distribuidora?.id || '')
 
   // Hydrate wishlist from localStorage on mount
   useEffect(() => {
@@ -220,7 +239,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           userDoc = cached.userDoc
           loginCacheRef.current = null
         } else {
-          userDoc = await getUserById(fbUser.uid)
+          userDoc = await getUserById(fbUser.uid) as unknown as Record<string, unknown> | null
         }
         if (userDoc?.role === 'admin') {
           setIsAuthenticated(true)
@@ -255,7 +274,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Fetch role so we can redirect immediately after
     const userDoc = await getUserById(credential.user.uid)
     // Cache userDoc so onAuthStateChanged doesn't need to re-fetch it
-    loginCacheRef.current = { uid: credential.user.uid, userDoc: userDoc as Record<string, unknown> }
+    loginCacheRef.current = { uid: credential.user.uid, userDoc: userDoc as unknown as Record<string, unknown> }
     const role: UserRole =
       userDoc?.role === 'comercio' || userDoc?.role === 'distribuidora'
         ? userDoc.role
@@ -380,12 +399,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isInWishlist,
     commerceOrders,
     ordersLoading,
+    distribuidoraOrders,
+    distribuidoraOrdersLoading,
   }), [
     isAuthenticated, authLoading, userRole, currentUser, firebaseUser,
     login, logout, cart, addToCart, removeFromCart, updateCartItemQuantity,
     clearCart, getCartTotal, getCartItemCount, wishlist,
     addToWishlist, removeFromWishlist, toggleWishlist, isInWishlist,
-    commerceOrders, ordersLoading,
+    commerceOrders, ordersLoading, distribuidoraOrders, distribuidoraOrdersLoading,
   ])
 
   return (

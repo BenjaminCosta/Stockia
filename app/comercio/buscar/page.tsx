@@ -8,7 +8,7 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { formatCurrency } from '@/lib/mock-data'
 import { useApp } from '@/lib/app-context'
 import { useProducts, useDistributors, useCategories } from '@/hooks/use-data'
-import { Product } from '@/lib/types'
+import { Comercio, Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { ProductCard } from '@/components/product-card'
 import { ProductCardSkeleton } from '@/components/ui/SkeletonCard'
@@ -107,10 +107,15 @@ export default function BuscarPage() {
   const [debouncedQuery, setDebouncedQuery] = useState(queryParam)
   const [quantities, setQuantities]   = useState<Record<string, number>>({})
   const [justAdded, setJustAdded]     = useState<Record<string, boolean>>({})
-  const { addToCart, getCartItemCount, cart } = useApp()
+  const { addToCart, getCartItemCount, cart, currentUser } = useApp()
   const cartItemCount = getCartItemCount()
+  const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
+  const loc = comercio?.location
+  const commerceContext = loc
+    ? { lat: loc.lat ?? undefined, lng: loc.lng ?? undefined, locationKey: loc.locationKey, citySlug: loc.citySlug }
+    : undefined
   const { data: products, loading: isLoading } = useProducts()
-  const { data: distributors } = useDistributors()
+  const { data: distributors } = useDistributors(commerceContext)
   const { data: allCategories } = useCategories()
 
   useEffect(() => {

@@ -123,8 +123,10 @@ function ProductCardComponent({
   }, [toggleWishlist, product])
 
   const productImg = (sizeClass: string, rounded = 'rounded-xl') => (
-    <div className={cn('flex items-center justify-center bg-white overflow-hidden', rounded, sizeClass)}>
-      {catObj ? (
+    <div className={cn('relative flex items-center justify-center bg-white overflow-hidden', rounded, sizeClass)}>
+      {product.imageUrl ? (
+        <Image src={product.imageUrl} alt={product.name} fill className="object-cover" sizes="128px" />
+      ) : catObj ? (
         <Image src={catObj.image} alt={product.category} width={64} height={64} className="h-2/3 w-2/3 object-contain" />
       ) : (
         <Package className="h-8 w-8 text-gray-200" />

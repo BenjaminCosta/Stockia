@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Bell, ChevronRight, Package, ShieldAlert, Star, Truck } from 'lucide-react'
-import { ComercioInfoHero } from '@/components/comercio-info-page'
+import { ComercioPageHeader } from '@/components/comercio-page-header'
 import { StatusBadge } from '@/components/status-badge'
 import { useApp } from '@/lib/app-context'
 import { useComercioOrders } from '@/hooks/use-data'
@@ -91,13 +91,10 @@ export default function ComercioNotificacionesPage() {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
-      <ComercioInfoHero
-        label="Actividad"
-        title="Notificaciones"
-        subtitle="Resumen reciente de pedidos y eventos relevantes de tu cuenta comercio."
-      />
+      <div className="max-w-350 mx-auto px-4 py-6 md:px-8 md:py-8">
+        <ComercioPageHeader label="Actividad" title="Notificaciones" />
 
-      <div className="mx-auto grid w-full max-w-350 gap-6 px-4 py-6 md:px-8 md:py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           {orderedNotifications.length === 0 ? (
             <div className="rounded-3xl border border-border bg-white px-6 py-12 text-center shadow-sm md:px-8">
@@ -177,6 +174,7 @@ export default function ComercioNotificacionesPage() {
             </p>
           </div>
         </aside>
+        </div>
       </div>
     </div>
   )

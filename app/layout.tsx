@@ -32,11 +32,11 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/logo-iso.svg',
-        type: 'image/svg+xml',
+        url: '/iso-stockia.png',
+        type: 'image/png',
       },
     ],
-    apple: '/logo-iso.svg',
+    apple: '/iso-stockia.png',
   },
 }
 
