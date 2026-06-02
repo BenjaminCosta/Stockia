@@ -4,6 +4,7 @@ import { Plus_Jakarta_Sans, Sora } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { TopLoadingBar } from '@/components/ui/TopLoadingBar'
 import { AppLoadingScreen } from '@/components/ui/AppLoadingScreen'
+import { ServiceWorkerRegister } from '@/components/ui/ServiceWorkerRegister'
 import './globals.css'
 
 const jakarta = Plus_Jakarta_Sans({
@@ -60,6 +61,7 @@ export default function RootLayout({
           <TopLoadingBar />
         </Suspense>
         <AppLoadingScreen />
+        <ServiceWorkerRegister />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
