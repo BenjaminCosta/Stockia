@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Plus, Pencil, Package, Upload, Download, FileSpreadsheet,
-  AlertTriangle, CheckCircle2, Trash2, CheckSquare, Square,
+  AlertTriangle, CheckCircle2, Trash2, CheckSquare, Square, ImageOff,
 } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -28,6 +28,7 @@ export default function ProductosPage() {
   const isBlocked = distribuidora?.commissionStatus === 'blocked'
 
   const [searchQuery, setSearchQuery]       = useState('')
+  const [filterNoImage, setFilterNoImage]   = useState(false)
   const [showImport, setShowImport]         = useState(false)
   const [refreshKey, setRefreshKey]         = useState(0)
   const [importedCount, setImportedCount]   = useState<number | null>(null)
@@ -136,13 +137,15 @@ export default function ProductosPage() {
 
   // ─── Filter ───────────────────────────────────────────────────────────────
 
+  const noImageCount = useMemo(() => products.filter(p => !p.imageUrl).length, [products])
+
   const filteredProducts = useMemo(() => {
     const q = searchQuery.toLowerCase()
-    return products.filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q)
-    )
-  }, [products, searchQuery])
+    return products.filter(p => {
+      if (filterNoImage && p.imageUrl) return false
+      return p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+    })
+  }, [products, searchQuery, filterNoImage])
 
   const allSelected = filteredProducts.length > 0 && selectedIds.size === filteredProducts.length
 
@@ -258,15 +261,30 @@ export default function ProductosPage() {
         ) : (
           <div className="bg-white md:rounded-2xl md:shadow-[0_1px_3px_rgba(11,26,69,0.05),0_6px_20px_rgba(11,26,69,0.07)] border border-transparent md:border-[#DFE1E8]/80 overflow-hidden">
 
-            {/* Bulk-select toolbar */}
+            {/* Toolbar */}
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[#DFE1E8]/60 bg-[#F7F8FA]">
-              <button
-                onClick={() => { setSelectMode(s => !s); setSelectedIds(new Set()); setConfirmDeleteId(null) }}
-                className={`flex items-center gap-1.5 text-xs font-semibold transition-colors ${selectMode ? 'text-primary' : 'text-[#7A839C] hover:text-[#5F6880]'}`}
-              >
-                {selectMode ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
-                {selectMode ? 'Cancelar selección' : 'Seleccionar'}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => { setSelectMode(s => !s); setSelectedIds(new Set()); setConfirmDeleteId(null) }}
+                  className={`flex items-center gap-1.5 text-xs font-semibold transition-colors ${selectMode ? 'text-primary' : 'text-[#7A839C] hover:text-[#5F6880]'}`}
+                >
+                  {selectMode ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+                  {selectMode ? 'Cancelar' : 'Seleccionar'}
+                </button>
+                {!selectMode && noImageCount > 0 && (
+                  <button
+                    onClick={() => setFilterNoImage(f => !f)}
+                    className={`flex items-center gap-1.5 text-xs font-semibold transition-colors px-2.5 py-1 rounded-lg border ${
+                      filterNoImage
+                        ? 'bg-amber-50 border-amber-200 text-amber-700'
+                        : 'bg-white border-[#DFE1E8]/80 text-[#7A839C] hover:text-[#5F6880]'
+                    }`}
+                  >
+                    <ImageOff className="h-3.5 w-3.5" />
+                    {filterNoImage ? 'Ver todos' : `${noImageCount} sin imagen`}
+                  </button>
+                )}
+              </div>
 
               {selectMode && (
                 <div className="flex items-center gap-3">
@@ -334,9 +352,17 @@ export default function ProductosPage() {
                               }
                             </button>
                           )}
-                          <div className="w-9 h-9 bg-[#F1FFD1] rounded-xl flex items-center justify-center shrink-0 md:hidden">
-                            <CategoryIcon category={product.category} className="h-4.5 w-4.5 text-[#4A662E]" />
-                          </div>
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="w-9 h-9 rounded-xl object-cover shrink-0 bg-gray-100"
+                            />
+                          ) : (
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-gray-100 border border-dashed border-gray-300" title="Sin imagen">
+                              <ImageOff className="h-3.5 w-3.5 text-gray-300" />
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <div className="text-[10px] font-bold text-[#7A839C] md:hidden uppercase tracking-[0.14em] mb-0.5">{product.category}</div>
                             <div className="font-bold text-[#0B1A45] text-sm leading-tight truncate">{product.name}</div>
