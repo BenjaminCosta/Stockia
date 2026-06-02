@@ -194,79 +194,100 @@ function resolveEstado(
   return 'active'
 }
 
-// ─── Parser principal ──────────────────────────────────────────────────────────
+// ─── Lectura del workbook con manejo de encoding ──────────────────────────────
 
-export function parseProductsFile(
-  file: File,
-): Promise<{ rows: ParsedProductRow[]; totalErrors: number }> {
+function readFileAsText(file: File, encoding: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target?.result as string)
+    reader.onerror = reject
+    reader.readAsText(file, encoding)
+  })
+}
 
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer)
-        const workbook = XLSX.read(data, { type: 'array' })
-        const sheet = workbook.Sheets[workbook.SheetNames[0]]
-        const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-          defval: '',
-          // raw: true (default) → números de Excel/CSV llegan como JS number directamente
-        })
-
-        if (rawRows.length === 0) {
-          resolve({ rows: [], totalErrors: 0 })
-          return
-        }
-
-        // Construir mapa de columnas UNA sola vez usando los headers de la primera fila
-        const headers = Object.keys(rawRows[0])
-        const colMap = buildColumnMap(headers)
-
-        const rows: ParsedProductRow[] = rawRows.map((raw, i) => {
-          const nombre     = getString(raw, colMap.nombre)
-          const categoria  = getString(raw, colMap.categoria)
-          const marca      = getString(raw, colMap.marca)
-          const sku        = getString(raw, colMap.sku)
-          const descripcion = getString(raw, colMap.descripcion)
-          const unidad     = getString(raw, colMap.unidad)
-          const activoRaw  = getString(raw, colMap.activo)
-          const estadoRaw  = getString(raw, colMap.estado)
-
-          const precio = getNumber(raw, colMap.precio)
-          const stock  = getNumber(raw, colMap.stock)
-
-          const estado = resolveEstado(activoRaw, estadoRaw, stock)
-
-          const errors: string[] = []
-          if (!nombre)                              errors.push('Nombre requerido')
-          if (!categoria)                           errors.push('Categoría requerida')
-          if (precio === null || isNaN(precio))     errors.push('Precio inválido')
-          else if (precio < 0)                      errors.push('Precio debe ser ≥ 0')
-          if (stock === null || isNaN(stock))       errors.push('Stock inválido')
-          else if (stock < 0)                       errors.push('Stock debe ser ≥ 0')
-
-          return {
-            rowIndex: i + 2,
-            nombre,
-            categoria,
-            marca,
-            sku,
-            descripcion,
-            precio,
-            stock,
-            unidad,
-            estado,
-            errors,
-            hasErrors: errors.length > 0,
-          }
-        })
-
-        resolve({ rows, totalErrors: rows.filter((r) => r.hasErrors).length })
-      } catch (err) {
-        reject(err)
-      }
-    }
-
+function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target?.result as ArrayBuffer)
     reader.onerror = reject
     reader.readAsArrayBuffer(file)
   })
+}
+
+async function readWorkbook(file: File): Promise<XLSX.WorkBook> {
+  const isCSV = /\.csv$/i.test(file.name) || file.type === 'text/csv'
+
+  if (isCSV) {
+    // Para CSV el browser no sabe el encoding → intentar UTF-8 primero.
+    // Si hay caracteres de reemplazo (U+FFFD) significa que era Windows-1252.
+    let text = await readFileAsText(file, 'UTF-8')
+    if (text.includes('\uFFFD')) {
+      text = await readFileAsText(file, 'windows-1252')
+    }
+    return XLSX.read(text, { type: 'string' })
+  }
+
+  // XLSX/XLS: formato binario con encoding interno, no necesita detección
+  const buffer = await readFileAsArrayBuffer(file)
+  return XLSX.read(new Uint8Array(buffer), { type: 'array' })
+}
+
+// ─── Parser principal ──────────────────────────────────────────────────────────
+
+export async function parseProductsFile(
+  file: File,
+): Promise<{ rows: ParsedProductRow[]; totalErrors: number }> {
+  const workbook = await readWorkbook(file)
+  const sheet = workbook.Sheets[workbook.SheetNames[0]]
+  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+    defval: '',
+    // raw: true (default) → números de Excel/CSV llegan como JS number directamente
+  })
+
+  if (rawRows.length === 0) return { rows: [], totalErrors: 0 }
+
+  // Construir mapa de columnas UNA sola vez usando los headers de la primera fila
+  const headers = Object.keys(rawRows[0])
+  const colMap = buildColumnMap(headers)
+
+  const rows: ParsedProductRow[] = rawRows.map((raw, i) => {
+    const nombre      = getString(raw, colMap.nombre)
+    const categoria   = getString(raw, colMap.categoria)
+    const marca       = getString(raw, colMap.marca)
+    const sku         = getString(raw, colMap.sku)
+    const descripcion = getString(raw, colMap.descripcion)
+    const unidad      = getString(raw, colMap.unidad)
+    const activoRaw   = getString(raw, colMap.activo)
+    const estadoRaw   = getString(raw, colMap.estado)
+
+    const precio = getNumber(raw, colMap.precio)
+    const stock  = getNumber(raw, colMap.stock)
+
+    const estado = resolveEstado(activoRaw, estadoRaw, stock)
+
+    const errors: string[] = []
+    if (!nombre)                              errors.push('Nombre requerido')
+    if (!categoria)                           errors.push('Categoría requerida')
+    if (precio === null || isNaN(precio))     errors.push('Precio inválido')
+    else if (precio < 0)                      errors.push('Precio debe ser ≥ 0')
+    if (stock === null || isNaN(stock))       errors.push('Stock inválido')
+    else if (stock < 0)                       errors.push('Stock debe ser ≥ 0')
+
+    return {
+      rowIndex: i + 2,
+      nombre,
+      categoria,
+      marca,
+      sku,
+      descripcion,
+      precio,
+      stock,
+      unidad,
+      estado,
+      errors,
+      hasErrors: errors.length > 0,
+    }
+  })
+
+  return { rows, totalErrors: rows.filter((r) => r.hasErrors).length }
 }

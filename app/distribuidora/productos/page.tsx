@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Pencil, Package, Upload, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react'
+import { Plus, Pencil, Package, Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Switch } from '@/components/ui/switch'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
-import { useProducts } from '@/hooks/use-data'
+import { useProducts, invalidateProductsCache } from '@/hooks/use-data'
 import { Distribuidora } from '@/lib/types'
 import { CategoryIcon } from '@/components/category-icon'
 import { InventoryTableSkeleton } from '@/components/ui/SkeletonCard'
@@ -25,7 +25,17 @@ export default function ProductosPage() {
   const isBlocked = distribuidora?.commissionStatus === 'blocked'
   const [searchQuery, setSearchQuery] = useState('')
   const [showImport, setShowImport] = useState(false)
-  const { data: products, loading: isLoading } = useProducts(distributorId)
+  const [importKey, setImportKey] = useState(0)
+  const [importedCount, setImportedCount] = useState<number | null>(null)
+  const { data: products, loading: isLoading } = useProducts(distributorId, importKey)
+
+  // Auto-ocultar el banner de éxito cuando termina de cargar
+  useEffect(() => {
+    if (importedCount !== null && !isLoading) {
+      const t = setTimeout(() => setImportedCount(null), 4000)
+      return () => clearTimeout(t)
+    }
+  }, [importedCount, isLoading])
 
   const handleImport = async (rows: ParsedProductRow[]): Promise<ImportResult> => {
     const results = await Promise.allSettled(
@@ -44,10 +54,14 @@ export default function ProductosPage() {
         })
       )
     )
-    return {
-      succeeded: results.filter(r => r.status === 'fulfilled').length,
-      failed:    results.filter(r => r.status === 'rejected').length,
+    const succeeded = results.filter(r => r.status === 'fulfilled').length
+    const failed    = results.filter(r => r.status === 'rejected').length
+    if (succeeded > 0) {
+      invalidateProductsCache(distributorId)
+      setImportKey(k => k + 1)
+      setImportedCount(succeeded)
     }
+    return { succeeded, failed }
   }
 
   const filteredProducts = useMemo(() => {
@@ -135,6 +149,21 @@ export default function ProductosPage() {
 
       {/* Content */}
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full">
+        {/* Banner post-import */}
+        {importedCount !== null && (
+          <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm">
+            {isLoading
+              ? <div className="h-4 w-4 shrink-0 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
+              : <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+            }
+            <span className="font-semibold text-green-800">
+              {isLoading
+                ? `Importando ${importedCount} productos al catálogo...`
+                : `${importedCount} productos importados correctamente`}
+            </span>
+          </div>
+        )}
+
         {isLoading ? (
           <InventoryTableSkeleton count={6} />
         ) : filteredProducts.length === 0 ? (
