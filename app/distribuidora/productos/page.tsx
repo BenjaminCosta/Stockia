@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Switch } from '@/components/ui/switch'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
-import { useProducts, invalidateProductsCache } from '@/hooks/use-data'
+import { useProductsAll, invalidateProductsCache } from '@/hooks/use-data'
 import { Distribuidora } from '@/lib/types'
 import { CategoryIcon } from '@/components/category-icon'
 import { InventoryTableSkeleton } from '@/components/ui/SkeletonCard'
@@ -19,7 +19,7 @@ import ImportProductsModal from '@/components/products/ImportProductsModal'
 import { exportProductsToXlsx, downloadTemplate } from '@/lib/export/productsExport'
 import type { ParsedProductRow } from '@/lib/import/productsImport'
 import type { ImportResult } from '@/components/products/ImportProductsModal'
-import { createProduct, deleteProduct } from '@/lib/data/products.service'
+import { createProduct, updateProduct, deleteProduct, getProductsByDistributorAll } from '@/lib/data/products.service'
 
 export default function ProductosPage() {
   const { currentUser } = useApp()
@@ -42,7 +42,7 @@ export default function ProductosPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
 
-  const { data: products, loading: isLoading } = useProducts(distributorId, refreshKey)
+  const { data: products, loading: isLoading } = useProductsAll(distributorId, refreshKey)
 
   const triggerRefresh = useCallback(() => {
     invalidateProductsCache(distributorId)
@@ -68,9 +68,16 @@ export default function ProductosPage() {
   // ─── Import ───────────────────────────────────────────────────────────────
 
   const handleImport = async (rows: ParsedProductRow[]): Promise<ImportResult> => {
+    // Obtener productos existentes para detectar duplicados por SKU
+    const existing = await getProductsByDistributorAll(distributorId).catch(() => [])
+    const skuMap = new Map<string, string>() // sku → productId
+    for (const p of existing) {
+      if (p.sku) skuMap.set(p.sku.trim().toLowerCase(), p.id)
+    }
+
     const results = await Promise.allSettled(
-      rows.map(row =>
-        createProduct({
+      rows.map(row => {
+        const productData = {
           distributorId,
           name: row.nombre,
           description: row.descripcion,
@@ -81,9 +88,20 @@ export default function ProductosPage() {
           price: row.precio ?? 0,
           stock: row.stock ?? 0,
           status: row.estado,
-        })
-      )
+        }
+
+        // Si tiene SKU y ya existe → actualizar (sin tocar imageUrl)
+        const skuKey = row.sku?.trim().toLowerCase()
+        const existingId = skuKey ? skuMap.get(skuKey) : undefined
+        if (existingId) {
+          const { distributorId: _d, ...updateData } = productData
+          return updateProduct(existingId, updateData)
+        }
+
+        return createProduct(productData)
+      })
     )
+
     const succeeded = results.filter(r => r.status === 'fulfilled').length
     const failed    = results.filter(r => r.status === 'rejected').length
     if (succeeded > 0) {

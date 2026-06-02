@@ -41,7 +41,9 @@ function toProduct(doc: FirestoreProduct & { id: string }): Product {
     stock: doc.stock,
     description: doc.description,
     imageUrl: doc.imageUrl,
+    sku: doc.sku,
     active: doc.status === 'active',
+    status: doc.status ?? 'active',
     rating: 0,
     reviewCount: 0,
     isOffer: doc.isOffer ?? false,
@@ -50,7 +52,7 @@ function toProduct(doc: FirestoreProduct & { id: string }): Product {
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
-/** Returns all active products for a given distributor. */
+/** Returns active + out_of_stock products for a distributor (buyer-facing). */
 export async function getProductsByDistributor(distributorId: string): Promise<Product[]> {
   try {
     const docs = await getDocumentsByField<FirestoreProduct>(
@@ -60,10 +62,24 @@ export async function getProductsByDistributor(distributorId: string): Promise<P
       distributorId
     )
     if (docs.length > 0) {
-      return docs
-        .filter(d => d.status !== 'paused')
-        .map(toProduct)
+      return docs.filter(d => d.status !== 'paused').map(toProduct)
     }
+  } catch {
+    // fall through
+  }
+  return getProductsByDistribuidora(distributorId)
+}
+
+/** Returns ALL products for a distributor including paused (admin panel use only). */
+export async function getProductsByDistributorAll(distributorId: string): Promise<Product[]> {
+  try {
+    const docs = await getDocumentsByField<FirestoreProduct>(
+      COLLECTIONS.products,
+      'distributorId',
+      '==',
+      distributorId
+    )
+    if (docs.length > 0) return docs.map(toProduct)
   } catch {
     // fall through
   }

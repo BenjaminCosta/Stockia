@@ -88,7 +88,9 @@ export interface Product {
   stock: number
   description: string
   imageUrl?: string
+  sku?: string
   active: boolean
+  status: 'active' | 'paused' | 'out_of_stock'
   rating: number
   reviewCount: number
   isOffer?: boolean

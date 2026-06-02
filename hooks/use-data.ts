@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase/client'
 import { COLLECTIONS } from '@/lib/firebase/collections'
 import { getDistributorCards, getDistributorById as fetchDistributor } from '@/lib/data/distributors.service'
 import type { CommerceContext } from '@/lib/types'
-import { getAllProducts, getProductsByDistributor, getProductById } from '@/lib/data/products.service'
+import { getAllProducts, getProductsByDistributor, getProductsByDistributorAll, getProductById } from '@/lib/data/products.service'
 import { getOrdersByCommerce, getOrdersByDistributor, getOrderById } from '@/lib/data/orders.service'
 import { getCategories } from '@/lib/data/categories.service'
 import type { DistributorCard, Product, Order, Distribuidora, OrderStatus, Category } from '@/lib/types'
@@ -89,6 +89,7 @@ export function useDistributor(id: string) {
 
 export function invalidateProductsCache(distributorId?: string) {
   dataCache.delete(`prods:${distributorId ?? 'all'}`)
+  dataCache.delete(`prods-all:${distributorId ?? 'all'}`)
 }
 
 export function useProducts(distributorId?: string, refreshKey?: number) {
@@ -96,6 +97,16 @@ export function useProducts(distributorId?: string, refreshKey?: number) {
     () => (distributorId ? getProductsByDistributor(distributorId) : getAllProducts()) as Promise<Product[]>,
     [distributorId, refreshKey],
     `prods:${distributorId ?? 'all'}`
+  )
+  return { data: data ?? [], loading }
+}
+
+/** Para el panel de la distribuidora — incluye productos pausados/inactivos. */
+export function useProductsAll(distributorId?: string, refreshKey?: number) {
+  const { data, loading } = useAsyncData<Product[]>(
+    () => (distributorId ? getProductsByDistributorAll(distributorId) : getAllProducts()) as Promise<Product[]>,
+    [distributorId, refreshKey],
+    `prods-all:${distributorId ?? 'all'}`
   )
   return { data: data ?? [], loading }
 }
