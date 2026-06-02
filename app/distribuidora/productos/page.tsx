@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Plus, Pencil, Package, Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import {
+  Plus, Pencil, Package, Upload, Download, FileSpreadsheet,
+  AlertTriangle, CheckCircle2, Trash2, CheckSquare, Square,
+} from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Switch } from '@/components/ui/switch'
@@ -16,26 +19,52 @@ import ImportProductsModal from '@/components/products/ImportProductsModal'
 import { exportProductsToXlsx, downloadTemplate } from '@/lib/export/productsExport'
 import type { ParsedProductRow } from '@/lib/import/productsImport'
 import type { ImportResult } from '@/components/products/ImportProductsModal'
-import { createProduct } from '@/lib/data/products.service'
+import { createProduct, deleteProduct } from '@/lib/data/products.service'
 
 export default function ProductosPage() {
   const { currentUser } = useApp()
   const distribuidora = currentUser?.role === 'distribuidora' ? currentUser as Distribuidora : null
   const distributorId = distribuidora?.id || 'dist-1'
   const isBlocked = distribuidora?.commissionStatus === 'blocked'
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showImport, setShowImport] = useState(false)
-  const [importKey, setImportKey] = useState(0)
-  const [importedCount, setImportedCount] = useState<number | null>(null)
-  const { data: products, loading: isLoading } = useProducts(distributorId, importKey)
 
-  // Auto-ocultar el banner de éxito cuando termina de cargar
+  const [searchQuery, setSearchQuery]       = useState('')
+  const [showImport, setShowImport]         = useState(false)
+  const [refreshKey, setRefreshKey]         = useState(0)
+  const [importedCount, setImportedCount]   = useState<number | null>(null)
+
+  // Delete state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deletingIds, setDeletingIds]         = useState<Set<string>>(new Set())
+
+  // Bulk select state
+  const [selectMode, setSelectMode]   = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+
+  const { data: products, loading: isLoading } = useProducts(distributorId, refreshKey)
+
+  const triggerRefresh = useCallback(() => {
+    invalidateProductsCache(distributorId)
+    setRefreshKey(k => k + 1)
+  }, [distributorId])
+
+  // Auto-ocultar el banner de importación cuando termina de cargar
   useEffect(() => {
     if (importedCount !== null && !isLoading) {
       const t = setTimeout(() => setImportedCount(null), 4000)
       return () => clearTimeout(t)
     }
   }, [importedCount, isLoading])
+
+  // Salir del select mode si no quedan resultados
+  useEffect(() => {
+    if (!isLoading && products.length === 0) {
+      setSelectMode(false)
+      setSelectedIds(new Set())
+    }
+  }, [isLoading, products.length])
+
+  // ─── Import ───────────────────────────────────────────────────────────────
 
   const handleImport = async (rows: ParsedProductRow[]): Promise<ImportResult> => {
     const results = await Promise.allSettled(
@@ -45,9 +74,9 @@ export default function ProductosPage() {
           name: row.nombre,
           description: row.descripcion,
           categoryId: row.categoria,
-          ...(row.marca    ? { brand: row.marca }    : {}),
-          ...(row.sku      ? { sku: row.sku }        : {}),
-          ...(row.unidad   ? { unit: row.unidad }    : {}),
+          ...(row.marca  ? { brand: row.marca }  : {}),
+          ...(row.sku    ? { sku: row.sku }      : {}),
+          ...(row.unidad ? { unit: row.unidad }  : {}),
           price: row.precio ?? 0,
           stock: row.stock ?? 0,
           status: row.estado,
@@ -57,12 +86,55 @@ export default function ProductosPage() {
     const succeeded = results.filter(r => r.status === 'fulfilled').length
     const failed    = results.filter(r => r.status === 'rejected').length
     if (succeeded > 0) {
-      invalidateProductsCache(distributorId)
-      setImportKey(k => k + 1)
+      triggerRefresh()
       setImportedCount(succeeded)
     }
     return { succeeded, failed }
   }
+
+  // ─── Delete ───────────────────────────────────────────────────────────────
+
+  const handleDelete = async (productId: string) => {
+    setDeletingIds(prev => new Set(prev).add(productId))
+    setConfirmDeleteId(null)
+    try {
+      await deleteProduct(productId)
+      triggerRefresh()
+    } finally {
+      setDeletingIds(prev => { const n = new Set(prev); n.delete(productId); return n })
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    setBulkDeleting(true)
+    try {
+      await Promise.allSettled([...selectedIds].map(id => deleteProduct(id)))
+      triggerRefresh()
+      setSelectedIds(new Set())
+      setSelectMode(false)
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const n = new Set(prev)
+      n.has(id) ? n.delete(id) : n.add(id)
+      return n
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredProducts.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredProducts.map(p => p.id)))
+    }
+  }
+
+  // ─── Filter ───────────────────────────────────────────────────────────────
 
   const filteredProducts = useMemo(() => {
     const q = searchQuery.toLowerCase()
@@ -71,6 +143,8 @@ export default function ProductosPage() {
       p.category.toLowerCase().includes(q)
     )
   }, [products, searchQuery])
+
+  const allSelected = filteredProducts.length > 0 && selectedIds.size === filteredProducts.length
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -86,11 +160,18 @@ export default function ProductosPage() {
       )}
 
       {/* Page header */}
-      <header className="sticky top-0 md:top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[#DFE1E8]/80 px-4 md:px-8 pt-4 md:pt-6 pb-0">
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[#DFE1E8]/80 px-4 md:px-8 pt-4 md:pt-6 pb-0">
         <div className="max-w-5xl mx-auto">
-          <div className="mb-3 md:mb-4">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-0.5">Inventario</p>
-            <h1 className="font-heading font-bold text-2xl md:text-3xl tracking-tight text-[#0B1A45]">Catálogo de productos</h1>
+          <div className="mb-3 md:mb-4 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-0.5">Inventario</p>
+              <h1 className="font-heading font-bold text-2xl md:text-3xl tracking-tight text-[#0B1A45]">Catálogo de productos</h1>
+            </div>
+            {!isLoading && products.length > 0 && (
+              <span className="shrink-0 mb-1 text-sm font-semibold text-[#7A839C] tabular-nums">
+                {products.length} {products.length === 1 ? 'producto' : 'productos'}
+              </span>
+            )}
           </div>
 
           <div className="flex gap-2 pb-3.5 flex-wrap">
@@ -100,7 +181,6 @@ export default function ProductosPage() {
               onChange={setSearchQuery}
               className="flex-1 min-w-40"
             />
-            {/* Import / Export / Template */}
             <button
               onClick={() => downloadTemplate()}
               className="h-10 px-3 rounded-xl border border-[#DFE1E8]/80 bg-white hover:bg-[#F7F8FA] text-[#5F6880] text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
@@ -149,6 +229,7 @@ export default function ProductosPage() {
 
       {/* Content */}
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full">
+
         {/* Banner post-import */}
         {importedCount !== null && (
           <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm">
@@ -176,88 +257,214 @@ export default function ProductosPage() {
           />
         ) : (
           <div className="bg-white md:rounded-2xl md:shadow-[0_1px_3px_rgba(11,26,69,0.05),0_6px_20px_rgba(11,26,69,0.07)] border border-transparent md:border-[#DFE1E8]/80 overflow-hidden">
-            {/* Desktop header row */}
-            <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-[#F7F8FA] border-b border-[#DFE1E8]/80 text-[10px] font-bold text-[#7A839C] uppercase tracking-[0.14em]">
-              <div className="col-span-4">Producto</div>
+
+            {/* Bulk-select toolbar */}
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[#DFE1E8]/60 bg-[#F7F8FA]">
+              <button
+                onClick={() => { setSelectMode(s => !s); setSelectedIds(new Set()); setConfirmDeleteId(null) }}
+                className={`flex items-center gap-1.5 text-xs font-semibold transition-colors ${selectMode ? 'text-primary' : 'text-[#7A839C] hover:text-[#5F6880]'}`}
+              >
+                {selectMode ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+                {selectMode ? 'Cancelar selección' : 'Seleccionar'}
+              </button>
+
+              {selectMode && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="text-xs font-semibold text-[#5F6880] hover:text-[#0B1A45] transition-colors"
+                  >
+                    {allSelected ? 'Deseleccionar todo' : 'Seleccionar todo'}
+                  </button>
+                  {selectedIds.size > 0 && (
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={bulkDeleting}
+                      className="flex items-center gap-1.5 h-8 px-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors disabled:opacity-60"
+                    >
+                      {bulkDeleting
+                        ? <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        : <Trash2 className="h-3.5 w-3.5" />
+                      }
+                      Eliminar {selectedIds.size} {selectedIds.size === 1 ? 'producto' : 'productos'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop table header */}
+            <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2.5 border-b border-[#DFE1E8]/80 text-[10px] font-bold text-[#7A839C] uppercase tracking-[0.14em]">
+              <div className="col-span-3">Producto</div>
               <div className="col-span-2">Categoría</div>
               <div className="col-span-2">Precio</div>
               <div className="col-span-2">Stock</div>
               <div className="col-span-1 text-center">Activo</div>
-              <div className="col-span-1 text-right">Edit.</div>
+              <div className="col-span-2 text-right">Acciones</div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 p-4 md:p-0 md:gap-0">
-              {filteredProducts.map((product, i) => (
-                <div
-                  key={product.id}
-                  className={`bg-white rounded-2xl md:rounded-none p-4 md:p-4 border border-[#DFE1E8]/60 md:border-x-0 md:border-t-0 md:grid md:grid-cols-12 md:gap-4 md:items-center shadow-[0_1px_3px_rgba(11,26,69,0.04)] md:shadow-none ${i !== 0 ? 'md:border-t md:border-[#DFE1E8]/60' : ''}`}
-                >
-                  {/* Product name */}
-                  <div className="col-span-4 mb-3 md:mb-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-9 h-9 bg-[#F1FFD1] rounded-xl flex items-center justify-center shrink-0 md:hidden">
-                          <CategoryIcon category={product.category} className="h-4.5 w-4.5 text-[#4A662E]" />
+              {filteredProducts.map((product, i) => {
+                const isConfirming = confirmDeleteId === product.id
+                const isBeingDeleted = deletingIds.has(product.id)
+                const isSelected = selectedIds.has(product.id)
+
+                return (
+                  <div
+                    key={product.id}
+                    className={`bg-white rounded-2xl md:rounded-none p-4 md:p-4 border border-[#DFE1E8]/60 md:border-x-0 md:border-t-0 md:grid md:grid-cols-12 md:gap-4 md:items-center shadow-[0_1px_3px_rgba(11,26,69,0.04)] md:shadow-none transition-colors ${
+                      isSelected ? 'bg-blue-50/40' : ''
+                    } ${i !== 0 ? 'md:border-t md:border-[#DFE1E8]/60' : ''} ${
+                      isBeingDeleted ? 'opacity-50 pointer-events-none' : ''
+                    }`}
+                  >
+                    {/* Product name — with optional checkbox */}
+                    <div className="col-span-3 mb-3 md:mb-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {/* Checkbox (select mode) */}
+                          {selectMode && (
+                            <button
+                              onClick={() => toggleSelect(product.id)}
+                              className="shrink-0 text-[#5F6880] hover:text-primary transition-colors"
+                            >
+                              {isSelected
+                                ? <CheckSquare className="h-4 w-4 text-primary" />
+                                : <Square className="h-4 w-4" />
+                              }
+                            </button>
+                          )}
+                          <div className="w-9 h-9 bg-[#F1FFD1] rounded-xl flex items-center justify-center shrink-0 md:hidden">
+                            <CategoryIcon category={product.category} className="h-4.5 w-4.5 text-[#4A662E]" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-bold text-[#7A839C] md:hidden uppercase tracking-[0.14em] mb-0.5">{product.category}</div>
+                            <div className="font-bold text-[#0B1A45] text-sm leading-tight truncate">{product.name}</div>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-[10px] font-bold text-[#7A839C] md:hidden uppercase tracking-[0.14em] mb-0.5">{product.category}</div>
-                          <div className="font-bold text-[#0B1A45] text-sm leading-tight truncate">{product.name}</div>
-                        </div>
-                      </div>
-                      <div className="md:hidden shrink-0">
-                        <Link href={`/distribuidora/productos/${product.id}`}>
-                          <button className="h-8 w-8 rounded-xl bg-[#F7F8FA] hover:bg-[#EFF0F3] border border-[#DFE1E8]/60 flex items-center justify-center text-[#5F6880] transition-colors">
-                            <Pencil className="h-3.5 w-3.5" />
+
+                        {/* Mobile: edit + delete buttons */}
+                        {!selectMode && (
+                          <div className="md:hidden shrink-0 flex items-center gap-1.5">
+                            {isConfirming ? (
+                              <>
+                                <button
+                                  onClick={() => handleDelete(product.id)}
+                                  className="h-8 px-2.5 rounded-xl bg-red-500 text-white text-xs font-bold transition-colors"
+                                >
+                                  Eliminar
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteId(null)}
+                                  className="h-8 w-8 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold transition-colors"
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <Link href={`/distribuidora/productos/${product.id}`}>
+                                  <button className="h-8 w-8 rounded-xl bg-[#F7F8FA] hover:bg-[#EFF0F3] border border-[#DFE1E8]/60 flex items-center justify-center text-[#5F6880] transition-colors">
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </button>
+                                </Link>
+                                <button
+                                  onClick={() => setConfirmDeleteId(product.id)}
+                                  className="h-8 w-8 rounded-xl bg-[#F7F8FA] hover:bg-red-50 hover:border-red-200 border border-[#DFE1E8]/60 flex items-center justify-center text-[#5F6880] hover:text-red-500 transition-colors"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Mobile: select checkbox */}
+                        {selectMode && (
+                          <button
+                            onClick={() => toggleSelect(product.id)}
+                            className="md:hidden shrink-0 text-[#5F6880] hover:text-primary transition-colors"
+                          >
+                            {isSelected
+                              ? <CheckSquare className="h-5 w-5 text-primary" />
+                              : <Square className="h-5 w-5" />
+                            }
                           </button>
-                        </Link>
+                        )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Category — desktop only */}
-                  <div className="col-span-2 hidden md:block">
-                    <span className="bg-[#F7F8FA] border border-[#DFE1E8]/60 px-2 py-1 rounded-lg text-xs font-semibold text-[#5F6880]">{product.category}</span>
-                  </div>
+                    {/* Category — desktop */}
+                    <div className="col-span-2 hidden md:block">
+                      <span className="bg-[#F7F8FA] border border-[#DFE1E8]/60 px-2 py-1 rounded-lg text-xs font-semibold text-[#5F6880]">{product.category}</span>
+                    </div>
 
-                  {/* Price */}
-                  <div className="col-span-2 mb-2.5 md:mb-0 flex md:block justify-between items-center">
-                    <span className="md:hidden text-[10px] font-bold text-[#7A839C] uppercase tracking-[0.14em]">Precio</span>
-                    <div className="font-heading font-bold text-base md:text-sm text-[#0B1A45]">{formatCurrency(product.price)}</div>
-                  </div>
+                    {/* Price */}
+                    <div className="col-span-2 mb-2.5 md:mb-0 flex md:block justify-between items-center">
+                      <span className="md:hidden text-[10px] font-bold text-[#7A839C] uppercase tracking-[0.14em]">Precio</span>
+                      <div className="font-heading font-bold text-base md:text-sm text-[#0B1A45]">{formatCurrency(product.price)}</div>
+                    </div>
 
-                  {/* Stock */}
-                  <div className="col-span-2 mb-3 md:mb-0 flex md:block justify-between items-center gap-2">
-                    <span className="md:hidden text-[10px] font-bold text-[#7A839C] uppercase tracking-[0.14em]">Stock</span>
-                    <div className="flex items-center gap-1.5 md:flex-col md:items-start">
-                      <span className="font-bold text-sm text-[#0B1A45]">{product.stock} un.</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                        product.stock > 10
-                          ? 'bg-[#F4FBE7] text-[#4A662E]'
-                          : product.stock > 0
-                          ? 'bg-amber-50 text-amber-700'
-                          : 'bg-red-50 text-red-600'
-                      }`}>
-                        {product.stock > 10 ? 'En stock' : product.stock > 0 ? 'Poco stock' : 'Sin stock'}
-                      </span>
+                    {/* Stock */}
+                    <div className="col-span-2 mb-3 md:mb-0 flex md:block justify-between items-center gap-2">
+                      <span className="md:hidden text-[10px] font-bold text-[#7A839C] uppercase tracking-[0.14em]">Stock</span>
+                      <div className="flex items-center gap-1.5 md:flex-col md:items-start">
+                        <span className="font-bold text-sm text-[#0B1A45]">{product.stock} un.</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          product.stock > 10
+                            ? 'bg-[#F4FBE7] text-[#4A662E]'
+                            : product.stock > 0
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-red-50 text-red-600'
+                        }`}>
+                          {product.stock > 10 ? 'En stock' : product.stock > 0 ? 'Poco stock' : 'Sin stock'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Active toggle */}
+                    <div className="col-span-1 flex justify-between md:justify-center items-center pt-3 md:pt-0 border-t border-[#DFE1E8]/40 md:border-none">
+                      <span className="md:hidden text-sm font-semibold text-[#0B1A45]">Producto activo</span>
+                      <Switch defaultChecked={product.active} className="data-[state=checked]:bg-[#0B1A45]" />
+                    </div>
+
+                    {/* Desktop actions: edit + delete */}
+                    <div className="col-span-2 hidden md:flex justify-end items-center gap-1.5">
+                      {isConfirming ? (
+                        <>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="h-8 px-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition-colors whitespace-nowrap"
+                          >
+                            Confirmar
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="h-8 w-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center text-xs transition-colors"
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Link href={`/distribuidora/productos/${product.id}`}>
+                            <button className="h-8 w-8 rounded-xl bg-[#F7F8FA] hover:bg-[#EFF0F3] border border-[#DFE1E8]/60 flex items-center justify-center text-[#5F6880] transition-colors" title="Editar">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          </Link>
+                          <button
+                            onClick={() => setConfirmDeleteId(product.id)}
+                            className="h-8 w-8 rounded-xl bg-[#F7F8FA] hover:bg-red-50 hover:border-red-200 border border-[#DFE1E8]/60 flex items-center justify-center text-[#5F6880] hover:text-red-500 transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
-
-                  {/* Active toggle */}
-                  <div className="col-span-1 flex justify-between md:justify-center items-center pt-3 md:pt-0 border-t border-[#DFE1E8]/40 md:border-none">
-                    <span className="md:hidden text-sm font-semibold text-[#0B1A45]">Producto activo</span>
-                    <Switch defaultChecked={product.active} className="data-[state=checked]:bg-[#0B1A45]" />
-                  </div>
-
-                  {/* Edit — desktop only */}
-                  <div className="col-span-1 hidden md:flex justify-end">
-                    <Link href={`/distribuidora/productos/${product.id}`}>
-                      <button className="h-8 w-8 rounded-xl bg-[#F7F8FA] hover:bg-[#EFF0F3] border border-[#DFE1E8]/60 flex items-center justify-center text-[#5F6880] transition-colors">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
