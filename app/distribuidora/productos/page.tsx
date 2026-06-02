@@ -15,6 +15,7 @@ import { InventoryTableSkeleton } from '@/components/ui/SkeletonCard'
 import ImportProductsModal from '@/components/products/ImportProductsModal'
 import { exportProductsToXlsx, downloadTemplate } from '@/lib/export/productsExport'
 import type { ParsedProductRow } from '@/lib/import/productsImport'
+import type { ImportResult } from '@/components/products/ImportProductsModal'
 import { createProduct } from '@/lib/data/products.service'
 
 export default function ProductosPage() {
@@ -26,23 +27,27 @@ export default function ProductosPage() {
   const [showImport, setShowImport] = useState(false)
   const { data: products, loading: isLoading } = useProducts(distributorId)
 
-  const handleImport = async (rows: ParsedProductRow[]) => {
-    await Promise.all(
+  const handleImport = async (rows: ParsedProductRow[]): Promise<ImportResult> => {
+    const results = await Promise.allSettled(
       rows.map(row =>
         createProduct({
           distributorId,
           name: row.nombre,
           description: row.descripcion,
           categoryId: row.categoria,
-          brand: row.marca || undefined,
-          sku: row.sku || undefined,
+          ...(row.marca    ? { brand: row.marca }    : {}),
+          ...(row.sku      ? { sku: row.sku }        : {}),
+          ...(row.unidad   ? { unit: row.unidad }    : {}),
           price: row.precio ?? 0,
           stock: row.stock ?? 0,
-          unit: row.unidad || undefined,
           status: row.estado,
-        }).catch(err => console.error('[import] createProduct failed', err))
+        })
       )
     )
+    return {
+      succeeded: results.filter(r => r.status === 'fulfilled').length,
+      failed:    results.filter(r => r.status === 'rejected').length,
+    }
   }
 
   const filteredProducts = useMemo(() => {
