@@ -16,16 +16,12 @@ const firebaseConfig = {
 
 // Guard: don't initialize Firebase without a valid API key (e.g. during SSG prerender)
 const app = firebaseConfig.apiKey
-  ? getApps().length
-    ? getApp()
-    : initializeApp(firebaseConfig)
+  ? (getApps().length ? getApp() : initializeApp(firebaseConfig))
   : null
 
 export const auth = app ? getAuth(app) : (null as unknown as ReturnType<typeof getAuth>)
 export const db = app ? getFirestore(app) : (null as unknown as ReturnType<typeof getFirestore>)
-export const storage = app
-  ? getStorage(app)
-  : (null as unknown as ReturnType<typeof getStorage>)
+export const storage = app ? getStorage(app) : (null as unknown as ReturnType<typeof getStorage>)
 
 // Analytics only runs in the browser — never on the server
 let analytics: Analytics | null = null
