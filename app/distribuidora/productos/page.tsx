@@ -295,12 +295,12 @@ export default function ProductosPage() {
 
             {/* Desktop table header */}
             <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2.5 border-b border-[#DFE1E8]/80 text-[10px] font-bold text-[#7A839C] uppercase tracking-[0.14em]">
-              <div className="col-span-3">Producto</div>
+              <div className="col-span-4">Producto</div>
               <div className="col-span-2">Categoría</div>
               <div className="col-span-2">Precio</div>
               <div className="col-span-2">Stock</div>
               <div className="col-span-1 text-center">Activo</div>
-              <div className="col-span-2 text-right">Acciones</div>
+              <div className="col-span-1 text-right">Acciones</div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 p-4 md:p-0 md:gap-0">
@@ -319,7 +319,7 @@ export default function ProductosPage() {
                     }`}
                   >
                     {/* Product name — with optional checkbox */}
-                    <div className="col-span-3 mb-3 md:mb-0">
+                    <div className="col-span-4 mb-3 md:mb-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5 min-w-0">
                           {/* Checkbox (select mode) */}
@@ -429,7 +429,7 @@ export default function ProductosPage() {
                     </div>
 
                     {/* Desktop actions: edit + delete */}
-                    <div className="col-span-2 hidden md:flex justify-end items-center gap-1.5">
+                    <div className="col-span-1 hidden md:flex justify-end items-center gap-1.5">
                       {isConfirming ? (
                         <>
                           <button
