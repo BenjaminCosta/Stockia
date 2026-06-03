@@ -8,8 +8,25 @@ import { PageHero } from '@/components/ui/PageHero'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
 import { useProducts } from '@/hooks/use-data'
-import { Distribuidora } from '@/lib/types'
+import { Distribuidora, Order } from '@/lib/types'
 import { DistribuidoraDashboardSkeleton } from '@/components/ui/SkeletonCard'
+
+const LOW_STOCK_THRESHOLD = 10
+const NON_SELLABLE_ORDER_STATUSES = new Set(['cancelled', 'not_delivered'])
+
+function isToday(dateValue: string) {
+  const date = new Date(dateValue)
+  if (Number.isNaN(date.getTime())) return false
+
+  const today = new Date()
+  return date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+}
+
+function isSellableOrder(order: Order) {
+  return !NON_SELLABLE_ORDER_STATUSES.has(order.firestoreStatus ?? order.status)
+}
 
 export default function DistribuidoraDashboardPage() {
   const { currentUser, distribuidoraOrders: orders, distribuidoraOrdersLoading: ordersLoading } = useApp()
@@ -24,18 +41,20 @@ export default function DistribuidoraDashboardPage() {
     const recent = [...orders]
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, 4)
-    const lowStock = products.filter(p => p.stock <= 10)
-    const healthyCount = products.filter(p => p.stock > 10).length
-    const coverage = products.length > 0 ? Math.round((healthyCount / products.length) * 100) : null
+    const catalogProducts = products.filter(p => p.status !== 'paused')
+    const lowStock = catalogProducts.filter(p => p.stock <= LOW_STOCK_THRESHOLD)
+    const healthyCount = catalogProducts.filter(p => p.stock > LOW_STOCK_THRESHOLD).length
+    const coverage = catalogProducts.length > 0 ? Math.round((healthyCount / catalogProducts.length) * 100) : null
+    const todayOrders = orders.filter(o => isToday(o.createdAt))
     const pendingCount = orders.filter(o => o.status === 'pendiente' || o.firestoreStatus === 'pending_confirmation').length
     return {
       recentOrders: recent,
       lowStockProducts: lowStock,
       lowStockCount: lowStock.length,
       kpis: {
-        ventasHoy: orders.reduce((s, o) => s + o.total, 0),
+        ventasHoy: todayOrders.filter(isSellableOrder).reduce((s, o) => s + o.total, 0),
         pendientes: pendingCount,
-        pedidosHoy: orders.length,
+        pedidosHoy: todayOrders.length,
         stockOk: coverage,
       },
     }

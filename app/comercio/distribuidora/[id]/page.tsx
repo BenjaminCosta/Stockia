@@ -62,11 +62,11 @@ export default function DistribuidoraCatalogPage({
   const handleAgregar = useCallback((productId: string) => {
     const product = products.find(p => p.id === productId)
     if (!product || !distribuidora) return
-    const qty = quantities[productId] ?? 1
+    const qty = Math.min(quantities[productId] ?? 1, Math.max(1, product.stock))
     const added = addToCart(product, distribuidora.companyName, qty)
     if (!added) return
     setAddedProducts(prev => new Set(prev).add(productId))
-    setCartItems(prev => ({ ...prev, [productId]: (prev[productId] || 0) + qty }))
+    setCartItems(prev => ({ ...prev, [productId]: Math.min((prev[productId] || 0) + qty, product.stock) }))
     window.setTimeout(() => {
       setAddedProducts(prev => {
         const next = new Set(prev)
@@ -163,7 +163,7 @@ export default function DistribuidoraCatalogPage({
                         product={product}
                         distName={distribuidora.companyName}
                         qty={quantities[product.id] ?? 1}
-                        onQtyChange={v => setQuantities(prev => ({ ...prev, [product.id]: v }))}
+                        onQtyChange={v => setQuantities(prev => ({ ...prev, [product.id]: Math.min(Math.max(1, v), Math.max(1, product.stock)) }))}
                         onAdd={() => handleAgregar(product.id)}
                         justAdded={addedProducts.has(product.id)}
                         view="grid"
@@ -179,7 +179,7 @@ export default function DistribuidoraCatalogPage({
                         product={product}
                         distName={distribuidora.companyName}
                         qty={quantities[product.id] ?? 1}
-                        onQtyChange={v => setQuantities(prev => ({ ...prev, [product.id]: v }))}
+                        onQtyChange={v => setQuantities(prev => ({ ...prev, [product.id]: Math.min(Math.max(1, v), Math.max(1, product.stock)) }))}
                         onAdd={() => handleAgregar(product.id)}
                         justAdded={addedProducts.has(product.id)}
                         view="grid"

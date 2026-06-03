@@ -16,6 +16,8 @@ function toLocalStatus(s: string): OrderStatus {
   if (s === 'delivered') return 'entregado'
   if (s === 'preparing' || s === 'ready_or_on_the_way') return 'en_preparacion'
   if (s === 'confirmed') return 'pagado'
+  if (s === 'cancelled') return 'cancelado'
+  if (s === 'not_delivered') return 'no_entregado'
   return 'pendiente'
 }
 
@@ -147,11 +149,9 @@ function useOrdersRealtime(field: 'commerceId' | 'distributorId', userId: string
       const unsub = onSnapshot(q,
         (snap) => {
           if (snap.empty) {
-            // Fall back to mock if no real data
-            const fallback = field === 'commerceId'
-              ? getOrdersByCommerce(userId)
-              : getOrdersByDistributor(userId)
-            fallback.then(orders => { setData(orders as Order[]); setLoading(false) })
+            // No orders for this real user — show empty list (no mock fallback)
+            setData([])
+            setLoading(false)
             return
           }
           const orders: Order[] = snap.docs.map(d => {
@@ -175,6 +175,10 @@ function useOrdersRealtime(field: 'commerceId' | 'distributorId', userId: string
               cancellationReason: raw.cancellationReason,
               commissionGenerated: raw.commissionGenerated ?? false,
               commissionAmount: raw.commissionAmount,
+              stockReservationStatus: raw.stockReservationStatus,
+              stockReservedAt: raw.stockReservedAt ? tsToISO(raw.stockReservedAt) : undefined,
+              stockReleasedAt: raw.stockReleasedAt ? tsToISO(raw.stockReleasedAt) : undefined,
+              stockReleaseReason: raw.stockReleaseReason,
               deliveredAt: raw.deliveredAt ? tsToISO(raw.deliveredAt) : undefined,
             }
           })
@@ -250,6 +254,10 @@ export function useOrder(id: string) {
             cancellationReason: raw.cancellationReason,
             commissionGenerated: raw.commissionGenerated ?? false,
             commissionAmount: raw.commissionAmount,
+            stockReservationStatus: raw.stockReservationStatus,
+            stockReservedAt: raw.stockReservedAt ? tsToISO(raw.stockReservedAt) : undefined,
+            stockReleasedAt: raw.stockReleasedAt ? tsToISO(raw.stockReleasedAt) : undefined,
+            stockReleaseReason: raw.stockReleaseReason,
             deliveredAt: raw.deliveredAt ? tsToISO(raw.deliveredAt) : undefined,
           })
           setLoading(false)

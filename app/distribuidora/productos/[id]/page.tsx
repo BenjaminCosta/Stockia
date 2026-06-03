@@ -14,31 +14,40 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { categories } from '@/lib/mock-data'
-import { useProduct } from '@/hooks/use-data'
+import { useProduct, invalidateProductsCache } from '@/hooks/use-data'
 import { CategoryIcon } from '@/components/category-icon'
 import { useApp } from '@/lib/app-context'
 import { updateProduct, deleteProduct } from '@/lib/data/products.service'
 import { ImageUploader } from '@/components/ui/ImageUploader'
 import { useImageUpload } from '@/hooks/use-image-upload'
+import { EditProductSkeleton } from '@/components/ui/SkeletonCard'
+import type { Product } from '@/lib/types'
 
-function EditProductoContent({ id }: { id: string }) {
+// ─── Form — se monta solo cuando product ya cargó, así useState inicializa con
+// valores reales y el Radix Select nunca arranca vacío.
+
+function EditProductoForm({ product }: { product: Product }) {
   const router = useRouter()
   const { currentUser } = useApp()
-  const { data: product } = useProduct(id)
 
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const [name, setName] = useState(product?.name || '')
-  const [category, setCategory] = useState(product?.category || '')
-  const [price, setPrice] = useState(product?.price?.toString() || '')
-  const [stock, setStock] = useState(product?.stock?.toString() || '')
-  const [description, setDescription] = useState(product?.description || '')
-  const [active, setActive] = useState(product?.active ?? true)
-  const [isOffer, setIsOffer] = useState(product?.isOffer ?? false)
+  // Normalizar categoría: buscar coincidencia case-insensitive contra la lista
+  const resolveCategory = (raw: string) =>
+    categories.find(c => c.name.toLowerCase() === raw.toLowerCase())?.name ?? raw
 
-  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(product?.imageUrl ?? null)
+  const [name, setName]               = useState(product.name)
+  const [category, setCategory]       = useState(resolveCategory(product.category))
+  const [price, setPrice]             = useState(product.price.toString())
+  const [stock, setStock]             = useState(product.stock.toString())
+  const [description, setDescription] = useState(product.description ?? '')
+  const [active, setActive]           = useState(product.active)
+  const [isOffer, setIsOffer]         = useState(product.isOffer ?? false)
+
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(product.imageUrl ?? null)
+
   const imageUpload = useImageUpload({
     type: 'product',
     ownerId: currentUser?.id ?? '',
@@ -49,7 +58,8 @@ function EditProductoContent({ id }: { id: string }) {
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await deleteProduct(id)
+      await deleteProduct(product.id)
+      invalidateProductsCache(currentUser?.id)
     } catch (err) {
       console.error('[edit-producto] deleteProduct failed', err)
     } finally {
@@ -61,7 +71,7 @@ function EditProductoContent({ id }: { id: string }) {
     e.preventDefault()
     setIsLoading(true)
     try {
-      await updateProduct(id, {
+      await updateProduct(product.id, {
         name,
         categoryId: category,
         price: parseFloat(price) || 0,
@@ -71,23 +81,13 @@ function EditProductoContent({ id }: { id: string }) {
         isOffer,
         ...(activeImageUrl ? { imageUrl: activeImageUrl } : {}),
       })
+      invalidateProductsCache(currentUser?.id)
     } catch (err) {
       console.error('[edit-producto] updateProduct failed', err)
     } finally {
       setIsLoading(false)
       router.push('/distribuidora/productos')
     }
-  }
-
-  if (!product) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <p className="text-[#7A839C]">Producto no encontrado</p>
-        <Link href="/distribuidora/productos" className="text-[#0B1A45] font-semibold mt-2 hover:underline">
-          Volver a productos
-        </Link>
-      </div>
-    )
   }
 
   return (
@@ -298,6 +298,27 @@ function EditProductoContent({ id }: { id: string }) {
       </main>
     </div>
   )
+}
+
+// ─── Shell — maneja loading/not-found, monta el form solo cuando hay datos
+
+function EditProductoContent({ id }: { id: string }) {
+  const { data: product, loading } = useProduct(id)
+
+  if (loading) return <EditProductSkeleton />
+
+  if (!product) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <p className="text-[#7A839C]">Producto no encontrado</p>
+        <Link href="/distribuidora/productos" className="text-[#0B1A45] font-semibold mt-2 hover:underline">
+          Volver a productos
+        </Link>
+      </div>
+    )
+  }
+
+  return <EditProductoForm product={product} />
 }
 
 export default function EditProductoPage({

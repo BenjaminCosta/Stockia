@@ -441,4 +441,88 @@ export function OrderDetailSkeleton() {
   )
 }
 
+export function EditProductSkeleton() {
+  return (
+    <div className="flex flex-col min-h-screen" aria-busy="true" aria-label="Cargando producto">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-[#DFE1E8]/80">
+        <div className="flex items-center h-13 px-4 max-w-2xl mx-auto gap-3">
+          <SkeletonBlock className="h-9 w-9 rounded-xl shrink-0" />
+          <div className="flex-1 space-y-1.5">
+            <SkeletonBlock className="h-2.5 w-16" />
+            <SkeletonBlock className="h-4 w-40" />
+          </div>
+          <SkeletonBlock className="h-9 w-9 rounded-xl shrink-0" />
+        </div>
+      </div>
+
+      {/* Form cards */}
+      <div className="flex-1 px-4 py-5 max-w-2xl mx-auto w-full pb-10 space-y-4">
+        {/* Image */}
+        <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 p-5">
+          <SkeletonBlock className="h-2.5 w-14 mb-3" />
+          <SkeletonBlock className="h-36 w-full rounded-xl" />
+        </div>
+
+        {/* Info */}
+        <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 p-5 space-y-4">
+          <SkeletonBlock className="h-2.5 w-20" />
+          <div className="space-y-1.5">
+            <SkeletonBlock className="h-2.5 w-28" />
+            <SkeletonBlock className="h-10 w-full rounded-xl" />
+          </div>
+          <div className="space-y-1.5">
+            <SkeletonBlock className="h-2.5 w-20" />
+            <SkeletonBlock className="h-11 w-full rounded-xl" />
+          </div>
+          <div className="space-y-1.5">
+            <SkeletonBlock className="h-2.5 w-24" />
+            <SkeletonBlock className="h-20 w-full rounded-xl" />
+          </div>
+        </div>
+
+        {/* Price & stock */}
+        <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 p-5">
+          <SkeletonBlock className="h-2.5 w-28 mb-4" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <SkeletonBlock className="h-2.5 w-14" />
+              <SkeletonBlock className="h-10 w-full rounded-xl" />
+            </div>
+            <div className="space-y-1.5">
+              <SkeletonBlock className="h-2.5 w-12" />
+              <SkeletonBlock className="h-10 w-full rounded-xl" />
+            </div>
+          </div>
+        </div>
+
+        {/* Toggles */}
+        <div className="bg-white rounded-2xl border border-[#DFE1E8]/80 p-5 space-y-4">
+          <SkeletonBlock className="h-2.5 w-20" />
+          <div className="flex items-center justify-between">
+            <div className="space-y-1.5">
+              <SkeletonBlock className="h-3.5 w-28" />
+              <SkeletonBlock className="h-2.5 w-40" />
+            </div>
+            <SkeletonBlock className="h-6 w-11 rounded-full" />
+          </div>
+          <div className="flex items-center justify-between pt-3 border-t border-[#DFE1E8]/60">
+            <div className="space-y-1.5">
+              <SkeletonBlock className="h-3.5 w-20" />
+              <SkeletonBlock className="h-2.5 w-52 max-w-full" />
+            </div>
+            <SkeletonBlock className="h-6 w-11 rounded-full" />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-2">
+          <SkeletonBlock className="flex-1 h-12 rounded-xl" />
+          <SkeletonBlock className="flex-1 h-12 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export { SkeletonBlock }

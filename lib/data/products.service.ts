@@ -23,6 +23,11 @@ export interface FirestoreProduct {
   stock: number
   unit?: string
   imageUrl?: string
+  imageURL?: string
+  image?: string
+  photoUrl?: string
+  photoURL?: string
+  thumbnailUrl?: string
   status: 'active' | 'paused' | 'out_of_stock'
   isOffer?: boolean
   createdAt: unknown
@@ -40,7 +45,8 @@ function toProduct(doc: FirestoreProduct & { id: string }): Product {
     price: doc.price,
     stock: doc.stock,
     description: doc.description,
-    imageUrl: doc.imageUrl,
+    imageUrl: doc.imageUrl || doc.imageURL || doc.image || doc.photoUrl || doc.photoURL || doc.thumbnailUrl,
+    brand: doc.brand,
     sku: doc.sku,
     active: doc.status === 'active',
     status: doc.status ?? 'active',
@@ -118,6 +124,8 @@ export async function searchProducts(query: string): Promise<Product[]> {
   return all.filter(
     p =>
       p.name.toLowerCase().includes(q) ||
+      (p.brand?.toLowerCase().includes(q) ?? false) ||
+      (p.sku?.toLowerCase().includes(q) ?? false) ||
       p.category.toLowerCase().includes(q) ||
       p.description.toLowerCase().includes(q)
   )

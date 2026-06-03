@@ -30,6 +30,20 @@ export interface Comercio extends User {
   }
 }
 
+/**
+ * Coverage definition for a distributor.
+ * - specific: only locationKeys list
+ * - province: covers full provinces (all localities within)
+ * - mixed: combination of full provinces + specific localities
+ */
+export interface DistributorCoverage {
+  mode: 'specific' | 'province' | 'mixed'
+  /** Province slugs covered entirely, e.g. ["entre-rios", "caba"] */
+  provinces: string[]
+  /** Specific location keys covered, e.g. ["buenos-aires:avellaneda"] */
+  locationKeys: string[]
+}
+
 export interface Distribuidora extends User {
   role: 'distribuidora'
   companyName: string
@@ -45,6 +59,8 @@ export interface Distribuidora extends User {
   deliveryLocationKeys?: string[]
   deliveryZoneKeys?: string[]
   deliveryHours: string      // "Lunes a Viernes · 8 a 17hs"
+  /** Structured coverage definition (new). Legacy fields kept for compat. */
+  coverage?: DistributorCoverage
   location: {
     /** Real WGS-84 latitude. Null/undefined means no geocoords yet. */
     lat?: number | null
@@ -88,6 +104,7 @@ export interface Product {
   stock: number
   description: string
   imageUrl?: string
+  brand?: string
   sku?: string
   active: boolean
   status: 'active' | 'paused' | 'out_of_stock'
@@ -131,7 +148,7 @@ export interface Cart {
 }
 
 // Order types
-export type OrderStatus = 'pendiente' | 'pagado' | 'en_preparacion' | 'entregado'
+export type OrderStatus = 'pendiente' | 'pagado' | 'en_preparacion' | 'entregado' | 'cancelado' | 'no_entregado'
 
 export interface OrderItem {
   productId: string
@@ -160,6 +177,10 @@ export interface Order {
   cancellationReason?: string
   commissionGenerated?: boolean
   commissionAmount?: number
+  stockReservationStatus?: 'reserved' | 'released'
+  stockReservedAt?: string
+  stockReleasedAt?: string
+  stockReleaseReason?: string
   deliveredAt?: string
 }
 

@@ -1,13 +1,13 @@
 'use client'
 
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Check, ChevronRight, ShoppingBag, Trash2 } from 'lucide-react'
+import { AlertTriangle, Check, ChevronRight, ShoppingBag, Trash2 } from 'lucide-react'
 import { ComercioPageHeader } from '@/components/comercio-page-header'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
-import { useDistributors } from '@/hooks/use-data'
+import { useDistributors, useProducts } from '@/hooks/use-data'
 import { LoadingButton } from '@/components/ui/LoadingButton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { QuantityStepper } from '@/components/quantity-stepper'
@@ -96,7 +96,33 @@ export default function CarritoPage() {
   const router = useRouter()
   const { cart, removeFromCart, getCartTotal, updateCartItemQuantity } = useApp()
   const { data: distributors } = useDistributors()
+  const { data: distributorProducts, loading: productsLoading } = useProducts(cart?.distribuidoraId)
   const [isConfirming, setIsConfirming] = useState(false)
+
+  const productById = useMemo(
+    () => new Map(distributorProducts.map(product => [product.id, product])),
+    [distributorProducts]
+  )
+
+  const stockIssues = useMemo(() => {
+    if (!cart || productsLoading) return []
+
+    return cart.items.flatMap(item => {
+      const currentProduct = productById.get(item.product.id)
+      const available = currentProduct?.status === 'active' ? currentProduct.stock : 0
+
+      if (!currentProduct || item.quantity > available) {
+        return [{
+          productId: item.product.id,
+          productName: currentProduct?.name ?? item.product.name,
+          requested: item.quantity,
+          available,
+        }]
+      }
+
+      return []
+    })
+  }, [cart, productById, productsLoading])
 
   if (!cart || cart.items.length === 0) {
     return (
@@ -121,6 +147,7 @@ export default function CarritoPage() {
   const minOrder = distributor?.minOrder ?? 20000
   const minProgress = Math.min((total / minOrder) * 100, 100)
   const remainingToMin = Math.max(minOrder - total, 0)
+  const hasStockIssues = stockIssues.length > 0
   const distInitials = cart.distribuidoraName
     .split(' ')
     .map((w: string) => w[0])
@@ -129,6 +156,7 @@ export default function CarritoPage() {
     .toUpperCase()
 
   const handleConfirm = async () => {
+    if (hasStockIssues || productsLoading) return
     setIsConfirming(true)
     await new Promise(resolve => setTimeout(resolve, 300))
     router.push('/comercio/checkout')
@@ -151,7 +179,7 @@ export default function CarritoPage() {
 
             {/* Distribuidor */}
             <Link
-              href={`/comercio/distribuidoras/${cart.distribuidoraId}`}
+              href={`/comercio/distribuidora/${cart.distribuidoraId}`}
               className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-[#DFE1E8]/80 shadow-[0_1px_3px_rgba(11,26,69,0.04)] px-4 py-3.5 hover:border-primary/20 hover:shadow-[0_4px_14px_rgba(11,26,69,0.08)] transition-all duration-200 group"
             >
               <div className="flex items-center gap-3">
@@ -176,37 +204,51 @@ export default function CarritoPage() {
               </div>
 
               <div className="space-y-5">
-                {cart.items.map((item, i) => (
-                  <div key={item.product.id}>
-                    {i !== 0 && <div className="border-t border-gray-100 mb-5" />}
-                    <div className="flex justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm text-foreground leading-tight">{item.product.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {formatCurrency(item.product.price)} c/u
-                        </p>
-                        <div className="mt-2.5 flex items-center gap-3">
-                          <QuantityStepper
-                            value={item.quantity}
-                            onChange={v => updateCartItemQuantity(item.product.id, v)}
-                            min={1}
-                          />
-                          <button
-                            onClick={() => removeFromCart(item.product.id)}
-                            className="flex items-center gap-1 text-xs text-red-400 font-semibold hover:text-red-600 transition-colors"
-                          >
-                            <Trash2 className="h-3 w-3" /> Eliminar
-                          </button>
+                {cart.items.map((item, i) => {
+                  const currentProduct = productById.get(item.product.id) ?? item.product
+                  const available = currentProduct.status === 'active' ? currentProduct.stock : 0
+                  const hasIssue = !productsLoading && item.quantity > available
+
+                  return (
+                    <div key={item.product.id}>
+                      {i !== 0 && <div className="border-t border-gray-100 mb-5" />}
+                      <div className="flex justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-foreground leading-tight">{currentProduct.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatCurrency(currentProduct.price)} c/u
+                          </p>
+                          {hasIssue && (
+                            <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-amber-700">
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              Stock disponible: {available} un.
+                            </p>
+                          )}
+                          <div className="mt-2.5 flex items-center gap-3">
+                            <QuantityStepper
+                              value={item.quantity}
+                              onChange={v => updateCartItemQuantity(item.product.id, v)}
+                              min={1}
+                              max={Math.max(1, available)}
+                              disabled={available <= 0}
+                            />
+                            <button
+                              onClick={() => removeFromCart(item.product.id)}
+                              className="flex items-center gap-1 text-xs text-red-400 font-semibold hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 className="h-3 w-3" /> Eliminar
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-heading font-bold text-base text-foreground">
+                            {formatCurrency(currentProduct.price * item.quantity)}
+                          </p>
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="font-heading font-bold text-base text-foreground">
-                          {formatCurrency(item.product.price * item.quantity)}
-                        </p>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -245,12 +287,16 @@ export default function CarritoPage() {
                 onClick={handleConfirm}
                 loading={isConfirming}
                 loadingLabel="Un momento..."
-                disabled={remainingToMin > 0}
+                disabled={remainingToMin > 0 || hasStockIssues || productsLoading}
               >
                 Ir al checkout →
               </LoadingButton>
 
-              {remainingToMin > 0 && (
+              {hasStockIssues ? (
+                <p className="hidden md:block text-xs text-center text-amber-700">
+                  Ajustá las cantidades sin stock para continuar
+                </p>
+              ) : remainingToMin > 0 && (
                 <p className="hidden md:block text-xs text-center text-muted-foreground">
                   Agregá {formatCurrency(remainingToMin)} más para continuar
                 </p>
@@ -274,11 +320,15 @@ export default function CarritoPage() {
           onClick={handleConfirm}
           loading={isConfirming}
           loadingLabel="Un momento..."
-          disabled={remainingToMin > 0}
+          disabled={remainingToMin > 0 || hasStockIssues || productsLoading}
         >
           Ir al checkout →
         </LoadingButton>
-        {remainingToMin > 0 && (
+        {hasStockIssues ? (
+          <p className="text-xs text-center text-amber-700">
+            Ajustá las cantidades sin stock para continuar
+          </p>
+        ) : remainingToMin > 0 && (
           <p className="text-xs text-center text-muted-foreground">
             Agregá {formatCurrency(remainingToMin)} más para continuar
           </p>

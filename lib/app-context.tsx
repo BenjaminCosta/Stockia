@@ -37,6 +37,7 @@ interface AppContextType {
   // Auth actions
   login: (email: string, password: string) => Promise<UserRole>
   logout: () => Promise<void>
+  refreshCurrentUser: () => Promise<void>
 
   // Cart state
   cart: Cart | null
@@ -81,11 +82,13 @@ function buildCartWithItem(
   distribuidoraName: string,
   quantity: number
 ): Cart {
+  const safeQuantity = Math.min(Math.max(1, quantity), Math.max(0, product.stock))
+
   if (!prevCart || prevCart.distribuidoraId !== product.distribuidoraId) {
     return {
       distribuidoraId: product.distribuidoraId,
       distribuidoraName,
-      items: [{ product, quantity }],
+      items: [{ product, quantity: safeQuantity }],
     }
   }
 
@@ -97,14 +100,15 @@ function buildCartWithItem(
     const newItems = [...prevCart.items]
     newItems[existingItemIndex] = {
       ...newItems[existingItemIndex],
-      quantity: newItems[existingItemIndex].quantity + quantity,
+      product,
+      quantity: Math.min(product.stock, newItems[existingItemIndex].quantity + quantity),
     }
     return { ...prevCart, items: newItems }
   }
 
   return {
     ...prevCart,
-    items: [...prevCart.items, { product, quantity }],
+    items: [...prevCart.items, { product, quantity: safeQuantity }],
   }
 }
 
@@ -293,7 +297,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // onAuthStateChanged will clear remaining state
   }, [])
 
+  const refreshCurrentUser = useCallback(async () => {
+    if (!firebaseUser || !userRole || userRole === 'admin') return
+    const updated = await buildCurrentUser(firebaseUser.uid, firebaseUser.email ?? '', currentUser ? ('storeName' in currentUser ? currentUser.storeName : currentUser.companyName) : '', userRole as UserRole).catch(() => null)
+    if (updated) setCurrentUser(updated)
+  }, [firebaseUser, userRole, currentUser])
+
   const addToCart = useCallback((product: Product, distribuidoraName: string, quantity: number = 1) => {
+    if (product.status !== 'active' || product.stock <= 0) return false
+
+    const existingQuantity = cart?.distribuidoraId === product.distribuidoraId
+      ? cart.items.find(item => item.product.id === product.id)?.quantity ?? 0
+      : 0
+    if (existingQuantity >= product.stock) return false
+
     if (cart && cart.distribuidoraId !== product.distribuidoraId) {
       setPendingCartReplacement({ product, distribuidoraName, quantity })
       return false
@@ -321,8 +338,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { ...prevCart, items: newItems }
       }
       const newItems = prevCart.items.map(item =>
-        item.product.id === productId ? { ...item, quantity } : item
-      )
+        item.product.id === productId
+          ? { ...item, quantity: Math.min(quantity, Math.max(0, item.product.stock)) }
+          : item
+      ).filter(item => item.quantity > 0)
+      if (newItems.length === 0) return null
       return { ...prevCart, items: newItems }
     })
   }, [])
@@ -385,6 +405,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     firebaseUser,
     login,
     logout,
+    refreshCurrentUser,
     cart,
     addToCart,
     removeFromCart,
@@ -403,7 +424,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     distribuidoraOrdersLoading,
   }), [
     isAuthenticated, authLoading, userRole, currentUser, firebaseUser,
-    login, logout, cart, addToCart, removeFromCart, updateCartItemQuantity,
+    login, logout, refreshCurrentUser, cart, addToCart, removeFromCart, updateCartItemQuantity,
     clearCart, getCartTotal, getCartItemCount, wishlist,
     addToWishlist, removeFromWishlist, toggleWishlist, isInWishlist,
     commerceOrders, ordersLoading, distribuidoraOrders, distribuidoraOrdersLoading,

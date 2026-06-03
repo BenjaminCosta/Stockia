@@ -45,13 +45,18 @@ export default function OnboardingComercioPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
-      {/* Left panel — red (comercio) */}
-      <div className="bg-primary md:w-1/2 pt-12 md:pt-20 pb-32 px-6 md:px-16 relative overflow-hidden shrink-0 flex flex-col justify-between">
-        <svg className="absolute inset-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="90%" cy="20%" r="80" fill="none" stroke="white" strokeWidth="6" />
-          <rect x="5%" y="60%" width="80" height="80" fill="none" stroke="white" strokeWidth="4" transform="rotate(20)" />
-          <path d="M-10 80 L40 30 L90 80 Z" fill="none" stroke="white" strokeWidth="4" />
-        </svg>
+      {/* Left panel */}
+      <div
+        className="bg-primary md:w-1/2 pt-12 md:pt-20 pb-32 px-6 md:px-16 relative overflow-hidden shrink-0 flex flex-col justify-between"
+        style={{
+          backgroundImage: "url('/assets/login-image.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center right 38%',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,15,43,0.94)_0%,rgba(8,15,43,0.76)_48%,rgba(8,15,43,0.46)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,15,43,0.24)_0%,rgba(8,15,43,0.86)_100%)]" />
 
         <div className="relative z-10 flex justify-between items-start w-full">
           <div>

@@ -4,9 +4,8 @@ import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
 import {
   Minus, Plus, ShoppingCart,
-  Package, Clock, AlertTriangle, ShieldCheck, Star, CheckCircle2, ChevronRight
+  Package, ShieldCheck, Star, CheckCircle2, ChevronRight, Info, Boxes, BadgePercent, Building2
 } from 'lucide-react'
-import { PageHero } from '@/components/ui/PageHero'
 import { Button } from '@/components/ui/button'
 import { ReviewCard } from '@/components/review-card'
 import { CriteriaRow, StarDisplay } from '@/components/star-rating'
@@ -87,9 +86,15 @@ function ProductoDetail({ id }: { id: string }) {
     'bg-gray-100 text-gray-500'
 
   const distInitials = distribuidora.companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+  const inCart = cart?.items.find(item => item.product.id === id)
+  const availableToAdd = Math.max(0, product.stock - (inCart?.quantity ?? 0))
+  const canAdd = product.status === 'active' && availableToAdd > 0
+  const subtotal = product.price * qty
+  const isOffer = Boolean(product.isOffer)
+  const imageSrc = product.imageUrl || '/placeholder.svg'
 
   const handleAddToCart = () => {
-    const added = addToCart(product, distribuidora.companyName, qty)
+    const added = addToCart(product, distribuidora.companyName, Math.min(qty, Math.max(1, availableToAdd)))
     if (!added) return
     setIsAdded(true)
     setTimeout(() => setIsAdded(false), 1500)
@@ -97,131 +102,201 @@ function ProductoDetail({ id }: { id: string }) {
 
   const commitQty = (raw: string) => {
     const n = parseInt(raw, 10)
-    if (!isNaN(n) && n >= 1) setQty(Math.min(product.stock || 999, n))
+    if (!isNaN(n) && n >= 1) setQty(Math.min(Math.max(1, availableToAdd), n))
   }
 
-  const inCart = cart?.items.find(item => item.product.id === id)
-
   return (
-    <div className="min-h-screen bg-background pb-44 md:pb-12">
-      <div className="max-w-6xl mx-auto md:p-8">
-
-        <PageHero
-          label={product.category}
-          title={product.name}
-          backHref={`/comercio/distribuidora/${product.distribuidoraId}`}
-          className="md:rounded-3xl md:mt-4 pb-20 md:pb-24"
-        />
-
-        {/* Floating grid */}
-        <div className="px-4 md:px-8 -mt-8 md:-mt-12 relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6">
-
-          {/* Left — product info */}
-          <div className="md:col-span-8 space-y-6">
-
-            {/* Price + distributor/stock */}
-            <div className="bg-white rounded-3xl shadow-md border border-border p-6 md:p-8">
-              <div className="flex items-center justify-between mb-6 md:mb-8">
-                <div>
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Precio unitario</p>
-                  <p className="font-heading font-bold text-4xl md:text-5xl text-primary">
-                    {formatCurrency(product.price)}
-                  </p>
-                </div>
-                <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl bg-gray-50 flex items-center justify-center text-primary shrink-0 border border-gray-100">
-                  <Package className="h-10 w-10 md:h-12 md:w-12" />
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-10 md:pb-12">
+      <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-6 md:py-6">
+        <section className="relative overflow-hidden rounded-3xl bg-[#080f2b] px-5 py-5 text-white shadow-[0_18px_52px_rgba(8,15,43,0.14)] md:px-8 md:py-7">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_12%,rgba(200,255,0,0.12),transparent_30%),linear-gradient(90deg,rgba(11,26,69,0.98)_0%,rgba(8,15,43,0.96)_100%)]" />
+          <div className="relative">
+            <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold text-white/62">
+              <Link href="/comercio" className="hover:text-white">Inicio</Link>
+              <span>/</span>
+              <Link href={`/comercio/buscar?categoria=${encodeURIComponent(product.category)}`} className="hover:text-white">{product.category}</Link>
+              <span>/</span>
+              <span className="text-white/86">{product.name}</span>
+            </div>
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h1 className="font-heading text-3xl font-bold leading-tight tracking-tight md:text-5xl">
+                  {product.name}
+                </h1>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-white/[0.10] px-3 py-1 text-xs font-bold text-white/84 ring-1 ring-white/[0.14]">
+                    {product.category}
+                  </span>
+                  {isOffer && (
+                    <span className="rounded-full border border-lima/40 bg-lima/[0.12] px-3 py-1 text-xs font-bold text-lima">
+                      En oferta
+                    </span>
+                  )}
                 </div>
               </div>
+              <Link
+                href={`/comercio/distribuidora/${distribuidora.id}`}
+                className="hidden items-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.08] px-4 py-3 text-sm font-bold text-white/84 transition-colors hover:bg-white/[0.12] md:flex"
+              >
+                <Building2 className="h-4 w-4 text-lima" />
+                {distribuidora.companyName}
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
 
-              <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-100 text-sm">
-                <Link
-                  href={`/comercio/distribuidora/${distribuidora.id}`}
-                  className="group rounded-2xl border border-[#DFE1E8] bg-gray-50 p-4 transition-[border-color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:border-[#0B1A45]/12 hover:bg-white md:p-5"
-                >
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Distribuidor</p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B1A45] text-xs font-bold text-white shadow-[0_8px_18px_rgba(11,26,69,0.14)]">
-                      {distInitials}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-foreground leading-tight text-sm">{distribuidora.companyName}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">Ver distribuidora</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-gray-300 transition-colors duration-150 group-hover:text-[#0B1A45]" />
+        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
+          <div className="space-y-5">
+            <section className="overflow-hidden rounded-3xl border border-[#DFE1E8]/80 bg-white p-4 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_16px_48px_rgba(11,26,69,0.06)] md:p-6">
+              <div className="flex min-h-[360px] items-center justify-center rounded-[1.4rem] bg-[radial-gradient(circle_at_center,#ffffff_0%,#f7f8fa_58%,#eef1f5_100%)] p-6 md:min-h-[520px]">
+                <img
+                  src={imageSrc}
+                  alt={product.name}
+                  className="max-h-[320px] w-full max-w-[560px] object-contain drop-shadow-[0_24px_42px_rgba(8,15,43,0.16)] md:max-h-[470px]"
+                />
+              </div>
+              <div className="mt-4 grid gap-3 rounded-[1.25rem] border border-[#DFE1E8]/80 bg-white p-3 md:grid-cols-4 md:p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F8FA] text-[#0B1A45]">
+                    <Building2 className="h-4.5 w-4.5" />
                   </div>
-                </Link>
-                <div className="bg-gray-50 rounded-2xl p-4 md:p-5">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Stock disponible</p>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${stockColor}`}>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Distribuidora</p>
+                    <p className="text-sm font-bold text-foreground">{distribuidora.companyName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 md:border-l md:border-[#DFE1E8]/80 md:pl-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F8FA] text-[#0B1A45]">
+                    <Boxes className="h-4.5 w-4.5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Stock disponible</p>
+                    <p className="text-sm font-bold text-foreground">{product.stock} un.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 md:border-l md:border-[#DFE1E8]/80 md:pl-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50 text-green-600">
+                    <BadgePercent className="h-4.5 w-4.5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">En oferta</p>
+                    <p className="text-sm font-bold text-foreground">{isOffer ? 'Sí' : 'No'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 md:border-l md:border-[#DFE1E8]/80 md:pl-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F8FA] text-[#0B1A45]">
+                    <Package className="h-4.5 w-4.5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Estado</p>
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${stockColor}`}>
                       {stockLabel}
                     </span>
-                    <p className="font-bold text-foreground">{product.stock} un.</p>
                   </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Product info list */}
-            <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
-              <h2 className="font-heading font-bold text-xl text-foreground mb-6">Información del producto</h2>
-              <div className="space-y-4 md:space-y-5 text-sm md:text-base">
-                <div className="flex justify-between items-center py-3 border-b border-gray-50">
-                  <span className="text-muted-foreground font-medium">Categoría</span>
-                  <span className="font-bold text-foreground bg-gray-100 px-3 py-1 rounded-lg">{product.category}</span>
+            <section className="rounded-3xl border border-[#DFE1E8]/80 bg-white p-5 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_12px_36px_rgba(11,26,69,0.05)] md:p-7">
+              <div className="mb-5 flex items-center gap-2 border-b border-[#DFE1E8]/80 pb-4">
+                <Info className="h-4.5 w-4.5 text-[#0B1A45]" />
+                <h2 className="font-heading text-lg font-bold text-foreground">Información del producto</h2>
+              </div>
+              <div className="divide-y divide-[#EEF0F4] text-sm">
+                <div className="grid gap-2 py-4 md:grid-cols-[220px_1fr]">
+                  <span className="font-medium text-muted-foreground">Descripción</span>
+                  <span className="font-medium leading-relaxed text-foreground">{product.description || 'Sin descripción disponible.'}</span>
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-50">
-                  <span className="text-muted-foreground font-medium">Unidad de venta</span>
-                  <span className="font-bold text-foreground">Por unidad</span>
+                <div className="grid gap-2 py-4 md:grid-cols-[220px_1fr]">
+                  <span className="font-medium text-muted-foreground">Precio</span>
+                  <span className="font-bold text-foreground">{formatCurrency(product.price)}</span>
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-gray-50">
-                  <span className="text-muted-foreground font-medium">Entrega estimada</span>
-                  <span className="font-bold flex items-center gap-2 bg-blue-50 text-blue-800 px-3 py-1 rounded-lg">
-                    <Clock className="h-4 w-4" /> {distribuidora.deliveryTimeLabel}
+                <div className="grid gap-2 py-4 md:grid-cols-[220px_1fr]">
+                  <span className="font-medium text-muted-foreground">Stock disponible</span>
+                  <span className="font-bold text-foreground">{product.stock} unidades</span>
+                </div>
+                <div className="grid gap-2 py-4 md:grid-cols-[220px_1fr]">
+                  <span className="font-medium text-muted-foreground">En oferta</span>
+                  <span>
+                    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${isOffer ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                      {isOffer ? 'Sí' : 'No'}
+                    </span>
                   </span>
                 </div>
-                <div className="flex justify-between items-center py-3">
-                  <span className="text-muted-foreground font-medium">Pedido mínimo del distribuidor</span>
-                  <span className="font-bold text-foreground">{formatCurrency(distribuidora.minOrder)}</span>
-                </div>
               </div>
-            </div>
+            </section>
 
-            {/* Low stock warning */}
-            {product.stock > 0 && product.stock <= 10 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex gap-4 items-start">
-                <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0" />
+            <section className="rounded-3xl border border-[#DFE1E8]/80 bg-white p-5 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_12px_36px_rgba(11,26,69,0.05)] md:p-7">
+              <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-bold text-amber-900">Últimas unidades disponibles</h3>
-                  <p className="text-sm text-amber-800 mt-1">
-                    Queda poco stock de este producto. Te recomendamos pedir ahora antes de que se agote.
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Reseñas</p>
+                  <h2 className="mt-1 font-heading text-xl font-bold text-foreground">Calificaciones de la distribuidora</h2>
+                </div>
+                <Link href={`/comercio/distribuidora/${distribuidora.id}`} className="hidden text-sm font-bold text-primary hover:underline md:block">
+                  Ver perfil
+                </Link>
+              </div>
+
+              {reviewsLoading ? (
+                <div className="grid gap-4 md:grid-cols-[280px_1fr]">
+                  <SkeletonBlock className="h-44 rounded-2xl" />
+                  <SkeletonBlock className="h-44 rounded-2xl" />
+                </div>
+              ) : ratingSummary && ratingSummary.reviewCount > 0 ? (
+                <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+                  <div className="rounded-2xl bg-[#F7F8FA] p-5 text-center">
+                    <p className="font-heading text-5xl font-bold text-foreground">{ratingSummary.averageGeneral.toFixed(1)}</p>
+                    <StarDisplay rating={ratingSummary.averageGeneral} size="md" className="mt-2 justify-center" />
+                    <p className="mt-2 text-xs font-medium text-muted-foreground">{ratingSummary.reviewCount} reseñas de comercios</p>
+                  </div>
+                  <div className="space-y-3">
+                    <CriteriaRow label="Cumplimiento" value={ratingSummary.averageFulfillment} />
+                    <CriteriaRow label="Entrega" value={ratingSummary.averageDelivery} />
+                    <CriteriaRow label="Mercadería" value={ratingSummary.averageProductCondition} />
+                    <CriteriaRow label="Atención" value={ratingSummary.averageCommunication} />
+                  </div>
+                  {reviews.length > 0 && (
+                    <div className="space-y-3 lg:col-span-2">
+                      {reviews.slice(0, 3).map(review => (
+                        <ReviewCard key={review.id} review={review} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-[#DFE1E8] bg-[#F7F8FA] px-4 py-8 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                    <Star className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <p className="mt-3 font-semibold text-foreground">Todavía no hay reseñas de esta distribuidora</p>
+                  <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+                    Las reseñas corresponden a pedidos realizados a la distribuidora, no a este producto en particular.
                   </p>
                 </div>
-              </div>
-            )}
-
-            {inCart && (
-              <p className="text-sm text-primary text-center font-medium">
-                Ya tenés {inCart.quantity} en el carrito
-              </p>
-            )}
+              )}
+            </section>
           </div>
 
-          {/* Right — desktop sticky actions + reviews */}
-          <div className="md:col-span-4 space-y-6">
+          <aside className="space-y-5 lg:sticky lg:top-36">
+            <section className="rounded-3xl border border-[#DFE1E8]/80 bg-white p-5 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_16px_48px_rgba(11,26,69,0.08)] md:p-6">
+              <h2 className="font-heading text-xl font-bold text-foreground">Agregar al pedido</h2>
+              <div className="mt-5">
+                <p className="text-sm font-semibold text-muted-foreground">Precio unitario</p>
+                <p className="mt-1 font-heading text-5xl font-bold tracking-tight text-[#0B1A45]">
+                  {formatCurrency(product.price)}
+                </p>
+              </div>
 
-            {/* Agregar al pedido (desktop only) */}
-            <div className="hidden md:block bg-white rounded-3xl shadow-xl border border-gray-200 p-6">
-              <h2 className="font-heading font-bold text-xl text-foreground mb-6">Agregar al pedido</h2>
-
-              <div className="mb-6">
-                <p className="text-sm font-bold text-gray-500 mb-3">Cantidad</p>
-                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-2xl h-14 overflow-hidden">
+              <div className="mt-6">
+                <p className="mb-2 text-sm font-semibold text-muted-foreground">Cantidad</p>
+                <div className="flex h-12 overflow-hidden rounded-xl border border-[#DFE1E8] bg-white">
                   <button
                     onClick={() => setQty(q => Math.max(1, q - 1))}
-                    className="w-14 h-full flex items-center justify-center text-gray-600 hover:text-foreground hover:bg-gray-100 transition-colors"
+                    className="flex w-12 items-center justify-center text-[#0B1A45] transition-colors hover:bg-[#F7F8FA]"
+                    aria-label="Reducir cantidad"
                   >
-                    <Minus className="h-5 w-5" />
+                    <Minus className="h-4.5 w-4.5" />
                   </button>
                   <input
                     type="text"
@@ -232,154 +307,76 @@ function ProductoDetail({ id }: { id: string }) {
                     onFocus={e => e.target.select()}
                     onBlur={e => commitQty(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-                    className="flex-1 text-center font-bold text-lg bg-white h-full border-x border-gray-200 outline-none focus:bg-[#F7F8FA] transition-colors tabular-nums"
+                    className="min-w-0 flex-1 border-x border-[#DFE1E8] bg-white text-center text-base font-bold text-foreground outline-none tabular-nums focus:bg-[#F7F8FA]"
                   />
                   <button
-                    onClick={() => setQty(q => Math.min(product.stock, q + 1))}
-                    disabled={qty >= product.stock}
-                    className="w-14 h-full flex items-center justify-center text-primary hover:bg-[#F1FFD1] transition-colors disabled:opacity-40"
+                    onClick={() => setQty(q => Math.min(Math.max(1, availableToAdd), q + 1))}
+                    disabled={qty >= availableToAdd || !canAdd}
+                    className="flex w-12 items-center justify-center text-[#0B1A45] transition-colors hover:bg-[#F1FFD1] disabled:opacity-40"
+                    aria-label="Aumentar cantidad"
                   >
-                    <Plus className="h-5 w-5" />
+                    <Plus className="h-4.5 w-4.5" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center mb-6 pt-6 border-t border-gray-100">
-                <span className="font-medium text-gray-500">Total</span>
-                <span className="font-heading font-bold text-3xl text-foreground">
-                  {formatCurrency(product.price * qty)}
-                </span>
+              <div className="mt-6 flex items-center justify-between border-t border-[#DFE1E8]/80 pt-5">
+                <span className="text-sm font-semibold text-muted-foreground">Subtotal</span>
+                <span className="font-heading text-2xl font-bold text-[#0B1A45]">{formatCurrency(subtotal)}</span>
               </div>
 
+              {inCart && (
+                <p className="mt-3 rounded-xl bg-[#F1FFD1] px-3 py-2 text-center text-xs font-bold text-[#0B1A45]">
+                  Ya tenés {inCart.quantity} en el carrito
+                </p>
+              )}
+
               <Button
-                className={`w-full h-14 text-base font-bold shadow-lg gap-2 rounded-xl transition-all duration-300 ${
-                  isAdded
-                    ? 'bg-green-600 hover:bg-green-600 shadow-green-200'
-                    : 'shadow-primary/20'
+                className={`mt-5 h-13 w-full rounded-xl text-base font-bold shadow-[0_14px_26px_rgba(8,15,43,0.16)] transition-all duration-300 ${
+                  isAdded ? 'bg-green-600 hover:bg-green-600' : 'bg-[#0B1A45] hover:bg-[#142657]'
                 }`}
                 onClick={handleAddToCart}
-                disabled={isAdded || product.stock === 0}
+                disabled={isAdded || !canAdd}
               >
                 {isAdded ? (
-                  <><CheckCircle2 className="h-5 w-5 animate-check-pop" /> Agregado</>
+                  <><CheckCircle2 className="mr-2 h-5 w-5 animate-check-pop" /> Agregado</>
                 ) : (
-                  <><ShoppingCart className="h-5 w-5" /> Agregar al carrito</>
+                  <><ShoppingCart className="mr-2 h-5 w-5" /> Agregar al carrito</>
                 )}
               </Button>
 
-              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground font-medium">
+              <div className="mt-4 flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground">
                 <ShieldCheck className="h-4 w-4 text-green-600" />
                 Compra 100% segura
               </div>
-            </div>
+            </section>
 
-            {/* Distributor reviews */}
-            <div className="bg-white rounded-3xl shadow-sm border border-border p-6">
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reseñas de la distribuidora</p>
-              <h2 className="mt-1 font-heading text-xl font-bold text-foreground">{distribuidora.companyName}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Este producto no tiene reseñas propias en esta versión. Las calificaciones que ves acá corresponden a la distribuidora.
-              </p>
-
-              {reviewsLoading ? (
-                <div className="mt-5 space-y-4">
-                  <div className="rounded-2xl bg-gray-50 p-4">
-                    <SkeletonBlock className="h-10 w-20" />
-                    <SkeletonBlock className="mt-3 h-3 w-28" />
-                    <div className="mt-4 space-y-2">
-                      {[1, 2, 3, 4].map(item => (
-                        <SkeletonBlock key={item} className="h-3 rounded-full" />
-                      ))}
-                    </div>
-                  </div>
-                  {[1, 2].map(item => (
-                    <SkeletonBlock key={item} className="h-28 rounded-2xl" />
-                  ))}
+            <section className="rounded-3xl border border-[#DFE1E8]/80 bg-white p-5 shadow-[0_1px_3px_rgba(11,26,69,0.04),0_12px_36px_rgba(11,26,69,0.05)] md:p-6">
+              <h2 className="font-heading text-lg font-bold text-foreground">Distribuidora</h2>
+              <Link
+                href={`/comercio/distribuidora/${distribuidora.id}`}
+                className="mt-4 flex items-center gap-3 rounded-2xl border border-[#DFE1E8] bg-[#F7F8FA] p-4 transition-colors hover:bg-white"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0B1A45] text-sm font-bold text-white shadow-[0_10px_22px_rgba(8,15,43,0.16)]">
+                  {distInitials}
                 </div>
-              ) : ratingSummary && ratingSummary.reviewCount > 0 ? (
-                <>
-                  <div className="mt-5 rounded-2xl bg-gray-50 p-4">
-                    <div className="flex flex-col gap-4">
-                      <div className="rounded-2xl bg-white p-4 text-center shadow-sm">
-                        <p className="font-heading text-4xl font-bold text-foreground">{ratingSummary.averageGeneral.toFixed(1)}</p>
-                        <StarDisplay rating={ratingSummary.averageGeneral} size="sm" className="mt-2 justify-center" />
-                        <p className="mt-2 text-xs font-medium text-muted-foreground">{ratingSummary.reviewCount} reseñas</p>
-                      </div>
-                      <div className="min-w-0 space-y-2">
-                        <CriteriaRow label="Cumplimiento" value={ratingSummary.averageFulfillment} />
-                        <CriteriaRow label="Entrega" value={ratingSummary.averageDelivery} />
-                        <CriteriaRow label="Mercadería" value={ratingSummary.averageProductCondition} />
-                        <CriteriaRow label="Atención" value={ratingSummary.averageCommunication} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 space-y-3">
-                    {reviews.slice(0, 2).map(review => (
-                      <ReviewCard key={review.id} review={review} />
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="mt-5 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                    <Star className="h-5 w-5 text-amber-400" />
-                  </div>
-                  <p className="mt-3 font-semibold text-foreground">Todavía no hay reseñas de la distribuidora</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Cuando otros comercios califiquen sus pedidos, las vas a ver acá.
-                  </p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-foreground">{distribuidora.companyName}</p>
+                  <p className="text-xs font-medium text-muted-foreground">Distribuidora verificada</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
+              {ratingSummary && ratingSummary.reviewCount > 0 && (
+                <div className="mt-4 flex items-center justify-between rounded-2xl bg-white px-1">
+                  <StarDisplay rating={ratingSummary.averageGeneral} size="sm" showValue />
+                  <span className="text-xs font-medium text-muted-foreground">{ratingSummary.reviewCount} reseñas</span>
                 </div>
               )}
-            </div>
-          </div>
+            </section>
+          </aside>
         </div>
       </div>
 
-      {/* Mobile fixed bottom action */}
-      <div className="md:hidden fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40 shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
-        <div className="flex items-center gap-4 max-w-md mx-auto">
-          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl h-14 overflow-hidden shrink-0">
-            <button
-              onClick={() => setQty(q => Math.max(1, q - 1))}
-              className="w-12 h-full flex items-center justify-center text-gray-600 hover:text-foreground"
-            >
-              <Minus className="h-5 w-5" />
-            </button>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={qtyInput}
-              onChange={e => setQtyInput(e.target.value.replace(/[^0-9]/g, ''))}
-              onFocus={e => e.target.select()}
-              onBlur={e => commitQty(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-              className="w-10 text-center font-bold text-lg bg-white h-full border-x border-gray-200 outline-none focus:bg-[#F7F8FA] transition-colors tabular-nums"
-            />
-            <button
-              onClick={() => setQty(q => Math.min(product.stock, q + 1))}
-              disabled={qty >= product.stock}
-              className="w-12 h-full flex items-center justify-center text-primary disabled:opacity-40"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
-          </div>
-          <Button
-            className={`flex-1 h-14 text-base font-bold shadow-lg rounded-xl transition-all duration-300 ${
-              isAdded ? 'bg-green-600 hover:bg-green-600 shadow-green-200' : 'shadow-primary/20'
-            }`}
-            onClick={handleAddToCart}
-            disabled={isAdded || product.stock === 0}
-          >
-            {isAdded ? (
-              <><CheckCircle2 className="h-4 w-4 mr-2 animate-check-pop" /> Agregado</>
-            ) : (
-              <><ShoppingCart className="h-4 w-4 mr-2" /> {formatCurrency(product.price * qty)}</>
-            )}
-          </Button>
-        </div>
-      </div>
     </div>
   )
 }

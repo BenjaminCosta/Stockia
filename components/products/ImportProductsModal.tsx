@@ -15,9 +15,11 @@ export interface ImportResult {
 interface Props {
   onClose: () => void
   onImport: (rows: ParsedProductRow[]) => Promise<ImportResult>
+  /** sku (lowercase) → nombre del producto existente */
+  existingSkus?: Map<string, string>
 }
 
-export default function ImportProductsModal({ onClose, onImport }: Props) {
+export default function ImportProductsModal({ onClose, onImport, existingSkus }: Props) {
   const [step, setStep] = useState<Step>('idle')
   const [rows, setRows] = useState<ParsedProductRow[]>([])
   const [totalErrors, setTotalErrors] = useState(0)
@@ -76,7 +78,11 @@ export default function ImportProductsModal({ onClose, onImport }: Props) {
     }
   }
 
-  const validCount = rows.filter((r) => !r.hasErrors).length
+  const validCount   = rows.filter((r) => !r.hasErrors).length
+  const updateCount  = existingSkus
+    ? rows.filter(r => !r.hasErrors && r.sku && existingSkus.has(r.sku.trim().toLowerCase())).length
+    : 0
+  const createCount  = validCount - updateCount
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -217,10 +223,18 @@ export default function ImportProductsModal({ onClose, onImport }: Props) {
                   <FileSpreadsheet className="h-4 w-4 text-gray-400" />
                   <span className="font-medium text-gray-700">{fileName}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="font-semibold text-green-700">{validCount} válidos</span>
-                </div>
+                {createCount > 0 && (
+                  <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="font-semibold text-green-700">{createCount} nuevos</span>
+                  </div>
+                )}
+                {updateCount > 0 && (
+                  <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-blue-500" />
+                    <span className="font-semibold text-blue-700">{updateCount} a actualizar</span>
+                  </div>
+                )}
                 {totalErrors > 0 && (
                   <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2 text-sm">
                     <AlertCircle className="h-4 w-4 text-red-500" />
@@ -279,6 +293,10 @@ export default function ImportProductsModal({ onClose, onImport }: Props) {
                                   <span key={i} className="text-red-600 font-medium">{e}</span>
                                 ))}
                               </div>
+                            ) : existingSkus && row.sku && existingSkus.has(row.sku.trim().toLowerCase()) ? (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 whitespace-nowrap">
+                                Actualiza
+                              </span>
                             ) : (
                               <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                             )}

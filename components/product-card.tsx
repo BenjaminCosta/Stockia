@@ -20,10 +20,12 @@ function isBestSeller(p: Product) {
 export function Stepper({
   qty,
   onChange,
+  max = 999,
   disabled,
 }: {
   qty: number
   onChange: (v: number) => void
+  max?: number
   disabled?: boolean
 }) {
   const [inputVal, setInputVal] = useState(String(qty))
@@ -36,8 +38,9 @@ export function Stepper({
   const commit = (raw: string) => {
     const n = parseInt(raw, 10)
     if (!isNaN(n) && n >= 1) {
-      onChange(n)
-      setInputVal(String(n))
+      const clamped = Math.min(max, n)
+      onChange(clamped)
+      setInputVal(String(clamped))
     } else {
       setInputVal(String(qty)) // revert to last valid
     }
@@ -65,8 +68,8 @@ export function Stepper({
         className="w-10 text-center text-sm font-bold text-[#0B1A45] tabular-nums bg-transparent border-none outline-none focus:bg-[#F7F8FA] transition-colors disabled:opacity-30"
       />
       <button
-        onClick={() => onChange(qty + 1)}
-        disabled={disabled}
+        onClick={() => onChange(Math.min(max, qty + 1))}
+        disabled={qty >= max || disabled}
         className="h-8 w-8 flex items-center justify-center text-[#0B1A45] hover:bg-[#F7F8FA] transition disabled:opacity-30 shrink-0"
       >
         <Plus className="h-3.5 w-3.5" />
@@ -104,7 +107,7 @@ function ProductCardComponent({
 
   const bestSeller = useMemo(() => isBestSeller(product), [product.rating, product.reviewCount])
   const offer = product.isOffer === true
-  const outOfStock = product.stock === 0
+  const outOfStock = product.stock <= 0 || product.status !== 'active'
   const catObj = useMemo(() => categories.find(c => c.name === product.category), [product.category])
   const distributorInitials = useMemo(() => (distName || 'Distribuidora')
     .split(' ')
@@ -122,10 +125,14 @@ function ProductCardComponent({
     setTimeout(() => setPopping(false), 500)
   }, [toggleWishlist, product])
 
+  const imgSizes = view === 'list'
+    ? '64px'
+    : '(max-width: 640px) calc(50vw - 24px), (max-width: 1024px) 200px, 180px'
+
   const productImg = (sizeClass: string, rounded = 'rounded-xl') => (
     <div className={cn('relative flex items-center justify-center bg-white overflow-hidden', rounded, sizeClass)}>
       {product.imageUrl ? (
-        <Image src={product.imageUrl} alt={product.name} fill className="object-cover" sizes="128px" />
+        <Image src={product.imageUrl} alt={product.name} fill className="object-cover" sizes={imgSizes} />
       ) : catObj ? (
         <Image src={catObj.image} alt={product.category} width={64} height={64} className="h-2/3 w-2/3 object-contain" />
       ) : (
@@ -208,7 +215,7 @@ function ProductCardComponent({
         </div>
 
         <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <Stepper qty={qty} onChange={onQtyChange} disabled={outOfStock} />
+          <Stepper qty={qty} onChange={onQtyChange} max={Math.max(1, product.stock)} disabled={outOfStock} />
           <button
             onClick={onAdd}
             disabled={outOfStock}
@@ -326,7 +333,7 @@ function ProductCardComponent({
           </button>
           {/* Desktop: stepper + full Agregar button */}
           <div className="hidden md:flex items-center gap-2 w-full">
-            <Stepper qty={qty} onChange={onQtyChange} disabled={outOfStock} />
+            <Stepper qty={qty} onChange={onQtyChange} max={Math.max(1, product.stock)} disabled={outOfStock} />
             <button
               onClick={onAdd}
               disabled={outOfStock}

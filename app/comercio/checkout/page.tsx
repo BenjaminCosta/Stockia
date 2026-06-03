@@ -4,13 +4,13 @@ import { Fragment, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Check, CheckCircle, Clock, CreditCard,
+  AlertTriangle, ArrowLeft, Check, CheckCircle, Clock, CreditCard,
   Handshake, Info, Lock, MapPin,
 } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency, getEstimatedDeliveryDate } from '@/lib/mock-data'
 import { useDistributor } from '@/hooks/use-data'
-import { createOrder } from '@/lib/data/orders.service'
+import { createOrder, StockValidationError, type StockValidationIssue } from '@/lib/data/orders.service'
 import type { OrderItem } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -129,17 +129,27 @@ function ExternalConfirmation({ distribuidoraName }: { distribuidoraName: string
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cart, getCartTotal, clearCart, currentUser } = useApp()
+  const { cart, getCartTotal, clearCart, currentUser, removeFromCart, updateCartItemQuantity } = useApp()
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mp')
   const [confirmed, setConfirmed] = useState(false)
+  const [confirmedDistName, setConfirmedDistName] = useState('')
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
+  const [stockIssues, setStockIssues] = useState<StockValidationIssue[]>([])
+  const [orderError, setOrderError] = useState('')
 
   const hasCart = !!cart && cart.items.length > 0
+  const isExternal = paymentMethod === 'external'
   const { data: distribuidora } = useDistributor(cart?.distribuidoraId || '')
 
   useEffect(() => {
     if (!hasCart && !confirmed) router.push('/comercio/carrito')
   }, [hasCart, confirmed, router])
+
+  if (confirmed) {
+    return isExternal
+      ? <ExternalConfirmation distribuidoraName={confirmedDistName} />
+      : <MpConfirmation />
+  }
 
   if (!hasCart) return null
 
@@ -150,11 +160,12 @@ export default function CheckoutPage() {
     ? getEstimatedDeliveryDate((distribuidora as any).deliveryTimeHours)
     : 'Próximos días hábiles'
   const deliveryLabel = distribuidora?.deliveryTimeLabel ?? '48 horas hábiles'
-  const isExternal = paymentMethod === 'external'
 
   const handleConfirmar = async () => {
     if (!currentUser || !cart) return
     setIsPlacingOrder(true)
+    setStockIssues([])
+    setOrderError('')
     const subtotal = getCartTotal()
     const items: OrderItem[] = cart.items.map(item => ({
       productId: item.product.id,
@@ -171,22 +182,34 @@ export default function CheckoutPage() {
         total: subtotal,
         paymentMethod: isExternal ? 'external' : 'mercado_pago',
       })
+
+      setConfirmedDistName(cart.distribuidoraName)
+      setConfirmed(true)
+      setTimeout(() => {
+        router.push('/comercio/pedidos?success=true')
+        clearCart()
+      }, 1500)
     } catch (err) {
       console.error('[checkout] createOrder failed', err)
+      const issues = err instanceof StockValidationError || (err as any)?.name === 'StockValidationError'
+        ? (err as StockValidationError).issues
+        : []
+
+      if (issues.length > 0) {
+        setStockIssues(issues)
+        issues.forEach(issue => {
+          if (issue.available <= 0) {
+            removeFromCart(issue.productId)
+          } else {
+            updateCartItemQuantity(issue.productId, issue.available)
+          }
+        })
+      } else {
+        setOrderError('No pudimos confirmar el pedido. Revisá tu conexión e intentá de nuevo.')
+      }
     } finally {
       setIsPlacingOrder(false)
     }
-    setConfirmed(true)
-    setTimeout(() => {
-      clearCart()
-      router.push('/comercio/pedidos?success=true')
-    }, 1500)
-  }
-
-  if (confirmed) {
-    return isExternal
-      ? <ExternalConfirmation distribuidoraName={cart.distribuidoraName} />
-      : <MpConfirmation />
   }
 
   const btnLabel = isExternal
@@ -333,6 +356,33 @@ export default function CheckoutPage() {
           <div className="md:col-span-5">
             <div className="bg-white rounded-3xl shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] border border-[#DFE1E8]/80 p-5 md:p-6 md:sticky md:top-8">
               <h2 className="font-bold text-xs uppercase tracking-widest text-[#7A839C] mb-4">Resumen del pedido</h2>
+
+              {stockIssues.length > 0 && (
+                <div className="mb-4 rounded-2xl border border-amber-200/80 bg-amber-50 p-4">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <div>
+                      <p className="text-xs font-bold text-amber-900">Revisá el stock disponible</p>
+                      <div className="mt-2 space-y-1">
+                        {stockIssues.map(issue => (
+                          <p key={issue.productId} className="text-xs text-amber-800">
+                            {issue.productName}: pediste {issue.requested}, disponible {issue.available}.
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {orderError && (
+                <div className="mb-4 rounded-2xl border border-red-200/80 bg-red-50 p-4">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                    <p className="text-xs font-semibold text-red-700">{orderError}</p>
+                  </div>
+                </div>
+              )}
 
               {/* Distribuidora */}
               <div className="flex items-center gap-2.5 mb-4 pb-4 border-b border-gray-100">

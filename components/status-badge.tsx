@@ -34,6 +34,11 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType | nu
     icon: X,
     className: 'bg-red-50 text-red-600 border-red-200',
   },
+  no_entregado: {
+    label: 'No entregado',
+    icon: AlertCircle,
+    className: 'bg-orange-50 text-orange-700 border-orange-200',
+  },
   // Firestore statuses (used in distribuidora detail + admin)
   pending_confirmation: {
     label: 'Pend. confirmación',

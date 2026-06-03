@@ -42,6 +42,9 @@ export default function ProductosPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
 
+  // Toggle active state per product
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
+
   const { data: products, loading: isLoading } = useProductsAll(distributorId, refreshKey)
 
   const triggerRefresh = useCallback(() => {
@@ -124,6 +127,17 @@ export default function ProductosPage() {
     }
   }
 
+  const handleToggleActive = async (productId: string, currentActive: boolean) => {
+    if (togglingIds.has(productId)) return
+    setTogglingIds(prev => new Set(prev).add(productId))
+    try {
+      await updateProduct(productId, { status: currentActive ? 'paused' : 'active' })
+      triggerRefresh()
+    } finally {
+      setTogglingIds(prev => { const n = new Set(prev); n.delete(productId); return n })
+    }
+  }
+
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
     setBulkDeleting(true)
@@ -156,6 +170,14 @@ export default function ProductosPage() {
   // ─── Filter ───────────────────────────────────────────────────────────────
 
   const noImageCount = useMemo(() => products.filter(p => !p.imageUrl).length, [products])
+
+  const existingSkus = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const p of products) {
+      if (p.sku) map.set(p.sku.trim().toLowerCase(), p.name)
+    }
+    return map
+  }, [products])
 
   const filteredProducts = useMemo(() => {
     const q = searchQuery.toLowerCase()
@@ -358,11 +380,11 @@ export default function ProductosPage() {
                     <div className="col-span-4 mb-3 md:mb-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          {/* Checkbox (select mode) */}
+                          {/* Checkbox (select mode) — desktop only; mobile has its own below */}
                           {selectMode && (
                             <button
                               onClick={() => toggleSelect(product.id)}
-                              className="shrink-0 text-[#5F6880] hover:text-primary transition-colors"
+                              className="hidden md:inline-flex shrink-0 text-[#5F6880] hover:text-primary transition-colors"
                             >
                               {isSelected
                                 ? <CheckSquare className="h-4 w-4 text-primary" />
@@ -384,6 +406,9 @@ export default function ProductosPage() {
                           <div className="min-w-0">
                             <div className="text-[10px] font-bold text-[#7A839C] md:hidden uppercase tracking-[0.14em] mb-0.5">{product.category}</div>
                             <div className="font-bold text-[#0B1A45] text-sm leading-tight truncate">{product.name}</div>
+                            {product.sku && (
+                              <div className="text-[10px] text-[#7A839C] font-mono mt-0.5 truncate">#{product.sku}</div>
+                            )}
                           </div>
                         </div>
 
@@ -469,7 +494,12 @@ export default function ProductosPage() {
                     {/* Active toggle */}
                     <div className="col-span-1 flex justify-between md:justify-center items-center pt-3 md:pt-0 border-t border-[#DFE1E8]/40 md:border-none">
                       <span className="md:hidden text-sm font-semibold text-[#0B1A45]">Producto activo</span>
-                      <Switch defaultChecked={product.active} className="data-[state=checked]:bg-[#0B1A45]" />
+                      <Switch
+                        checked={product.active}
+                        disabled={togglingIds.has(product.id)}
+                        onCheckedChange={() => handleToggleActive(product.id, product.active)}
+                        className="data-[state=checked]:bg-[#0B1A45] disabled:opacity-50"
+                      />
                     </div>
 
                     {/* Desktop actions: edit + delete */}
@@ -519,6 +549,7 @@ export default function ProductosPage() {
         <ImportProductsModal
           onClose={() => setShowImport(false)}
           onImport={handleImport}
+          existingSkus={existingSkus}
         />
       )}
     </div>

@@ -21,6 +21,8 @@ const statusFilters: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'pagado', label: 'Pagados' },
   { value: 'en_preparacion', label: 'En preparación' },
   { value: 'entregado', label: 'Entregados' },
+  { value: 'cancelado', label: 'Cancelados' },
+  { value: 'no_entregado', label: 'No entregados' },
 ]
 
 export default function PedidosDistribuidoraPage() {
@@ -28,13 +30,17 @@ export default function PedidosDistribuidoraPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const handleQuickAction = async (orderId: string, action: FSOrderStatus) => {
     setUpdatingId(orderId)
+    setErrorMsg(null)
     try {
       await updateOrderStatus(orderId, action)
     } catch (err) {
       console.error('[pedidos-list] updateOrderStatus failed', err)
+      setErrorMsg('No se pudo actualizar el pedido. Intentá de nuevo.')
+      setTimeout(() => setErrorMsg(null), 4000)
     } finally {
       setUpdatingId(null)
     }
@@ -86,6 +92,13 @@ export default function PedidosDistribuidoraPage() {
           </div>
         </div>
       </header>
+
+      {/* Error toast */}
+      {errorMsg && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold max-w-xs text-center animate-fade-in">
+          {errorMsg}
+        </div>
+      )}
 
       {/* Content */}
       <main className="flex-1 px-4 md:px-8 py-3 md:py-4 max-w-5xl mx-auto w-full">

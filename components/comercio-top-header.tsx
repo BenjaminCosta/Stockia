@@ -148,7 +148,8 @@ export function ComercioTopHeader() {
     <header className="sticky top-0 z-50 bg-sidebar lg:bg-[#0B1A45] text-white">
 
       {/* Main header */}
-      <div className="max-w-350 mx-auto px-4 lg:px-8 h-10 lg:h-16 flex items-center gap-4">
+      <div className="relative overflow-hidden">
+        <div className="relative z-10 max-w-350 mx-auto px-3 lg:px-6 h-10 lg:h-16 flex items-center gap-4">
 
         {/* Logo */}
         <Link href="/comercio" className="shrink-0">
@@ -380,10 +381,11 @@ export function ComercioTopHeader() {
           </Link>
         </div>
       </div>
+      </div>
 
       {/* Category bar — desktop only */}
       <div className="hidden lg:block bg-[#080f2b]/70 backdrop-blur-sm border-t border-white/5">
-        <div className="max-w-350 mx-auto px-8 h-12 flex items-center gap-1 overflow-x-auto scrollbar-hide text-sm">
+        <div className="max-w-350 mx-auto px-6 h-12 flex items-center gap-1 overflow-x-auto scrollbar-hide text-sm">
           {categoryBar.map((c) => {
             const Icon = c.icon
             const catParam = c.href.includes('?categoria=')

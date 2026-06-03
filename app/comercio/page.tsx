@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils'
 import { DistribuidoraCard } from '@/components/distribuidora-card'
 
 const bannerImage =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuD5AyXfk8ajEi26pq48tlS5ch4s6KleLvBpkMakL1s-oa5bQ7Z1FDjB6tw3mmY5OzVH153BMmYuf7viMCuUJPOwpJX5u2_arVtIHwLb3TFVvTSfeyQw8901VqZg4xPG2znYiyo2V4ZadHAjcNaRJrFcNGj2wGDH6ulcZ7-3c0jjHZ-_sheGCoH_CfgECZ2TLcM2DL5Cg9ERywVrxKyLsYBkZDrCV4dM2Qphw2hinMpGymIsoz0VM2rFuKolkzsOq-kHikNxmaOMKzif'
+  '/assets/banner-image.png'
 
 const categoryPhotos: Record<string, string> = {
   'Bebidas':            '/assets/categories/bebidas.jpg',
@@ -49,11 +49,12 @@ function CategoryCard({ category }: { category: Category }) {
           <img
             src={photo}
             alt={category.name}
+            loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center bg-[#0B1A45]">
-            <img src={category.image} alt={category.name} className="h-16 w-16 md:h-20 md:w-20 object-contain" />
+            <img src={category.image} alt={category.name} loading="lazy" className="h-16 w-16 md:h-20 md:w-20 object-contain" />
           </div>
         )}
       </div>
@@ -85,7 +86,7 @@ function ReorderProductCard({
   onReorder: (item: ReorderProduct) => void
 }) {
   const { product, distributorName, orderCount, totalQuantity } = item
-  const outOfStock = product.stock === 0
+  const outOfStock = product.stock <= 0 || product.status !== 'active'
 
   return (
     <article
@@ -99,6 +100,7 @@ function ReorderProductCard({
         <img
           src={categoryImage}
           alt={product.category}
+          loading="lazy"
           className="h-full w-full object-contain"
         />
       </div>
@@ -141,11 +143,10 @@ export default function ComercioHomePage() {
   const [reorderedProducts, setReorderedProducts] = useState<Set<string>>(new Set())
 
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
-  const storeName = comercio?.storeName || 'Tu comercio'
   const currentLocation = comercio?.location
 
   const commerceContext = currentLocation
-    ? { lat: currentLocation.lat ?? undefined, lng: currentLocation.lng ?? undefined, locationKey: currentLocation.locationKey, citySlug: currentLocation.citySlug }
+    ? { lat: currentLocation.lat ?? undefined, lng: currentLocation.lng ?? undefined, locationKey: currentLocation.locationKey, citySlug: currentLocation.citySlug, provinceSlug: currentLocation.provinceSlug }
     : undefined
   const { data: distributors, loading: isLoading } = useDistributors(commerceContext)
   const { data: products } = useProducts()
@@ -214,39 +215,16 @@ export default function ComercioHomePage() {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
-      <section className="mx-auto w-full max-w-[1400px] px-4 py-3 md:px-8 md:py-8">
-        <div className="mb-3 md:mb-6">
-          <div>
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Buen día</p>
-            <h1 className="font-heading text-xl font-bold tracking-tight text-foreground md:text-4xl mt-0.5">
-              {storeName}
-            </h1>
-            {currentLocation && (
-              <div className="mt-1.5 flex items-center text-xs font-medium text-muted-foreground">
-                <MapPin className="mr-1 h-3 w-3 text-primary" />
-                <span>{[currentLocation.city, currentLocation.province].filter(Boolean).join(', ')}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mb-3 md:hidden">
-          <SearchInput
-            placeholder="Buscar productos o distribuidoras..."
-            value={searchQuery}
-            onChange={setSearchQuery}
-          />
-        </div>
-
+      <section className="relative overflow-hidden bg-[#080f2b]">
         <section
-          className="relative mb-5 flex min-h-[230px] overflow-hidden rounded-[1.75rem] border border-white/[0.16] bg-cover bg-center shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_22px_60px_rgba(8,15,43,0.16)] md:mb-12 md:min-h-[340px] md:rounded-[2rem] lg:min-h-[390px]"
+          className="relative flex min-h-[285px] w-full overflow-hidden bg-cover bg-center md:min-h-[390px] lg:min-h-[440px]"
           style={{
             backgroundImage: `url(${bannerImage})`,
             backgroundPosition: 'center 48%',
           }}
         >
-          <div className="absolute inset-0 scale-[1.03] bg-[linear-gradient(90deg,rgba(8,15,43,0.96)_0%,rgba(8,15,43,0.84)_40%,rgba(8,15,43,0.48)_68%,rgba(24,29,37,0.12)_100%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,15,43,0.00)_0%,rgba(8,15,43,0.38)_100%)]" />
+          <div className="absolute inset-0 scale-[1.02] bg-[linear-gradient(90deg,rgba(8,15,43,0.98)_0%,rgba(8,15,43,0.90)_38%,rgba(8,15,43,0.54)_67%,rgba(8,15,43,0.14)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,15,43,0.20)_0%,rgba(8,15,43,0.16)_54%,rgba(8,15,43,0.76)_100%)]" />
           <svg
             className="absolute inset-0 h-full w-full opacity-[0.075] mix-blend-screen"
             xmlns="http://www.w3.org/2000/svg"
@@ -263,10 +241,10 @@ export default function ComercioHomePage() {
             <path d="M-40 255C120 188 188 226 322 148C456 70 565 104 724 34" fill="none" stroke="white" strokeWidth="1.2" strokeDasharray="8 14" opacity="0.5" />
             <path d="M52 258h58m-29-29v58M720 68h52m-26-26v52" stroke="white" strokeWidth="1" opacity="0.38" />
           </svg>
-          <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/35 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-[#080f2b]/[0.55] to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-[#080f2b]/[0.72] to-transparent" />
 
-          <div className="relative flex w-full items-center px-5 py-7 text-white md:px-12 md:py-12 lg:px-16">
+          <div className="relative mx-auto flex w-full max-w-[1400px] items-center px-3 py-8 text-white md:px-6 md:py-12 lg:py-14">
             <div className="w-full max-w-[840px]">
               <span className="mb-3 inline-flex w-fit items-center rounded-full border border-white/[0.22] bg-white/[0.10] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/[0.92] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-md md:mb-5 md:px-4 md:py-1.5 md:text-xs">
                 STOCKIA PARA COMERCIOS
@@ -294,7 +272,9 @@ export default function ComercioHomePage() {
             </div>
           </div>
         </section>
+      </section>
 
+      <section className="mx-auto w-full max-w-[1400px] px-3 py-5 md:px-6 md:py-9">
         <section className="mb-6 md:mb-12">
           <div className="mb-3 flex items-end justify-between gap-4">
             <div>
@@ -314,7 +294,7 @@ export default function ComercioHomePage() {
             </Link>
           </div>
           {/* Mobile: círculos con scroll horizontal */}
-          <div className="md:hidden -mx-4 px-4 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="md:hidden -mx-3 px-3 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div className="flex gap-4 w-max">
               {allCategories.map(category => {
                 const photo = categoryPhotos[category.name]
@@ -341,7 +321,7 @@ export default function ComercioHomePage() {
           </div>
 
           {/* Desktop: carousel de cards con imagen completa */}
-          <div className="hidden md:block -mx-8 px-8 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="hidden md:block -mx-6 px-6 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div className="flex gap-4 w-max">
               {allCategories.map(category => {
                 const photo = categoryPhotos[category.name]
@@ -384,7 +364,7 @@ export default function ComercioHomePage() {
               </p>
             </div>
             <Link
-              href="/comercio/buscar"
+              href="/comercio/distribuidoras"
               className="flex items-center gap-1 text-sm font-bold text-primary hover:underline"
             >
               Ver todas
@@ -401,6 +381,43 @@ export default function ComercioHomePage() {
 
           {isLoading ? (
             <DistributorCardSkeleton />
+          ) : !currentLocation?.city ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F7F8FA] border border-[#DFE1E8]/80">
+                <MapPin className="h-5 w-5 text-[#7A839C]" />
+              </div>
+              <div>
+                <p className="font-heading font-bold text-foreground text-sm">Ubicación no configurada</p>
+                <p className="mt-1 text-xs text-muted-foreground max-w-[22ch] leading-relaxed">
+                  Completá tu ubicación para ver distribuidoras disponibles.
+                </p>
+              </div>
+              <Link
+                href="/comercio/cuenta"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white transition-[transform,background-color] duration-150 hover:bg-primary/90 active:scale-[0.97]"
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                Completar ubicación
+              </Link>
+            </div>
+          ) : filteredDistributors.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F7F8FA] border border-[#DFE1E8]/80">
+                <MapPin className="h-5 w-5 text-[#7A839C]" />
+              </div>
+              <div>
+                <p className="font-heading font-bold text-foreground text-sm">Sin distribuidoras en tu zona</p>
+                <p className="mt-1 text-xs text-muted-foreground max-w-[28ch] leading-relaxed">
+                  Todavía no hay distribuidoras que entreguen en {[currentLocation.city, currentLocation.province].filter(Boolean).join(', ')}.
+                </p>
+              </div>
+              <Link
+                href="/comercio/cuenta"
+                className="text-xs font-bold text-primary hover:underline"
+              >
+                Editar ubicación
+              </Link>
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 md:gap-5">
               {filteredDistributors.slice(0, 3).map((distributor, index) => (
@@ -410,7 +427,7 @@ export default function ComercioHomePage() {
           )}
         </section>
 
-        <section className="relative overflow-hidden rounded-2xl bg-[#080f2b] px-4 py-5 text-white shadow-[0_18px_52px_rgba(8,15,43,0.18)] md:rounded-[1.75rem] md:px-8 md:py-7">
+        <section className="relative overflow-hidden rounded-2xl bg-[#080f2b] px-3 py-5 text-white shadow-[0_18px_52px_rgba(8,15,43,0.18)] md:rounded-[1.75rem] md:px-6 md:py-7">
           <div className="absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#0B1A45] opacity-80 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-12 -right-12 h-48 w-48 rounded-full bg-[#0B1A45]/60 blur-2xl pointer-events-none" />
           <div className="absolute right-1/4 top-0 h-32 w-32 rounded-full bg-lima/[0.04] blur-3xl pointer-events-none" />

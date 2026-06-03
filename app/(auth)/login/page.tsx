@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Boxes, Eye, EyeOff, Route } from 'lucide-react'
+import { Eye, EyeOff, ShieldCheck, Package, Clock } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -49,75 +49,83 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background md:flex">
+    <main className="min-h-screen bg-background lg:flex">
       {/* Left Panel — desktop only */}
       <div
-        className="auth-panel-enter hidden md:flex w-1/2 flex-col justify-between p-12 relative overflow-hidden"
+        className="auth-panel-enter relative hidden min-h-screen flex-col justify-between overflow-hidden bg-[#08102b] px-11 py-12 lg:flex lg:w-1/2 xl:px-14 xl:py-16"
         style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1672552226380-486fe900b322?q=95&w=3840&auto=format&fit=crop')",
+          backgroundImage: "url('/assets/login-image.png')",
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: 'center right 42%',
+          backgroundRepeat: 'no-repeat',
         }}
       >
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-sidebar/85" />
-        <div className="absolute inset-0 opacity-[0.06]">
-          <div className="absolute -left-20 top-24 h-64 w-64 rounded-full border border-white" />
-          <div className="absolute right-10 top-20 h-28 w-28 rotate-12 rounded-3xl border border-white" />
-          <div className="absolute left-16 bottom-24 h-px w-56 rotate-12 bg-primary" />
-          <Boxes className="absolute bottom-16 left-20 h-24 w-24 text-white" />
-          <Route className="absolute right-28 bottom-36 h-20 w-20 text-white" />
-        </div>
-        <div className="absolute left-16 top-16 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,15,43,0.98)_0%,rgba(8,15,43,0.88)_31%,rgba(8,15,43,0.48)_63%,rgba(8,15,43,0.62)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,15,43,0.70)_0%,rgba(8,15,43,0.08)_42%,rgba(8,15,43,0.88)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_45%,rgba(255,255,255,0.08)_0%,rgba(8,15,43,0.05)_28%,rgba(8,15,43,0.56)_72%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,15,43,0.38)_0%,transparent_44%,rgba(8,15,43,0.24)_100%)]" />
 
-        <div className="relative z-10 flex items-center gap-3">
-          <StockiaLogo size={52} />
-          <span className="font-heading text-2xl font-bold text-white">StockIA</span>
+        <div className="relative z-10">
+          <StockiaLogo variant="white" size={46} className="h-9 w-auto" />
         </div>
 
-        <div className="relative z-10 max-w-md">
-          <h2 className="font-heading text-4xl font-bold text-white mb-4 leading-tight">
+        <div className="relative z-10 mb-auto mt-[13vh] max-w-[23rem] xl:mt-[12vh] xl:max-w-[26rem]">
+          <h1 className="font-heading text-[2.18rem] font-bold leading-[1.1] tracking-tight text-white xl:text-[2.82rem]">
             El marketplace B2B para tu negocio
-          </h2>
-          <p className="text-white/70 text-lg mb-8 leading-8">
+          </h1>
+          <div className="my-5 h-0.75 w-12 rounded-full bg-[#C8FF00]" />
+          <p className="max-w-[22rem] text-base font-medium leading-relaxed text-white/70 xl:text-[1.05rem]">
             Conectamos comercios con distribuidoras de forma simple, rápida y transparente.
           </p>
         </div>
 
-        <div className="relative z-10 border-t border-white/10 pt-8">
-          <p className="text-white/60 text-sm">Operaciones B2B simples para comercios y distribuidoras</p>
+        <div className="relative z-10 grid grid-cols-3 border-t border-white/[0.08] pt-7">
+          {[
+            { icon: ShieldCheck, title: 'Comercio verificado',    desc: 'Transacciones seguras y confiables.' },
+            { icon: Package,     title: 'Catálogo inteligente',   desc: 'Encontrá productos al mejor precio.' },
+            { icon: Clock,       title: 'Operaciones eficientes', desc: 'Ahorra tiempo y haz crecer tu negocio.' },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div
+              key={title}
+              className="flex items-start gap-4 px-5 first:pl-0 last:pr-0 [&:not(:first-child)]:border-l [&:not(:first-child)]:border-white/[0.18]"
+            >
+              <Icon className="mt-0.5 h-8 w-8 shrink-0 text-[#C8FF00]" strokeWidth={1.7} />
+              <div>
+                <p className="text-sm font-bold leading-tight text-white">{title}</p>
+                <p className="mt-1 text-sm font-medium leading-snug text-white/64">{desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Right Panel — form */}
-      <div className="w-full md:w-1/2 flex min-h-screen flex-col md:items-center md:justify-center md:p-8 relative">
+      <div className="relative flex min-h-screen w-full flex-col lg:w-1/2 lg:items-center lg:justify-center lg:bg-[linear-gradient(180deg,#ffffff_0%,#f7f8fa_100%)] lg:p-8">
         {/* Mobile header */}
         <div
-          className="relative flex h-64 w-full flex-col items-center justify-center overflow-hidden px-5 pb-16 pt-6 text-white md:hidden"
+          className="relative flex h-[22rem] w-full flex-col items-center justify-center overflow-hidden bg-[#08102b] px-5 pb-20 pt-8 text-white sm:h-[24rem] lg:hidden"
           style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1672552226380-486fe900b322?q=95&w=3840&auto=format&fit=crop')",
+            backgroundImage: "url('/assets/login-image.png')",
             backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundPosition: 'center 32%',
+            backgroundRepeat: 'no-repeat',
           }}
         >
-          {/* Dark overlay */}
-          <div className="absolute inset-0 bg-sidebar/82" />
-          <div className="absolute inset-0 opacity-[0.07]">
-            <div className="absolute -left-8 top-10 h-28 w-28 rounded-full border border-white" />
-            <div className="absolute right-8 top-16 h-20 w-20 rotate-12 rounded-2xl border border-white" />
-            <div className="absolute bottom-12 left-1/2 h-px w-56 -translate-x-1/2 rotate-[-16deg] bg-primary" />
-          </div>
-          <div className="relative z-10 flex flex-col items-center gap-3">
-            <div className="rounded-2xl p-1">
-              <StockiaLogo size={96} className="rounded-xl" />
-            </div>
-            <span className="font-heading text-xl font-bold text-white tracking-wide">StockIA</span>
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,15,43,0.60)_0%,rgba(8,15,43,0.48)_46%,rgba(8,15,43,0.86)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,255,255,0.08)_0%,rgba(8,15,43,0.08)_32%,rgba(8,15,43,0.58)_72%)]" />
+          <div className="pointer-events-none absolute -left-10 top-22 h-30 w-30 rounded-full border border-white/[0.10]" />
+          <div className="pointer-events-none absolute right-8 top-20 h-22 w-16 rounded-[45%] border border-white/[0.09] rotate-12" />
+          <div className="relative z-10 flex flex-col items-center">
+            <StockiaLogo size={118} className="h-[7.4rem] w-[7.4rem]" />
+            <span className="mt-3 font-heading text-4xl font-bold leading-none tracking-tight text-white">
+              StockIA
+            </span>
           </div>
         </div>
 
-        <div className="auth-form-enter w-full max-w-md -mt-10 px-4 pb-8 md:mt-0 md:px-0 md:pb-0">
-          <div className="rounded-3xl border border-border bg-white p-6 shadow-[0_18px_50px_rgba(17,24,39,0.06)] md:p-8">
-            <h2 className="hidden md:block font-heading text-3xl font-bold text-foreground mb-8">
+        <div className="auth-form-enter w-full max-w-md -mt-18 px-5 pb-8 lg:mt-0 lg:px-0 lg:pb-0">
+          <div className="rounded-[2rem] border border-border bg-white p-7 shadow-[0_22px_58px_rgba(8,15,43,0.10)] lg:rounded-3xl lg:p-8 lg:shadow-[0_18px_50px_rgba(17,24,39,0.06)]">
+            <h2 className="mb-8 hidden font-heading text-3xl font-bold text-foreground lg:block">
               Iniciar sesión
             </h2>
 

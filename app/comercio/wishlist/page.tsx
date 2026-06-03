@@ -17,13 +17,13 @@ export default function WishlistPage() {
 
   const getQty = (id: string) => quantities[id] ?? 1
 
-  const handleQtyChange = (id: string, v: number) => {
-    setQuantities(prev => ({ ...prev, [id]: v }))
+  const handleQtyChange = (product: Product, v: number) => {
+    setQuantities(prev => ({ ...prev, [product.id]: Math.min(Math.max(1, v), Math.max(1, product.stock)) }))
   }
 
   const handleAddToCart = (product: Product) => {
     const distName = distributors.find((dist) => dist.id === product.distribuidoraId)?.companyName || product.distribuidoraId
-    const added = addToCart(product, distName, getQty(product.id))
+    const added = addToCart(product, distName, Math.min(getQty(product.id), Math.max(1, product.stock)))
     if (!added) return
     setJustAdded(prev => ({ ...prev, [product.id]: true }))
     setTimeout(() => setJustAdded(prev => ({ ...prev, [product.id]: false })), 2000)
@@ -103,7 +103,7 @@ export default function WishlistPage() {
                 distName={distributor?.companyName}
                 distDistance={distributor?.distance}
                 qty={getQty(product.id)}
-                onQtyChange={v => handleQtyChange(product.id, v)}
+                onQtyChange={v => handleQtyChange(product, v)}
                 onAdd={() => handleAddToCart(product)}
                 justAdded={justAdded[product.id] ?? false}
                 view="grid"

@@ -3,7 +3,7 @@ import { COLLECTIONS } from '../firebase/collections'
 import { mockDistribuidoras, mockDistributorCards } from '../mock-data'
 import { getDistanceKm, formatDistance, isWithinCoverage, normalizeCitySlug, normalizeTextSlug, buildLocationKey, hasRealCoordinates } from '../firebase/geo'
 import { normalizeLocationInput } from '../locations/location-utils'
-import type { Distribuidora, DistributorCard, CommerceContext } from '../types'
+import type { Distribuidora, DistributorCard, CommerceContext, DistributorCoverage } from '../types'
 
 // ─── Internal helper: aggregate ratings per distributor ────────────────────────
 
@@ -61,6 +61,11 @@ export interface FirestoreDistributor {
   /** Legacy key name from previous implementation. Prefer deliveryLocationKeys. */
   deliveryZoneKeys?: string[]
   deliveryHours?: string
+  coverage?: {
+    mode: 'specific' | 'province' | 'mixed'
+    provinces: string[]
+    locationKeys: string[]
+  }
   location?: {
     province?: string
     provinceSlug?: string
@@ -102,6 +107,7 @@ function toDistribuidora(doc: FirestoreDistributor & { id: string }): Distribuid
     deliveryLocationKeys: doc.deliveryLocationKeys ?? doc.deliveryZoneKeys ?? [],
     deliveryZoneKeys: doc.deliveryZoneKeys ?? [],
     deliveryHours: doc.deliveryHours ?? '',
+    coverage: doc.coverage as DistributorCoverage | undefined,
     location: {
       ...normalizedLocation,
       provinceSlug: doc.location?.provinceSlug || doc.provinceSlug || normalizedLocation.provinceSlug,
@@ -148,27 +154,48 @@ function matchesContextFn(context: CommerceContext | undefined) {
   const commerceLocationKey = context?.locationKey || context?.zoneKey
   const hasLocationKey = !!commerceLocationKey
   const hasCitySlug = !!(context?.citySlug)
+  // Extract province slug from the commerce's locationKey (format: "province:city")
+  const commerceProvinceSlug = context?.provinceSlug
+    || (commerceLocationKey ? commerceLocationKey.split(':')[0] : undefined)
 
   return (d: FirestoreDistributor & { id: string }): boolean => {
     const distLat = d.location?.lat ?? d.lat ?? null
     const distLng = d.location?.lng ?? d.lng ?? null
+
+    // 1. Real coords on both sides → Haversine
     if (commerceCoordsOk && hasRealCoordinates(distLat, distLng)) {
-      // Haversine: commerce must be within the distributor's coverage radius
       return isWithinCoverage(
         { lat: context!.lat!, lng: context!.lng! },
         { lat: distLat!, lng: distLng! },
         d.coverageRadiusKm
       )
     }
+
+    // 2. Structured coverage object (new)
+    if (d.coverage) {
+      const { mode, provinces, locationKeys } = d.coverage
+      if ((mode === 'province' || mode === 'mixed') && commerceProvinceSlug) {
+        if (provinces.includes(commerceProvinceSlug)) return true
+      }
+      if ((mode === 'specific' || mode === 'mixed') && hasLocationKey) {
+        if (locationKeys.includes(commerceLocationKey!)) return true
+      }
+      // If coverage object exists, don't fall through to legacy — avoids false positives
+      return false
+    }
+
+    // 3. Legacy: locationKey matching against deliveryLocationKeys
     if (hasLocationKey) {
       return getDistributorDeliveryLocationKeys(d).includes(commerceLocationKey!)
     }
+
+    // 4. Legacy: citySlug matching
     if (hasCitySlug) {
-      // Legacy locality matching: distributor must deliver to commerce's city.
       return (d.deliveryZones ?? []).some(
         z => normalizeCitySlug(z) === context!.citySlug
       ) || getDistributorLocationKey(d).endsWith(`:${context!.citySlug}`)
     }
+
     return true // no context → show all
   }
 }
@@ -253,8 +280,7 @@ export async function getDistributorCards(
 
     if (docs.length > 0) {
       const matchedDocs = docs.filter(matchesCtx)
-      const visibleDocs = matchedDocs.length > 0 ? matchedDocs : docs
-      const cards: DistributorCard[] = visibleDocs
+      const cards: DistributorCard[] = matchedDocs
         .map(d => {
           const r = ratings[d.id]
           return {
@@ -266,7 +292,7 @@ export async function getDistributorCards(
               .map(w => w[0])
               .join('')
               .toUpperCase(),
-            distance: matchedDocs.length > 0 || !hasContext ? computeDist(d) : 'Consultar cobertura',
+            distance: computeDist(d),
             deliveryInfo: d.deliveryTimeLabel ?? '',
             minOrder: d.minimumOrder,
             productCount: 0,
@@ -290,8 +316,9 @@ export async function getDistributorCards(
     // fall through to mock
   }
 
-  // Mock fallback — apply coord filter when we have real coords;
-  // for zone-matching or no context, return all mock cards (demo-friendly).
+  // Mock fallback — apply coord filter when we have real coords.
+  // If zone context is present but no coords, return empty (no verified coverage).
+  // No context at all → return all mock cards (onboarding/demo).
   if (coordsOk) {
     return mockDistribuidoras
       .filter(d =>
@@ -321,7 +348,8 @@ export async function getDistributorCards(
       .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance))
   }
 
-  // Zone-match or no context → return all mock cards
+  if (hasContext) return []
+
   return mockDistributorCards
 }
 
