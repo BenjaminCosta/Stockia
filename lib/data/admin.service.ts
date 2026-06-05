@@ -1,7 +1,7 @@
 // Admin data service — Firestore-first with realistic mock fallback.
 // Admin users have full read access via security rules (isAdmin()).
 
-import { getCollection, getDocumentsByField, updateDocument, createDocument } from '../firebase/firestore'
+import { getCollection, getDocument, getDocumentsByField, updateDocument, createDocument } from '../firebase/firestore'
 import { COLLECTIONS } from '../firebase/collections'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -20,6 +20,13 @@ export type AdminDistributor = {
   totalRevenue: number
   pendingCommission: number
   joinedAt: string
+  // Detail fields (populated by getAdminDistributorById)
+  razonSocial?: string
+  cuit?: string
+  minOrder?: number
+  deliveryTimeLabel?: string
+  deliveryHours?: string
+  commissionRate?: number
 }
 
 export type AdminCommerce = {
@@ -33,6 +40,9 @@ export type AdminCommerce = {
   totalOrders: number
   totalSpent: number
   joinedAt: string
+  // Detail fields (populated by getAdminCommerceById)
+  razonSocial?: string
+  cuit?: string
 }
 
 export type AdminOrder = {
@@ -84,19 +94,19 @@ export type AdminReview = {
 // ─── Mock fallback data ────────────────────────────────────────────────────────
 
 const MOCK_DISTRIBUTORS: AdminDistributor[] = [
-  { id: 'dist-1', companyName: 'Bebidas del Sur', email: 'ventas@bebidasdelsur.com', phone: '+54 11 4321-5678', address: 'Ruta 3 km 12', city: 'Lomas de Zamora', status: 'active', categories: ['Bebidas', 'Almacén'], totalOrders: 284, totalRevenue: 1_840_000, pendingCommission: 27_600, joinedAt: '2024-03-15' },
-  { id: 'dist-2', companyName: 'Lácteos San Martín', email: 'info@lacteossm.com', phone: '+54 11 5555-1234', address: 'Av. Galicia 900', city: 'Quilmes', status: 'active', categories: ['Lácteos', 'Almacén'], totalOrders: 156, totalRevenue: 920_000, pendingCommission: 0, joinedAt: '2024-04-02' },
-  { id: 'dist-3', companyName: 'Limpieza Total', email: 'contacto@limpiezatotal.ar', phone: '+54 11 4900-2222', address: 'Calle 14 N°320', city: 'Avellaneda', status: 'paused', categories: ['Limpieza'], totalOrders: 89, totalRevenue: 540_000, pendingCommission: 8_100, joinedAt: '2024-05-10' },
-  { id: 'dist-4', companyName: 'El Granero', email: 'hola@elgranero.com.ar', phone: '+54 11 4312-7890', address: 'Belgrano 456', city: 'Lanús', status: 'review', categories: ['Almacén', 'Lácteos'], totalOrders: 12, totalRevenue: 78_000, pendingCommission: 1_170, joinedAt: '2025-04-20' },
-  { id: 'dist-5', companyName: 'Distribuidora Norte', email: 'norte@dist.com', phone: '+54 11 3311-4455', address: 'Corrientes 2100', city: 'Berazategui', status: 'active', categories: ['Bebidas', 'Snacks'], totalOrders: 201, totalRevenue: 1_230_000, pendingCommission: 18_450, joinedAt: '2024-02-01' },
+  { id: 'dist-1', companyName: 'Bebidas del Sur', email: 'ventas@bebidasdelsur.com', phone: '+54 11 4321-5678', address: 'Ruta 3 km 12', city: 'Lomas de Zamora', status: 'active', categories: ['Bebidas', 'Almacén'], totalOrders: 284, totalRevenue: 1_840_000, pendingCommission: 27_600, joinedAt: '2024-03-15', razonSocial: 'Transportes del Sur S.R.L.', cuit: '30-71234567-9', minOrder: 15_000, deliveryTimeLabel: '48 horas hábiles', deliveryHours: 'Lunes a Viernes · 8 a 17hs', commissionRate: 0.015 },
+  { id: 'dist-2', companyName: 'Lácteos San Martín', email: 'info@lacteossm.com', phone: '+54 11 5555-1234', address: 'Av. Galicia 900', city: 'Quilmes', status: 'active', categories: ['Lácteos', 'Almacén'], totalOrders: 156, totalRevenue: 920_000, pendingCommission: 0, joinedAt: '2024-04-02', razonSocial: 'San Martín Productos Lácteos S.A.', cuit: '30-62345678-1', minOrder: 8_000, deliveryTimeLabel: '24 horas hábiles', deliveryHours: 'Lunes a Sábado · 7 a 16hs', commissionRate: 0.015 },
+  { id: 'dist-3', companyName: 'Limpieza Total', email: 'contacto@limpiezatotal.ar', phone: '+54 11 4900-2222', address: 'Calle 14 N°320', city: 'Avellaneda', status: 'paused', categories: ['Limpieza'], totalOrders: 89, totalRevenue: 540_000, pendingCommission: 8_100, joinedAt: '2024-05-10', razonSocial: 'Limpieza Total Distribuciones S.R.L.', cuit: '30-58901234-5', minOrder: 10_000, deliveryTimeLabel: '72 horas hábiles', deliveryHours: 'Lunes a Viernes · 9 a 17hs', commissionRate: 0.015 },
+  { id: 'dist-4', companyName: 'El Granero', email: 'hola@elgranero.com.ar', phone: '+54 11 4312-7890', address: 'Belgrano 456', city: 'Lanús', status: 'review', categories: ['Almacén', 'Lácteos'], totalOrders: 12, totalRevenue: 78_000, pendingCommission: 1_170, joinedAt: '2025-04-20', razonSocial: 'Granero Norte Distribuciones', cuit: '30-79012345-6', minOrder: 5_000, deliveryTimeLabel: '48 horas hábiles', deliveryHours: 'Lunes a Viernes · 8 a 17hs', commissionRate: 0.015 },
+  { id: 'dist-5', companyName: 'Distribuidora Norte', email: 'norte@dist.com', phone: '+54 11 3311-4455', address: 'Corrientes 2100', city: 'Berazategui', status: 'active', categories: ['Bebidas', 'Snacks'], totalOrders: 201, totalRevenue: 1_230_000, pendingCommission: 18_450, joinedAt: '2024-02-01', razonSocial: 'Distribuidora del Norte S.R.L.', cuit: '30-67890123-4', minOrder: 12_000, deliveryTimeLabel: '48 horas hábiles', deliveryHours: 'Lunes a Viernes · 8 a 18hs', commissionRate: 0.015 },
 ]
 
 const MOCK_COMMERCES: AdminCommerce[] = [
-  { id: 'com-1', businessName: 'Almacén Don Pedro', email: 'donpedro@gmail.com', phone: '+54 11 4567-8901', address: 'Av. Mitre 1234', city: 'Avellaneda', status: 'active', totalOrders: 48, totalSpent: 340_000, joinedAt: '2024-06-01' },
-  { id: 'com-2', businessName: 'Kiosco La Esquina', email: 'laesquina@hotmail.com', phone: '+54 11 3344-5566', address: 'Rivadavia 780', city: 'Lanús', status: 'active', totalOrders: 32, totalSpent: 190_000, joinedAt: '2024-07-14' },
-  { id: 'com-3', businessName: 'Minimercado Flores', email: 'flores.mini@gmail.com', phone: '+54 11 2233-1122', address: 'San Martín 450', city: 'Quilmes', status: 'active', totalOrders: 67, totalSpent: 520_000, joinedAt: '2024-05-22' },
-  { id: 'com-4', businessName: 'Super Don Carlos', email: 'doncarlos@live.com', phone: '+54 11 4412-9900', address: 'Corrientes 310', city: 'Avellaneda', status: 'review', totalOrders: 5, totalSpent: 22_000, joinedAt: '2025-03-10' },
-  { id: 'com-5', businessName: 'El Boliche de Ramón', email: 'ramon_boliche@gmail.com', phone: '+54 11 5566-7788', address: 'Belgrano 1200', city: 'Lomas de Zamora', status: 'blocked', totalOrders: 14, totalSpent: 88_000, joinedAt: '2024-09-05' },
+  { id: 'com-1', businessName: 'Almacén Don Pedro', email: 'donpedro@gmail.com', phone: '+54 11 4567-8901', address: 'Av. Mitre 1234', city: 'Avellaneda', status: 'active', totalOrders: 48, totalSpent: 340_000, joinedAt: '2024-06-01', razonSocial: 'García, Roberto Marcelo', cuit: '20-28741632-9' },
+  { id: 'com-2', businessName: 'Kiosco La Esquina', email: 'laesquina@hotmail.com', phone: '+54 11 3344-5566', address: 'Rivadavia 780', city: 'Lanús', status: 'active', totalOrders: 32, totalSpent: 190_000, joinedAt: '2024-07-14', razonSocial: 'Martínez, Laura Viviana', cuit: '27-32567891-4' },
+  { id: 'com-3', businessName: 'Minimercado Flores', email: 'flores.mini@gmail.com', phone: '+54 11 2233-1122', address: 'San Martín 450', city: 'Quilmes', status: 'active', totalOrders: 67, totalSpent: 520_000, joinedAt: '2024-05-22', razonSocial: 'Flores Distribuciones S.R.L.', cuit: '30-71890234-7' },
+  { id: 'com-4', businessName: 'Super Don Carlos', email: 'doncarlos@live.com', phone: '+54 11 4412-9900', address: 'Corrientes 310', city: 'Avellaneda', status: 'review', totalOrders: 5, totalSpent: 22_000, joinedAt: '2025-03-10', razonSocial: 'González, Carlos Alberto', cuit: '20-15678903-1' },
+  { id: 'com-5', businessName: 'El Boliche de Ramón', email: 'ramon_boliche@gmail.com', phone: '+54 11 5566-7788', address: 'Belgrano 1200', city: 'Lomas de Zamora', status: 'blocked', totalOrders: 14, totalSpent: 88_000, joinedAt: '2024-09-05', razonSocial: 'Rodríguez, Ramón Hugo', cuit: '20-22345678-9' },
 ]
 
 const MOCK_ORDERS: AdminOrder[] = [
@@ -150,7 +160,7 @@ function fsToDistributor(doc: Record<string, unknown> & { id: string }): AdminDi
     email: String(doc.email ?? ''),
     phone: String(doc.phone ?? ''),
     address: String(doc.address ?? ''),
-    city: String(doc.city ?? ''),
+    city: String(doc.city ?? (doc.location as any)?.city ?? ''),
     status: (doc.status as AdminDistributor['status']) ?? 'active',
     commissionStatus: (doc.commissionStatus as AdminDistributor['commissionStatus']) ?? undefined,
     categories: Array.isArray(doc.categories) ? doc.categories : [],
@@ -160,6 +170,12 @@ function fsToDistributor(doc: Record<string, unknown> & { id: string }): AdminDi
     joinedAt:
       (doc.createdAt as any)?.toDate?.()?.toISOString?.()?.slice(0, 10) ??
       (typeof doc.createdAt === 'string' && doc.createdAt ? doc.createdAt.slice(0, 10) : ''),
+    razonSocial: doc.razonSocial ? String(doc.razonSocial) : undefined,
+    cuit: doc.cuit ? String(doc.cuit) : undefined,
+    minOrder: doc.minOrder ? Number(doc.minOrder) : doc.minimumOrder ? Number(doc.minimumOrder) : undefined,
+    deliveryTimeLabel: doc.deliveryTimeLabel ? String(doc.deliveryTimeLabel) : undefined,
+    deliveryHours: doc.deliveryHours ? String(doc.deliveryHours) : undefined,
+    commissionRate: doc.commissionRate ? Number(doc.commissionRate) : undefined,
   }
 }
 
@@ -170,15 +186,17 @@ function fsToCommerce(doc: Record<string, unknown> & { id: string }): AdminComme
     (typeof rawCreatedAt === 'string' && rawCreatedAt ? rawCreatedAt.slice(0, 10) : '')
   return {
     id: doc.id,
-    businessName: String(doc.businessName ?? ''),
+    businessName: String(doc.businessName ?? doc.storeName ?? ''),
     email: String(doc.email ?? ''),
     phone: String(doc.phone ?? ''),
     address: String(doc.address ?? ''),
-    city: String(doc.city ?? ''),
+    city: String(doc.city ?? (doc.location as any)?.city ?? ''),
     status: (doc.status as AdminCommerce['status']) ?? 'active',
     totalOrders: 0,
     totalSpent: 0,
     joinedAt,
+    razonSocial: doc.razonSocial ? String(doc.razonSocial) : undefined,
+    cuit: doc.cuit ? String(doc.cuit) : undefined,
   }
 }
 
@@ -246,18 +264,78 @@ function fsToReview(doc: Record<string, unknown> & { id: string }): AdminReview 
 
 export async function getAdminDistributors(): Promise<AdminDistributor[]> {
   try {
-    const docs = await getCollection<Record<string, unknown>>(COLLECTIONS.distributors)
-    if (docs.length > 0) return docs.map(fsToDistributor)
+    const [docs, userDocs] = await Promise.all([
+      getCollection<Record<string, unknown>>(COLLECTIONS.distributors),
+      getCollection<Record<string, unknown>>(COLLECTIONS.users),
+    ])
+    if (docs.length > 0) {
+      const emailByUid: Record<string, string> = {}
+      userDocs.forEach(u => { emailByUid[u.id] = String(u.email ?? '') })
+      return docs.map(doc => {
+        const base = fsToDistributor(doc)
+        return { ...base, email: base.email || emailByUid[doc.id] || '' }
+      })
+    }
   } catch { /* fall through */ }
   return MOCK_DISTRIBUTORS
 }
 
 export async function getAdminCommerces(): Promise<AdminCommerce[]> {
   try {
-    const docs = await getCollection<Record<string, unknown>>(COLLECTIONS.commerces)
-    if (docs.length > 0) return docs.map(fsToCommerce)
+    const [docs, userDocs] = await Promise.all([
+      getCollection<Record<string, unknown>>(COLLECTIONS.commerces),
+      getCollection<Record<string, unknown>>(COLLECTIONS.users),
+    ])
+    if (docs.length > 0) {
+      const emailByUid: Record<string, string> = {}
+      userDocs.forEach(u => { emailByUid[u.id] = String(u.email ?? '') })
+      return docs.map(doc => {
+        const base = fsToCommerce(doc)
+        return { ...base, email: base.email || emailByUid[doc.id] || '' }
+      })
+    }
   } catch { /* fall through */ }
   return MOCK_COMMERCES
+}
+
+export async function getAdminDistributorById(id: string): Promise<AdminDistributor | null> {
+  try {
+    const [distDoc, userDoc, orderDocs, commDocs] = await Promise.all([
+      getDocument<Record<string, unknown>>(COLLECTIONS.distributors, id),
+      getDocument<Record<string, unknown>>(COLLECTIONS.users, id),
+      getDocumentsByField<Record<string, unknown>>(COLLECTIONS.orders, 'distributorId', '==', id),
+      getDocumentsByField<Record<string, unknown>>(COLLECTIONS.commissions, 'distributorId', '==', id),
+    ])
+    if (distDoc) {
+      const base = fsToDistributor(distDoc)
+      const email = base.email || String(userDoc?.email ?? '')
+      const totalOrders = orderDocs.length
+      const totalRevenue = orderDocs.reduce((sum, o) => sum + Number(o.total ?? 0), 0)
+      const pendingCommission = commDocs
+        .filter(c => c.status === 'pending' || c.status === 'overdue')
+        .reduce((sum, c) => sum + Number(c.commissionAmount ?? 0), 0)
+      return { ...base, email, totalOrders, totalRevenue, pendingCommission }
+    }
+  } catch { /* fall through */ }
+  return MOCK_DISTRIBUTORS.find(d => d.id === id) ?? null
+}
+
+export async function getAdminCommerceById(id: string): Promise<AdminCommerce | null> {
+  try {
+    const [commDoc, userDoc, orderDocs] = await Promise.all([
+      getDocument<Record<string, unknown>>(COLLECTIONS.commerces, id),
+      getDocument<Record<string, unknown>>(COLLECTIONS.users, id),
+      getDocumentsByField<Record<string, unknown>>(COLLECTIONS.orders, 'commerceId', '==', id),
+    ])
+    if (commDoc) {
+      const base = fsToCommerce(commDoc)
+      const email = base.email || String(userDoc?.email ?? '')
+      const totalOrders = orderDocs.length
+      const totalSpent = orderDocs.reduce((sum, o) => sum + Number(o.total ?? 0), 0)
+      return { ...base, email, totalOrders, totalSpent }
+    }
+  } catch { /* fall through */ }
+  return MOCK_COMMERCES.find(c => c.id === id) ?? null
 }
 
 export async function getAdminOrders(): Promise<AdminOrder[]> {

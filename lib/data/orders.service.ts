@@ -37,6 +37,7 @@ export interface FirestoreOrder {
   cancellationReason?: string
   commissionAmount?: number
   commissionGenerated: boolean
+  commissionError?: boolean
   stockReservationStatus?: 'reserved' | 'released'
   stockReservedAt?: unknown
   stockReleasedAt?: unknown
@@ -122,6 +123,7 @@ function toOrder(doc: FirestoreOrder & { id: string }): Order {
     cancellationReason: doc.cancellationReason,
     commissionGenerated: doc.commissionGenerated,
     commissionAmount: doc.commissionAmount,
+    commissionError: doc.commissionError,
     stockReservationStatus: doc.stockReservationStatus,
     stockReservedAt: doc.stockReservedAt ? toISOString(doc.stockReservedAt) : undefined,
     stockReleasedAt: doc.stockReleasedAt ? toISOString(doc.stockReleasedAt) : undefined,
@@ -369,38 +371,58 @@ export async function updateOrderStatus(
 /**
  * Internal helper — creates a commission record when an order is delivered.
  * Called automatically from updateOrderStatus.
- * TODO: replace with a Cloud Function trigger (Firestore onUpdate) for reliability.
+ * Retries up to 3 times with exponential backoff. If all attempts fail,
+ * sets commissionError: true on the order for manual reconciliation.
+ * TODO: replace with a Cloud Function trigger (Firestore onUpdate) for full atomicity.
  */
 async function generateCommissionForOrder(orderId: string): Promise<void> {
-  try {
-    const doc = await getDocument<FirestoreOrder>(COLLECTIONS.orders, orderId)
-    if (!doc || doc.commissionGenerated) return
+  const MAX_RETRIES = 3
 
-    // Use per-distributor rate if set, otherwise default 1.5%
-    const distDoc = await getDocument<Record<string, unknown>>(COLLECTIONS.distributors, doc.distributorId).catch(() => null)
-    const commissionRate = Number((distDoc as any)?.commissionRate ?? 0.015)
-    const commissionAmount = Math.round(doc.total * commissionRate * 100) / 100
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const orderDoc = await getDocument<FirestoreOrder>(COLLECTIONS.orders, orderId)
+      if (!orderDoc || orderDoc.commissionGenerated) return
 
-    const period = new Date().toISOString().slice(0, 7) // "YYYY-MM"
+      // Use per-distributor rate if set, otherwise default 1.5%
+      const distDoc = await getDocument<Record<string, unknown>>(COLLECTIONS.distributors, orderDoc.distributorId).catch(() => null)
+      const commissionRate = Number((distDoc as any)?.commissionRate ?? 0.015)
+      const commissionAmount = Math.round(orderDoc.total * commissionRate * 100) / 100
 
-    await createDocument(COLLECTIONS.commissions, {
-      distributorId: doc.distributorId,
-      distributorName: doc.distributorName ?? doc.distributorId,
-      orderId,
-      orderNumber: orderId.slice(0, 8).toUpperCase(),
-      orderTotal: doc.total,
-      commissionRate,
-      commissionAmount,
-      status: 'pending',
-      period,
-    })
+      const period = new Date().toISOString().slice(0, 7) // "YYYY-MM"
 
-    await updateDocument(COLLECTIONS.orders, orderId, {
-      commissionGenerated: true,
-      commissionAmount,
-    })
-  } catch (err) {
-    console.error('[orders.service] generateCommissionForOrder failed', err)
-    // Non-fatal — commission can be reconciled manually
+      await createDocument(COLLECTIONS.commissions, {
+        distributorId: orderDoc.distributorId,
+        distributorName: orderDoc.distributorName ?? orderDoc.distributorId,
+        orderId,
+        orderNumber: orderId.slice(0, 8).toUpperCase(),
+        orderTotal: orderDoc.total,
+        commissionRate,
+        commissionAmount,
+        status: 'pending',
+        period,
+      })
+
+      await updateDocument(COLLECTIONS.orders, orderId, {
+        commissionGenerated: true,
+        commissionAmount,
+        commissionError: false,
+      })
+
+      return // success
+    } catch (err) {
+      console.error(`[orders.service] generateCommissionForOrder attempt ${attempt}/${MAX_RETRIES} failed`, err)
+      if (attempt < MAX_RETRIES) {
+        // Exponential backoff: 500ms, 1000ms, 2000ms
+        await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt - 1)))
+      } else {
+        // All retries exhausted — mark order for manual reconciliation
+        try {
+          await updateDocument(COLLECTIONS.orders, orderId, { commissionError: true })
+        } catch {
+          // best-effort
+        }
+        console.error('[orders.service] generateCommissionForOrder: all retries failed, commissionError flag set on order', orderId)
+      }
+    }
   }
 }

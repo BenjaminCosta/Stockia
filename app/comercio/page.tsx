@@ -22,7 +22,8 @@ import { formatCurrency } from '@/lib/mock-data'
 import { useDistributors, useProducts, useCategories } from '@/hooks/use-data'
 import { Category, Comercio, DistributorCard as DistributorCardType, Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { DistribuidoraCard, distributorCovers } from '@/components/distribuidora-card'
+import { DistribuidoraCard, DistribuidoraCardCover, distributorCovers } from '@/components/distribuidora-card'
+import { InternalHeaderBackground } from '@/components/internal-header-background'
 
 const bannerImage =
   '/assets/banner-image.png'
@@ -281,10 +282,7 @@ function NearbyDistributorFeature({
   return (
     <Link href={`/comercio/distribuidora/${distributor.id}`} className="group block">
       <article className="grid overflow-hidden rounded-2xl border border-[#DFE1E8] bg-white shadow-[0_1px_3px_rgba(11,26,69,0.04),0_16px_44px_rgba(11,26,69,0.07)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[#C8D0DF] hover:shadow-[0_6px_18px_rgba(11,26,69,0.08),0_22px_56px_rgba(11,26,69,0.11)] md:grid-cols-[220px_1fr_auto] md:items-stretch md:rounded-3xl">
-        <div className={cn('relative min-h-24 overflow-hidden bg-gradient-to-br md:min-h-full', cover)}>
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,.22)_1px,transparent_1px),linear-gradient(45deg,rgba(255,255,255,.14)_1px,transparent_1px)] bg-size-[18px_18px,28px_28px] opacity-[0.18]" />
-          <div className="absolute -left-8 -top-8 h-24 w-24 rounded-full bg-white/8 blur-xl" />
-          <div className="absolute -right-6 -top-8 h-20 w-20 rounded-full bg-white/10 blur-sm md:-right-8 md:-top-10 md:h-28 md:w-28" />
+        <DistribuidoraCardCover cover={cover} className="min-h-24 md:min-h-full">
           <div className="relative flex h-full min-h-24 items-center justify-center p-4 md:min-h-32 md:p-5">
             <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-white/18 bg-white p-1 shadow-[0_18px_34px_rgba(0,0,0,0.18)] md:h-20 md:w-20 md:rounded-2xl md:p-1.5">
               <div className="flex h-full w-full items-center justify-center rounded-lg bg-lima-soft font-heading text-xl font-bold text-green-dark md:rounded-xl md:text-2xl">
@@ -292,7 +290,7 @@ function NearbyDistributorFeature({
               </div>
             </div>
           </div>
-        </div>
+        </DistribuidoraCardCover>
 
         <div className="min-w-0 p-3 md:p-5 lg:p-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -792,19 +790,7 @@ export default function ComercioHomePage() {
           )}
         </section>
 
-        <section className="relative overflow-hidden rounded-2xl bg-[#080f2b] px-3 py-6 text-white shadow-[0_18px_52px_rgba(8,15,43,0.18)] md:rounded-[1.75rem] md:px-6 md:py-9">
-          <div className="absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#0B1A45] opacity-80 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-12 -right-12 h-48 w-48 rounded-full bg-[#0B1A45]/60 blur-2xl pointer-events-none" />
-          <div className="absolute right-1/4 top-0 h-32 w-32 rounded-full bg-lima/[0.04] blur-3xl pointer-events-none" />
-          <svg className="absolute inset-0 h-full w-full opacity-[0.04] pointer-events-none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-            <circle cx="92%" cy="-10%" r="38%" fill="none" stroke="white" strokeWidth="32" />
-            <circle cx="8%" cy="110%" r="22%" fill="none" stroke="white" strokeWidth="20" />
-            <line x1="0" y1="100%" x2="100%" y2="0" stroke="white" strokeWidth="0.8" opacity="0.6" />
-            <line x1="0" y1="70%" x2="70%" y2="0" stroke="white" strokeWidth="0.5" opacity="0.4" />
-            <circle cx="15%" cy="30%" r="1.5" fill="white" opacity="0.5" />
-            <circle cx="22%" cy="55%" r="1" fill="white" opacity="0.3" />
-          </svg>
-          <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,1)_1px,transparent_1px)] bg-size-[18px_18px] opacity-[0.03] pointer-events-none" />
+        <InternalHeaderBackground as="section" className="rounded-2xl px-3 py-6 text-white shadow-[0_18px_52px_rgba(8,15,43,0.18)] md:rounded-[1.75rem] md:px-6 md:py-9">
           <div className="relative z-10 grid gap-5 lg:grid-cols-[0.85fr_1.15fr] lg:items-center md:gap-6">
             <div>
               <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-lima/[0.60] md:text-xs">
@@ -868,7 +854,7 @@ export default function ComercioHomePage() {
               </div>
             </div>
           </div>
-        </section>
+        </InternalHeaderBackground>
       </section>
     </main>
   )

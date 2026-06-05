@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { InternalHeaderBackground } from '@/components/internal-header-background'
 
 interface PageHeroProps {
   /** Etiqueta pequeña uppercase sobre el título */
@@ -28,34 +29,7 @@ export function PageHero({
   contentClassName,
 }: PageHeroProps) {
   return (
-    <div className={cn('bg-[#080f2b] px-4 md:px-8 pt-5 pb-10 md:pt-8 relative overflow-hidden', className)}>
-      {/* Layered decorative background */}
-
-      {/* Radial glow — top left */}
-      <div className="absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#0B1A45] blur-3xl opacity-80 pointer-events-none" />
-      {/* Radial glow — bottom right */}
-      <div className="absolute -bottom-12 -right-12 h-48 w-48 rounded-full bg-[#0B1A45]/60 blur-2xl pointer-events-none" />
-      {/* Lima accent glow — very subtle */}
-      <div className="absolute top-0 right-1/4 h-32 w-32 rounded-full bg-[#C8FF00]/4 blur-3xl pointer-events-none" />
-
-      {/* Geometric SVG overlay */}
-      <svg className="absolute inset-0 h-full w-full opacity-[0.04] pointer-events-none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-        {/* Large ring — top right */}
-        <circle cx="92%" cy="-10%" r="38%" fill="none" stroke="white" strokeWidth="32" />
-        {/* Medium ring — bottom left */}
-        <circle cx="8%" cy="110%" r="22%" fill="none" stroke="white" strokeWidth="20" />
-        {/* Diagonal route line */}
-        <line x1="0" y1="100%" x2="100%" y2="0" stroke="white" strokeWidth="0.8" opacity="0.6" />
-        <line x1="0" y1="70%" x2="70%" y2="0" stroke="white" strokeWidth="0.5" opacity="0.4" />
-        {/* Small dot grid — top-left quadrant */}
-        <circle cx="15%" cy="30%" r="1.5" fill="white" opacity="0.5" />
-        <circle cx="22%" cy="55%" r="1" fill="white" opacity="0.3" />
-        <circle cx="35%" cy="20%" r="1" fill="white" opacity="0.3" />
-      </svg>
-
-      {/* Subtle dot mesh */}
-      <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle,rgba(255,255,255,1)_1px,transparent_1px)] bg-size-[18px_18px] pointer-events-none" />
-
+    <InternalHeaderBackground className={cn('px-4 md:px-8 pt-5 pb-10 md:pt-8', className)}>
       <div className={cn('relative z-10 max-w-350 mx-auto w-full', contentClassName)}>
         {backHref && (
           <Link
@@ -84,6 +58,6 @@ export function PageHero({
 
         {children && <div className="mt-3 md:mt-4">{children}</div>}
       </div>
-    </div>
+    </InternalHeaderBackground>
   )
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { Clock, MapPin, Package, Star } from 'lucide-react'
 import { formatCurrency } from '@/lib/mock-data'
 import { DistributorCard } from '@/lib/types'
@@ -10,6 +11,21 @@ export const distributorCovers = [
   'from-[#2f3132] to-[#575e70]',
   'from-[#0B1A45] via-[#1a3a2e] to-[#2d4d1e]',
 ]
+
+interface DistribuidoraCardCoverProps {
+  cover: string
+  className?: string
+  children?: ReactNode
+}
+
+export function DistribuidoraCardCover({ cover, className, children }: DistribuidoraCardCoverProps) {
+  return (
+    <div className={cn('relative overflow-hidden bg-gradient-to-br', cover, className)}>
+      <div className="absolute inset-0 bg-[url('/assets/distri-bg.png')] bg-cover bg-center opacity-40 mix-blend-screen" />
+      {children}
+    </div>
+  )
+}
 
 interface DistribuidoraCardProps {
   distributor: DistributorCard
@@ -32,15 +48,7 @@ export function DistribuidoraCard({
   return (
     <Link href={`/comercio/distribuidora/${distributor.id}`} className="group block">
       <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_1px_3px_rgba(11,26,69,0.05),0_4px_14px_rgba(11,26,69,0.06)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[#DFE1E8] hover:shadow-[0_4px_8px_rgba(11,26,69,0.06),0_16px_40px_rgba(11,26,69,0.11)] md:rounded-3xl">
-        {/* Cover gradient */}
-        <div className={cn('relative h-14 overflow-hidden bg-gradient-to-br md:h-24', cover)}>
-          {/* Layered texture: fine grid + diagonal lines */}
-          <div className="absolute inset-0 opacity-[0.18] bg-[linear-gradient(135deg,rgba(255,255,255,.22)_1px,transparent_1px),linear-gradient(45deg,rgba(255,255,255,.14)_1px,transparent_1px)] bg-size-[18px_18px,28px_28px]" />
-          {/* Radial glow top-left */}
-          <div className="absolute -left-8 -top-8 h-24 w-24 rounded-full bg-white/8 blur-xl" />
-          {/* Decorative circle top-right */}
-          <div className="absolute -right-6 -top-8 h-20 w-20 rounded-full bg-white/10 blur-sm md:-right-8 md:-top-10 md:h-28 md:w-28" />
-        </div>
+        <DistribuidoraCardCover cover={cover} className="h-14 md:h-24" />
 
         <div className="relative px-2.5 pb-2.5 md:px-5 md:pb-5">
           {/* Floating logo */}

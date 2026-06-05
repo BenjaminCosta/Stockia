@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { use, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   AlertCircle, ArrowLeft, Check, Clock,
@@ -56,12 +56,32 @@ function PedidoDetail({ id }: { id: string }) {
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
+  const prevFSStatus = useRef<string | null>(null)
 
   useEffect(() => {
     if (order?.status === 'entregado') {
       getReviewByOrder(id).then(r => setHasReview(!!r))
     }
   }, [id, order?.status])
+
+  // Detect real-time status changes via onSnapshot and notify the user
+  useEffect(() => {
+    if (!order?.firestoreStatus) return
+    const current = order.firestoreStatus
+    if (prevFSStatus.current !== null && prevFSStatus.current !== current) {
+      const STATUS_CHANGE_LABELS: Record<string, string> = {
+        confirmed:           '✓ La distribuidora confirmó tu pedido',
+        preparing:           'Tu pedido está en preparación',
+        ready_or_on_the_way: 'Tu pedido está en camino',
+        delivered:           '¡Tu pedido fue entregado!',
+        cancelled:           'El pedido fue cancelado',
+        not_delivered:       'El pedido no pudo ser entregado',
+      }
+      const msg = STATUS_CHANGE_LABELS[current]
+      if (msg) setActionMessage(msg)
+    }
+    prevFSStatus.current = current
+  }, [order?.firestoreStatus])
 
   useEffect(() => {
     if (!actionMessage) return
@@ -93,7 +113,7 @@ function PedidoDetail({ id }: { id: string }) {
   )) as FirestoreOrderStatus
   const isCancelled   = firestoreStatus === 'cancelled' || firestoreStatus === 'not_delivered'
   const isConfirmed   = ['confirmed', 'preparing', 'ready_or_on_the_way', 'delivered'].includes(firestoreStatus)
-  const canCancel     = firestoreStatus === 'pending_confirmation'
+  const canCancel     = ['pending_confirmation', 'confirmed'].includes(firestoreStatus)
 
   const distInitials = order.distribuidoraName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const paymentMeta = getPaymentMethodConfig(order.paymentMethod)
@@ -126,7 +146,9 @@ function PedidoDetail({ id }: { id: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar pedido</AlertDialogTitle>
             <AlertDialogDescription>
-              Este pedido está pendiente de confirmación. Si lo cancelás, la distribuidora dejará de verlo como activo.
+              {firestoreStatus === 'pending_confirmation'
+                ? 'Este pedido está pendiente de confirmación. Si lo cancelás, la distribuidora dejará de verlo como activo.'
+                : 'La distribuidora ya aceptó el pedido. Si lo cancelás, el stock se devolverá. Te recomendamos avisarle primero.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -223,7 +245,11 @@ function PedidoDetail({ id }: { id: string }) {
             <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-red-100 bg-red-50 mb-4">
               <div>
                 <p className="text-sm font-semibold text-red-700">¿Necesitás cancelar?</p>
-                <p className="text-xs text-red-600 mt-0.5">Podés cancelarlo mientras esté pendiente.</p>
+                <p className="text-xs text-red-600 mt-0.5">
+                  {firestoreStatus === 'pending_confirmation'
+                    ? 'Podés cancelarlo mientras esté pendiente de confirmación.'
+                    : 'Podés cancelarlo antes de que la distribuidora inicie la preparación.'}
+                </p>
               </div>
               <button
                 type="button"

@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Phone, Package, Clock, CheckCircle, Truck, X, AlertTriangle, Handshake, CreditCard, BadgePercent, Star } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Package, Clock, CheckCircle, Truck, X, AlertTriangle, Handshake, CreditCard, BadgePercent, Star, FileDown } from 'lucide-react'
 import { formatCurrency, getEstimatedDeliveryDate } from '@/lib/mock-data'
 import { useOrder, useDistributor } from '@/hooks/use-data'
 import { getCommerceById, type FirestoreCommerce } from '@/lib/data/users.service'
@@ -15,6 +15,7 @@ import { FeedbackModal } from '@/components/FeedbackModal'
 import { useApp } from '@/lib/app-context'
 import type { Distribuidora } from '@/lib/types'
 import { OrderDetailSkeleton } from '@/components/ui/SkeletonCard'
+import { printRemito } from '@/lib/utils/remito'
 
 // ─── Status system ────────────────────────────────────────────────────────────
 
@@ -53,6 +54,8 @@ function toFirestoreStatus(localStatus: string): DistribStatus {
   if (localStatus === 'entregado') return 'delivered'
   if (localStatus === 'en_preparacion') return 'preparing'
   if (localStatus === 'pagado') return 'confirmed'
+  if (localStatus === 'cancelado') return 'cancelled'
+  if (localStatus === 'no_entregado') return 'not_delivered'
   return 'pending_confirmation'
 }
 
@@ -244,6 +247,13 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
         <span className={`text-[10px] md:text-xs px-3 py-1.5 rounded-full font-bold uppercase tracking-wide border shrink-0 ${STATUS_COLORS[currentFSStatus]}`}>
           {STATUS_LABELS[currentFSStatus]}
         </span>
+        <button
+          onClick={() => printRemito(order, comercioData, distribuidora as any)}
+          title="Descargar remito PDF"
+          className="h-9 w-9 rounded-xl bg-[#F7F8FA] border border-[#DFE1E8]/80 flex items-center justify-center text-[#5F6880] hover:bg-[#0B1A45] hover:text-[#C8FF00] hover:border-[#0B1A45] transition-all shrink-0"
+        >
+          <FileDown className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="px-4 md:px-8 mt-6 max-w-4xl mx-auto w-full space-y-4 md:space-y-6">
@@ -284,7 +294,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
         )}
 
         {/* Commission badge when delivered */}
-        {currentFSStatus === 'delivered' && (
+        {currentFSStatus === 'delivered' && !order.commissionError && (
           <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
             <BadgePercent className="h-5 w-5 text-emerald-600 shrink-0" />
             <div className="flex-1">
@@ -292,6 +302,17 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
               <p className="text-xs text-emerald-700 mt-0.5">{(commissionRate * 100).toFixed(1)}% sobre {formatCurrency(order.total)}</p>
             </div>
             <p className="font-heading font-bold text-emerald-700">{formatCurrency(commission)}</p>
+          </div>
+        )}
+
+        {/* Commission error — pending reconciliation */}
+        {currentFSStatus === 'delivered' && order.commissionError && (
+          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+            <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-800 text-sm">Comisión pendiente de revisión</p>
+              <p className="text-xs text-amber-700 mt-0.5">Hubo un error al registrar la comisión automáticamente. El equipo de Stockia lo resolverá en breve.</p>
+            </div>
           </div>
         )}
 
@@ -407,6 +428,17 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
               <span className="font-heading font-bold text-2xl text-primary">{formatCurrency(order.total)}</span>
             </div>
           </div>
+        </div>
+
+        {/* Remito PDF */}
+        <div>
+          <button
+            onClick={() => printRemito(order, comercioData, distribuidora as any)}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border border-[#DFE1E8] text-[#5F6880] font-semibold text-sm hover:bg-[#0B1A45] hover:text-[#C8FF00] hover:border-[#0B1A45] transition-all"
+          >
+            <FileDown className="h-4 w-4" />
+            Descargar remito PDF
+          </button>
         </div>
 
         {/* Calificar comercio — shown when order is terminal */}

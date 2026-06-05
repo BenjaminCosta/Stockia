@@ -219,9 +219,10 @@ export default function BuscarPage() {
   const commerceContext = loc
     ? { lat: loc.lat ?? undefined, lng: loc.lng ?? undefined, locationKey: loc.locationKey, citySlug: loc.citySlug }
     : undefined
-  const { data: products, loading: isLoading } = useProducts()
-  const { data: distributors } = useDistributors(commerceContext)
+  const { data: products, loading: productsLoading } = useProducts()
+  const { data: distributors, loading: distributorsLoading } = useDistributors(commerceContext)
   const { data: allDistributors } = useDistributors()
+  const isLoading = productsLoading || (!!commerceContext && distributorsLoading)
   const { data: allCategories } = useCategories()
 
   const updateSearchParams = useCallback((updates: Record<string, string | null>) => {
@@ -271,7 +272,14 @@ export default function BuscarPage() {
       .then(entries => setResolvedDistributorNames(prev => Object.assign({ ...prev }, Object.fromEntries(entries))))
   }, [products, distributorMap, allDistributorMap])
 
-  const catalogProducts = useMemo(() => products.filter((p: Product) => p.status !== 'paused'), [products])
+  const catalogProducts = useMemo(() => {
+    const base = products.filter((p: Product) => p.status !== 'paused')
+    // Apply zone filter once distributors have loaded: only show products from distributors in the comercio's zone
+    if (commerceContext && !distributorsLoading && distributors.length > 0) {
+      return base.filter((p: Product) => distributorMap.has(p.distribuidoraId))
+    }
+    return base
+  }, [products, distributors, distributorMap, distributorsLoading, commerceContext])
 
   const normalizedQuery = debouncedQuery.trim()
   const normalizedSearch = normalizedQuery.toLowerCase()
@@ -462,8 +470,8 @@ export default function BuscarPage() {
   return (
     <div className="flex flex-col min-h-screen bg-[#F7F8FA]">
 
-      {/* Sticky sub-header */}
-      <div className="sticky top-12 z-30 bg-white border-b border-[#DFE1E8] shadow-[0_1px_4px_rgba(11,26,69,0.05)] lg:hidden">
+      {/* Mobile sub-header */}
+      <div className="bg-white border-b border-[#DFE1E8] shadow-[0_1px_4px_rgba(11,26,69,0.05)] lg:hidden">
         <div className="max-w-350 mx-auto px-3 py-3 md:px-8">
           <div className="flex items-center gap-3">
             <SearchInput

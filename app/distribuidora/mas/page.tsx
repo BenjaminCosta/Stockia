@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, CircleUserRound, LogOut, MapPinned, ShieldCheck, Star } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
+import { InternalHeaderBackground } from '@/components/internal-header-background'
 
 const moreItems = [
   {
@@ -40,23 +41,23 @@ export default function DistribuidoraMasPage() {
 
   return (
     <div className="min-h-screen bg-[#F4F5F7]">
-      <div className="bg-[#0B1A45] px-5 pt-6 pb-10 lg:hidden">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="h-11 w-11 rounded-xl bg-[rgba(200,255,0,0.12)] flex items-center justify-center shrink-0">
+      <InternalHeaderBackground className="px-5 pt-7 pb-12 shadow-[0_18px_52px_rgba(8,15,43,0.18)] lg:hidden">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
             <ShieldCheck className="h-6 w-6 text-[#C8FF00]" />
           </div>
-          <div>
-            <p className="text-[11px] font-bold text-[#C8FF00] uppercase tracking-widest">Panel Distribuidora</p>
-            <h1 className="text-lg font-bold text-white leading-tight">Más opciones</h1>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C8FF00]/60">Panel Distribuidora</p>
+            <h1 className="font-heading text-xl font-bold leading-tight tracking-tight text-white">Más opciones</h1>
           </div>
         </div>
-        <div className="bg-white/8 border border-white/5 rounded-xl px-4 py-3">
-          <p className="text-[11px] text-white/40 font-medium uppercase tracking-wider mb-0.5">Cuenta activa</p>
-          <p className="text-sm font-semibold text-white">Gestión de la distribuidora</p>
+        <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+          <p className="mb-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Cuenta activa</p>
+          <p className="text-sm font-semibold text-white/90">Gestión de la distribuidora</p>
         </div>
-      </div>
+      </InternalHeaderBackground>
 
-      <div className="px-4 -mt-4 pb-8 lg:mt-0 lg:mx-auto lg:max-w-2xl lg:pt-8">
+      <div className="relative z-10 px-4 -mt-7 pb-8 lg:mt-0 lg:mx-auto lg:max-w-2xl lg:pt-8">
         <div className="overflow-hidden rounded-2xl border border-[#DFE1E8]/80 bg-white shadow-[0_1px_3px_rgba(11,26,69,0.05)]">
           <div className="border-b border-[#DFE1E8]/60 px-4 py-2.5">
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">Gestión</p>

@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Search, ShieldOff, ShieldCheck } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Search, ShieldOff, ShieldCheck, ChevronRight } from 'lucide-react'
 import { getAdminCommerces, adminSetCommerceStatus, type AdminCommerce } from '@/lib/data/admin.service'
 import { formatCurrency } from '@/lib/utils'
 import { AdminListSkeleton } from '@/components/ui/SkeletonCard'
@@ -13,6 +14,7 @@ const statusConfig = {
 }
 
 export default function AdminComerciosPage() {
+  const router = useRouter()
   const [commerces, setCommerces] = useState<AdminCommerce[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -86,7 +88,11 @@ export default function AdminComerciosPage() {
           <div className="text-center py-12 text-gray-400 text-sm">Sin resultados</div>
         )}
         {filtered.map(c => (
-          <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div
+            key={c.id}
+            onClick={() => router.push(`/admin/comercios/${c.id}`)}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 cursor-pointer hover:border-gray-200 hover:shadow-md transition-all"
+          >
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-gray-900 truncate">{c.businessName}</p>
@@ -115,7 +121,7 @@ export default function AdminComerciosPage() {
                 </div>
               </div>
               <button
-                onClick={() => toggleBlock(c.id, c.status)}
+                onClick={e => { e.stopPropagation(); toggleBlock(c.id, c.status) }}
                 title={c.status === 'blocked' ? 'Desbloquear' : 'Bloquear cuenta'}
                 className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${c.status === 'blocked' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}
               >
@@ -143,7 +149,11 @@ export default function AdminComerciosPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.map(c => (
-                <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr
+                  key={c.id}
+                  onClick={() => router.push(`/admin/comercios/${c.id}`)}
+                  className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                >
                   <td className="px-5 py-4">
                     <div>
                       <p className="font-semibold text-gray-900">{c.businessName}</p>
@@ -162,13 +172,16 @@ export default function AdminComerciosPage() {
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <button
-                      onClick={() => toggleBlock(c.id, c.status)}
-                      title={c.status === 'blocked' ? 'Desbloquear' : 'Bloquear cuenta'}
-                      className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${c.status === 'blocked' ? 'text-gray-400 hover:bg-green-50 hover:text-green-600' : 'text-gray-400 hover:bg-red-50 hover:text-red-600'}`}
-                    >
-                      {c.status === 'blocked' ? <ShieldCheck className="h-4 w-4" /> : <ShieldOff className="h-4 w-4" />}
-                    </button>
+                    <div className="flex items-center gap-1 justify-end">
+                      <button
+                        onClick={e => { e.stopPropagation(); toggleBlock(c.id, c.status) }}
+                        title={c.status === 'blocked' ? 'Desbloquear' : 'Bloquear cuenta'}
+                        className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${c.status === 'blocked' ? 'text-gray-400 hover:bg-green-50 hover:text-green-600' : 'text-gray-400 hover:bg-red-50 hover:text-red-600'}`}
+                      >
+                        {c.status === 'blocked' ? <ShieldCheck className="h-4 w-4" /> : <ShieldOff className="h-4 w-4" />}
+                      </button>
+                      <ChevronRight className="h-4 w-4 text-gray-300" />
+                    </div>
                   </td>
                 </tr>
               ))}

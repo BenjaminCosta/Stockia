@@ -15,6 +15,7 @@ import { useProducts, useDistributor } from '@/hooks/use-data'
 import { getReviewsByDistributor, getDistributorRatingSummary } from '@/lib/data/reviews.service'
 import { DistributorRatingSummary, Review } from '@/lib/types'
 import { ProductDetailSkeleton, SkeletonBlock } from '@/components/ui/SkeletonCard'
+import { InternalHeaderBackground } from '@/components/internal-header-background'
 
 function ProductoDetail({ id }: { id: string }) {
   const { addToCart, cart } = useApp()
@@ -198,8 +199,7 @@ function ProductoDetail({ id }: { id: string }) {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-10 md:pb-12">
       <div className="mx-auto w-full max-w-[1400px] px-3 py-4 md:px-6 md:py-6">
-        <section className="relative overflow-hidden rounded-3xl bg-[#080f2b] px-5 py-5 text-white shadow-[0_18px_52px_rgba(8,15,43,0.14)] md:px-8 md:py-7">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_12%,rgba(200,255,0,0.12),transparent_30%),linear-gradient(90deg,rgba(11,26,69,0.98)_0%,rgba(8,15,43,0.96)_100%)]" />
+        <InternalHeaderBackground as="section" className="rounded-3xl px-5 py-5 text-white shadow-[0_18px_52px_rgba(8,15,43,0.14)] md:px-8 md:py-7">
           <div className="relative">
             <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold text-white/62">
               <Link href="/comercio" className="hover:text-white">Inicio</Link>
@@ -234,7 +234,7 @@ function ProductoDetail({ id }: { id: string }) {
               </Link>
             </div>
           </div>
-        </section>
+        </InternalHeaderBackground>
 
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
           <div className="space-y-5">

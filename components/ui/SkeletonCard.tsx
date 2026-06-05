@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { InternalHeaderBackground } from '@/components/internal-header-background'
 
 function SkeletonBlock({ className }: { className?: string }) {
   return (
@@ -325,7 +326,7 @@ export function ProductDetailSkeleton() {
   return (
     <div className="min-h-screen bg-background pb-44 md:pb-12" aria-busy="true" aria-label="Cargando producto">
       <div className="mx-auto max-w-6xl md:p-8">
-        <div className="h-56 rounded-b-3xl bg-[#080f2b] md:mt-4 md:h-64 md:rounded-3xl" />
+        <InternalHeaderBackground className="h-56 rounded-b-3xl md:mt-4 md:h-64 md:rounded-3xl" />
         <div className="relative z-10 -mt-8 grid grid-cols-1 gap-6 px-4 md:-mt-12 md:grid-cols-12 md:px-8">
           <div className="space-y-6 md:col-span-8">
             <div className="rounded-3xl border border-[#DFE1E8] bg-white p-6 shadow-md md:p-8">
@@ -369,7 +370,7 @@ export function DistributorDetailSkeleton() {
       <div className="mx-auto max-w-7xl md:p-6">
         <div className="md:flex md:items-start md:gap-8">
           <div className="flex-1">
-            <div className="h-56 rounded-b-3xl bg-[#080f2b] md:h-64 md:rounded-3xl" />
+            <InternalHeaderBackground className="h-56 rounded-b-3xl md:h-64 md:rounded-3xl" />
 
             <div className="px-4 md:px-8 md:mt-8">
               <div className="mt-6 flex gap-2 overflow-hidden md:mt-0">

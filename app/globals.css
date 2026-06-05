@@ -439,6 +439,16 @@
     0 0 0 1px rgba(11,26,69,0.04);
 }
 
+.stockia-internal-header-bg {
+  background-color: #080f2b;
+  background-image:
+    linear-gradient(90deg, rgba(8, 15, 43, 0.88) 0%, rgba(8, 15, 43, 0.72) 48%, rgba(8, 15, 43, 0.58) 100%),
+    url('/assets/internal-header.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
 .shadow-card-hover {
   box-shadow:
     0 2px 4px rgba(11,26,69,0.05),

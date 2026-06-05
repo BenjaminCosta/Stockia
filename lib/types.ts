@@ -178,6 +178,7 @@ export interface Order {
   cancellationReason?: string
   commissionGenerated?: boolean
   commissionAmount?: number
+  commissionError?: boolean
   stockReservationStatus?: 'reserved' | 'released'
   stockReservedAt?: string
   stockReleasedAt?: string
