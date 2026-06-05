@@ -71,8 +71,9 @@ export default function ProductosPage() {
   // ─── Import ───────────────────────────────────────────────────────────────
 
   const handleImport = async (rows: ParsedProductRow[]): Promise<ImportResult> => {
-    // Obtener productos existentes para detectar duplicados por SKU
+    // Obtener productos existentes para detectar duplicados por id interno o SKU
     const existing = await getProductsByDistributorAll(distributorId).catch(() => [])
+    const existingIdSet = new Set(existing.map(p => p.id))
     const skuMap = new Map<string, string>() // sku → productId
     for (const p of existing) {
       if (p.sku) skuMap.set(p.sku.trim().toLowerCase(), p.id)
@@ -93,7 +94,13 @@ export default function ProductosPage() {
           status: row.estado,
         }
 
-        // Si tiene SKU y ya existe → actualizar (sin tocar imageUrl)
+        // 1. Match por id_interno (producto exportado desde esta plataforma)
+        if (row.id_interno && existingIdSet.has(row.id_interno)) {
+          const { distributorId: _d, ...updateData } = productData
+          return updateProduct(row.id_interno, updateData)
+        }
+
+        // 2. Match por SKU (archivo externo o sin id_interno)
         const skuKey = row.sku?.trim().toLowerCase()
         const existingId = skuKey ? skuMap.get(skuKey) : undefined
         if (existingId) {
@@ -101,6 +108,7 @@ export default function ProductosPage() {
           return updateProduct(existingId, updateData)
         }
 
+        // 3. Producto nuevo
         return createProduct(productData)
       })
     )

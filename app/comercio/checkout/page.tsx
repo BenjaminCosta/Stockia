@@ -11,6 +11,7 @@ import { useApp } from '@/lib/app-context'
 import { formatCurrency, getEstimatedDeliveryDate } from '@/lib/mock-data'
 import { useDistributor } from '@/hooks/use-data'
 import { createOrder, StockValidationError, type StockValidationIssue } from '@/lib/data/orders.service'
+import type { FirebaseError } from 'firebase/app'
 import type { OrderItem } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -205,7 +206,12 @@ export default function CheckoutPage() {
           }
         })
       } else {
-        setOrderError('No pudimos confirmar el pedido. Revisá tu conexión e intentá de nuevo.')
+        const isPermission = (err as FirebaseError)?.code === 'permission-denied'
+        setOrderError(
+          isPermission
+            ? 'No se pudo crear el pedido por un error de permisos. Por favor, contactá a soporte.'
+            : 'No pudimos confirmar el pedido. Revisá tu conexión e intentá de nuevo.'
+        )
       }
     } finally {
       setIsPlacingOrder(false)

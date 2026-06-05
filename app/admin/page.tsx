@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { TrendingUp, Truck, Store, ClipboardList, Receipt, AlertTriangle, ChevronRight, PauseCircle, XCircle } from 'lucide-react'
 import { getAdminDashboardStats } from '@/lib/data/admin.service'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/utils'
+import { AdminDashboardSkeleton } from '@/components/ui/SkeletonCard'
 
 type Stats = Awaited<ReturnType<typeof getAdminDashboardStats>>
 
@@ -35,13 +36,7 @@ export default function AdminDashboard() {
     getAdminDashboardStats().then(setStats)
   }, [])
 
-  if (!stats) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-screen">
-        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      </div>
-    )
-  }
+  if (!stats) return <AdminDashboardSkeleton />
 
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">

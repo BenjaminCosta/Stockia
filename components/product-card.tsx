@@ -127,7 +127,7 @@ function ProductCardComponent({
 
   const imgSizes = view === 'list'
     ? '64px'
-    : '(max-width: 640px) calc(50vw - 24px), (max-width: 1024px) 200px, 180px'
+    : '(max-width: 640px) calc(50vw - 16px), (max-width: 1024px) 200px, 180px'
 
   const productImg = (sizeClass: string, rounded = 'rounded-xl') => (
     <div className={cn('relative flex items-center justify-center bg-white overflow-hidden', rounded, sizeClass)}>
@@ -290,13 +290,27 @@ function ProductCardComponent({
         <Link href={`/comercio/producto/${product.id}`} className="block">
           {productImg('aspect-square w-full', 'rounded-none')}
         </Link>
-        {distributorLogo('absolute bottom-2 left-2 z-10 h-8 w-8 p-0.5 md:h-9 md:w-9')}
+        {distributorLogo('absolute bottom-2 left-2 z-10 h-7 w-7 p-0.5 md:h-9 md:w-9')}
+        <button
+          onClick={onAdd}
+          disabled={outOfStock}
+          aria-label={justAdded ? 'Producto agregado' : 'Agregar al carrito'}
+          className={cn(
+            'absolute bottom-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full md:hidden',
+            'border border-white/85 bg-white text-[#0B1A45] shadow-[0_10px_24px_rgba(8,15,43,0.18)] ring-1 ring-[#0B1A45]/5',
+            'transition-[transform,background-color,color] duration-150 active:scale-[0.94]',
+            justAdded && 'bg-[#F1FFD1] text-[#4A662E] ring-[#C8FF00]/45',
+            outOfStock && 'cursor-not-allowed opacity-45',
+          )}
+        >
+          {justAdded ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-4 w-4" />}
+        </button>
       </div>
 
       {/* Separator */}
-      <div className="h-px mx-3 bg-linear-to-r from-transparent via-gray-200 to-transparent shadow-[0_1px_6px_rgba(11,26,69,0.07)]" />
+      <div className="h-px mx-2 bg-linear-to-r from-transparent via-gray-200 to-transparent shadow-[0_1px_6px_rgba(11,26,69,0.07)] md:mx-3" />
 
-      <div className="flex flex-col flex-1 p-2.5 pt-2 md:p-4 md:pt-3">
+      <div className="flex flex-col flex-1 p-2 pt-1.5 md:p-4 md:pt-3">
         <Link href={`/comercio/producto/${product.id}`}>
           <h3 className="font-bold text-xs md:text-sm text-[#0B1A45] leading-snug line-clamp-2 mb-0.5 hover:underline">
             {product.name}
@@ -312,27 +326,13 @@ function ProductCardComponent({
           )}
         </p>
 
-        <div className="mb-2 md:mb-4">
+        <div className="mb-0 md:mb-4">
           <span className="font-bold text-base md:text-xl text-[#0B1A45]">{formatCurrency(product.price)}</span>
         </div>
 
-        <div className="mt-auto flex items-center gap-2">
-          {/* Mobile: compact + button */}
-          <button
-            onClick={onAdd}
-            disabled={outOfStock}
-            className={cn(
-              'md:hidden ml-auto h-8 w-8 rounded-xl flex items-center justify-center transition-all shrink-0',
-              justAdded
-                ? 'bg-[rgba(137,179,23,0.15)] text-[#4A662E]'
-                : 'bg-[#F7F8FA] text-[#0B1A45] active:scale-[0.95]',
-              outOfStock && 'opacity-40 cursor-not-allowed',
-            )}
-          >
-            {justAdded ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          </button>
+        <div className="mt-auto hidden items-center gap-2 md:flex">
           {/* Desktop: stepper + full Agregar button */}
-          <div className="hidden md:flex items-center gap-2 w-full">
+          <div className="flex items-center gap-2 w-full">
             <Stepper qty={qty} onChange={onQtyChange} max={Math.max(1, product.stock)} disabled={outOfStock} />
             <button
               onClick={onAdd}

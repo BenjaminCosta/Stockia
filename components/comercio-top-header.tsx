@@ -109,13 +109,14 @@ export function ComercioTopHeader() {
   const activeCategoria = searchParams.get('categoria')
   const activeOferta = searchParams.get('oferta') === '1'
   const [searchQuery, setSearchQuery] = useState(currentQuery)
-  const { currentUser, getCartItemCount, getCartTotal, wishlist, commerceOrders } = useApp()
+  const { currentUser, getCartItemCount, getCartTotal, removeFromCart, cart, wishlist, commerceOrders } = useApp()
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
   const storeName = comercio?.storeName || 'Mi comercio'
   const locationCity = [comercio?.location?.city, comercio?.location?.province].filter(Boolean).join(', ') || 'Argentina'
   const initials = storeName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const cartItemCount = getCartItemCount()
   const cartTotal = getCartTotal()
+  const cartPreviewItems = cart?.items.slice(-3).reverse() ?? []
   const wishlistCount = wishlist.length
   const recentNotifications = useMemo(() => [...commerceOrders]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -360,21 +361,120 @@ export function ComercioTopHeader() {
             )}
           </Link>
 
-          {/* Cart */}
+          {/* Cart — desktop preview */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  'relative hidden h-10 items-center justify-center gap-2 rounded-xl bg-white/10 px-3.5 text-white transition hover:bg-white/15 lg:flex',
+                  cartItemCount > 0 && 'animate-cart-pulse'
+                )}
+                aria-label={`Carrito con ${cartItemCount} productos`}
+              >
+                <ShoppingCart size={18} />
+                <span className="text-sm font-bold">{formatCurrency(cartTotal)}</span>
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#C8FF00] px-1 text-[10px] font-bold text-[#0B1A45] ring-2 ring-[#0B1A45]">
+                    {cartItemCount}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              side="bottom"
+              sideOffset={12}
+              className="hidden w-96 overflow-hidden rounded-[26px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-0 text-slate-950 shadow-[0_22px_64px_rgba(15,23,42,0.16)] lg:block"
+            >
+              <div className="relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-22 bg-[radial-gradient(circle_at_top_right,rgba(200,255,0,0.24),transparent_52%),linear-gradient(180deg,rgba(241,245,249,0.96)_0%,rgba(255,255,255,0)_100%)]" />
+                <div className="relative border-b border-slate-200 px-4 pb-4 pt-4.5">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7c31]">Pedido en curso</p>
+                  <h3 className="mt-1.5 font-heading text-2xl font-bold tracking-tight text-[#0B1A45]">Carrito</h3>
+                  <p className="mt-1.5 max-w-md text-[13px] leading-5 text-slate-600">
+                    Revisá lo agregado sin salir de la página. Cuando quieras cerrar el pedido, entrá al carrito completo.
+                  </p>
+                </div>
+
+                <div className="relative space-y-2.5 px-3 py-3">
+                  {cartItemCount === 0 || !cart ? (
+                    <div className="rounded-3xl border border-dashed border-slate-200 bg-white px-5 py-8 text-center">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-lime-50 text-[#7ea105]">
+                        <ShoppingCart className="h-5 w-5" />
+                      </div>
+                      <h3 className="mt-3 font-heading text-lg font-bold text-[#0B1A45]">Tu carrito está vacío</h3>
+                      <p className="mx-auto mt-2 max-w-xs text-[13px] leading-5 text-slate-600">
+                        Agregá productos desde el catálogo para armar tu pedido mayorista.
+                      </p>
+                    </div>
+                  ) : (
+                    cartPreviewItems.map(({ product, quantity }) => (
+                      <div
+                        key={product.id}
+                        className="group flex items-start gap-3 rounded-3xl border border-lime-200 bg-white px-3 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300"
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0B1A45] text-white shadow-[0_8px_18px_rgba(11,26,69,0.14)]">
+                          <Package className="h-4.5 w-4.5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-bold text-[#0B1A45]">{product.name}</p>
+                            <span className="shrink-0 rounded-full bg-[#F1FFD1] px-2 py-0.5 text-[11px] font-bold text-[#0B1A45]">
+                              {quantity}x
+                            </span>
+                          </div>
+                          <p className="mt-1 truncate text-[13px] leading-5 text-slate-600">
+                            {cart.distribuidoraName || 'Distribuidora'} · {formatCurrency(product.price * quantity)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(product.id)}
+                          aria-label={`Quitar ${product.name}`}
+                          className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-500"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="relative flex items-center justify-between gap-3 border-t border-slate-200 bg-white/80 px-3 py-3.5">
+                  <div className="min-w-0">
+                    <p className="text-[13px] text-slate-500">
+                      {cartItemCount > 0 ? `${cartItemCount} ${cartItemCount === 1 ? 'producto' : 'productos'}` : 'Sin productos'}
+                    </p>
+                    {cartItemCount > 0 && (
+                      <p className="truncate text-sm font-bold text-[#0B1A45]">{formatCurrency(cartTotal)}</p>
+                    )}
+                  </div>
+                  <Link
+                    href="/comercio/carrito"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B1A45] px-3.5 py-2 text-[13px] font-bold text-white transition-[transform,background-color] duration-150 hover:scale-[1.01] hover:bg-[#142657]"
+                  >
+                    Ver todo
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Cart — mobile */}
           <Link
             href="/comercio/carrito"
             className={cn(
-              'relative flex h-9 lg:h-10 px-2.5 lg:px-3.5 rounded-xl bg-white/10 hover:bg-white/15 items-center justify-center gap-2 transition',
+              'relative flex h-9 items-center justify-center gap-2 rounded-xl bg-white/10 px-2.5 transition hover:bg-white/15 lg:hidden',
               cartItemCount > 0 && 'animate-cart-pulse'
             )}
             aria-label={`Carrito con ${cartItemCount} productos`}
           >
             <ShoppingCart size={18} />
-            <span className="text-sm font-bold">
-              {formatCurrency(cartTotal)}
-            </span>
+            <span className="text-sm font-bold">{formatCurrency(cartTotal)}</span>
             {cartItemCount > 0 && (
-              <span className="absolute -top-1 -right-1 h-4.5 min-w-4.5 px-1 rounded-full bg-[#C8FF00] text-[#0B1A45] text-[10px] font-bold flex items-center justify-center ring-2 ring-[#0B1A45]">
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#C8FF00] px-0.5 text-[9px] font-bold text-[#0B1A45] ring-2 ring-[#0B1A45]">
                 {cartItemCount}
               </span>
             )}

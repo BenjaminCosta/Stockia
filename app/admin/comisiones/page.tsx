@@ -1,15 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Ban, AlertTriangle, Lock, Unlock, ChevronDown } from 'lucide-react'
+import { CheckCircle2, Ban, AlertTriangle, Lock, Unlock, ChevronDown, RotateCcw } from 'lucide-react'
 import {
   getAdminCommissions,
+  getAdminDistributors,
   adminMarkCommissionPaid,
   adminWaiveCommission,
+  adminRevertCommission,
   adminSetDistributorCommissionStatus,
   type AdminCommission,
 } from '@/lib/data/admin.service'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/utils'
+import { AdminCommissionSkeleton } from '@/components/ui/SkeletonCard'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -72,8 +75,14 @@ export default function AdminComisionesPage() {
   const [distBlockStatus, setDistBlockStatus] = useState<Record<string, 'ok' | 'overdue' | 'blocked'>>({})
 
   useEffect(() => {
-    getAdminCommissions().then(data => {
+    Promise.all([getAdminCommissions(), getAdminDistributors()]).then(([data, distributors]) => {
       setCommissions(data)
+      // Initialize block status from Firestore distributor data so it persists across refreshes
+      const initialBlockStatus: Record<string, 'ok' | 'overdue' | 'blocked'> = {}
+      distributors.forEach(d => {
+        if (d.commissionStatus) initialBlockStatus[d.id] = d.commissionStatus as 'ok' | 'overdue' | 'blocked'
+      })
+      setDistBlockStatus(initialBlockStatus)
       setLoading(false)
     })
   }, [])
@@ -105,6 +114,13 @@ export default function AdminComisionesPage() {
     }
   }
 
+  const revert = async (id: string, prevStatus: AdminCommission['status']) => {
+    setCommissions(prev => prev.map(c => c.id === id ? { ...c, status: 'pending' as const } : c))
+    try { await adminRevertCommission(id) } catch {
+      setCommissions(prev => prev.map(c => c.id === id ? { ...c, status: prevStatus } : c))
+    }
+  }
+
   const toggleBlock = async (distId: string, currentStatus: 'ok' | 'overdue' | 'blocked') => {
     const newStatus = currentStatus === 'blocked' ? 'ok' : 'blocked'
     setBlockingId(distId)
@@ -126,9 +142,7 @@ export default function AdminComisionesPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          {[1,2,3].map(i => <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse" />)}
-        </div>
+        <AdminCommissionSkeleton />
       ) : (
         <>
           {/* Totals header */}
@@ -271,7 +285,7 @@ export default function AdminComisionesPage() {
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      {(c.status === 'pending' || c.status === 'overdue') && (
+                      {(c.status === 'pending' || c.status === 'overdue') ? (
                         <div className="flex gap-1 justify-end">
                           <button
                             onClick={() => markPaid(c.id)}
@@ -286,7 +300,17 @@ export default function AdminComisionesPage() {
                             <Ban className="h-3.5 w-3.5" /> Saldar
                           </button>
                         </div>
-                      )}
+                      ) : (c.status === 'paid' || c.status === 'waived') ? (
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => revert(c.id, c.status)}
+                            title="Volver a pendiente"
+                            className="h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" /> Deshacer
+                          </button>
+                        </div>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

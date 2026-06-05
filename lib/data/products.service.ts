@@ -48,6 +48,7 @@ function toProduct(doc: FirestoreProduct & { id: string }): Product {
     imageUrl: doc.imageUrl || doc.imageURL || doc.image || doc.photoUrl || doc.photoURL || doc.thumbnailUrl,
     brand: doc.brand,
     sku: doc.sku,
+    unit: doc.unit,
     active: doc.status === 'active',
     status: doc.status ?? 'active',
     rating: 0,

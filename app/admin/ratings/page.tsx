@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Star, Eye, EyeOff, Search, Filter, MessageSquare, Store, Truck, CheckCircle2, Clock, RotateCcw, ExternalLink } from 'lucide-react'
+import { Star, Eye, EyeOff, Search, Filter, MessageSquare, Store, Truck, CheckCircle2, Clock, RotateCcw } from 'lucide-react'
 import { getAllReviews, moderateReview } from '@/lib/data/reviews.service'
 import { getAllCommerceReviews, moderateCommerceReview } from '@/lib/data/commerce-reviews.service'
 import { getAllFeedback, updateFeedbackStatus } from '@/lib/data/feedback.service'
 import type { Review, CommerceReview, PlatformFeedback } from '@/lib/types'
 import { StarDisplay } from '@/components/star-rating'
+import { AdminReviewsSkeleton } from '@/components/ui/SkeletonCard'
 
 // ─── Shared config ────────────────────────────────────────────────────────────
 
@@ -471,11 +472,7 @@ function Filters({
 }
 
 function Skeletons() {
-  return (
-    <div className="space-y-3">
-      {[1, 2, 3].map(i => <div key={i} className="bg-white rounded-2xl border border-gray-100 h-28 animate-pulse" />)}
-    </div>
-  )
+  return <AdminReviewsSkeleton count={3} />
 }
 
 function EmptyMsg({ label = 'Sin reseñas con estos filtros' }: { label?: string }) {

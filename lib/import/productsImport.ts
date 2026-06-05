@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx'
 
 export interface ParsedProductRow {
   rowIndex: number
+  id_interno: string
   nombre: string
   categoria: string
   marca: string
@@ -30,6 +31,9 @@ function norm(s: string): string {
 // Cualquier header que matchee (después de normalizar) se mapea al campo interno.
 
 const ALIASES: Record<string, string[]> = {
+  id_interno: [
+    'id_interno', 'id', 'idinterno', 'productoid', 'docid', 'firebaseid',
+  ],
   nombre: [
     'nombre', 'name', 'producto', 'articulo', 'item',
     'nombreprod', 'nombreproducto', 'nombrearticulo',
@@ -251,6 +255,7 @@ export async function parseProductsFile(
   const colMap = buildColumnMap(headers)
 
   const rows: ParsedProductRow[] = rawRows.map((raw, i) => {
+    const id_interno  = getString(raw, colMap.id_interno)
     const nombre      = getString(raw, colMap.nombre)
     const categoria   = getString(raw, colMap.categoria)
     const marca       = getString(raw, colMap.marca)
@@ -275,6 +280,7 @@ export async function parseProductsFile(
 
     return {
       rowIndex: i + 2,
+      id_interno,
       nombre,
       categoria,
       marca,

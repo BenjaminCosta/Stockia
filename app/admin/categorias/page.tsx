@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Eye, EyeOff, GripVertical } from 'lucide-react'
+import { Plus, Eye, EyeOff } from 'lucide-react'
 import { getAdminCategories, adminSetCategoryVisibility, adminCreateCategory, type AdminCategory } from '@/lib/data/admin.service'
+import { AdminCategoriesSkeleton } from '@/components/ui/SkeletonCard'
 
 // Group categories by rubric
 function groupByRubric(cats: AdminCategory[]) {
@@ -16,11 +17,12 @@ function groupByRubric(cats: AdminCategory[]) {
 
 export default function AdminCategoriasPage() {
   const [categories, setCategories] = useState<AdminCategory[]>([])
+  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [newName, setNewName] = useState('')
   const [newRubric, setNewRubric] = useState('')
 
-  useEffect(() => { getAdminCategories().then(setCategories) }, [])
+  useEffect(() => { getAdminCategories().then(data => { setCategories(data); setLoading(false) }) }, [])
 
   const toggleVisibility = async (id: string, currentVisible: boolean) => {
     setCategories(prev => prev.map(c => c.id === id ? { ...c, visible: !currentVisible } : c))
@@ -51,6 +53,21 @@ export default function AdminCategoriasPage() {
   const grouped = groupByRubric(categories)
   const rubrics = Object.keys(grouped)
 
+  if (loading) {
+    return (
+      <div className="px-4 py-6 md:px-8 md:py-8 max-w-4xl mx-auto w-full">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-7 w-32 bg-[#EEF1F5] rounded-xl animate-pulse mb-2" />
+            <div className="h-4 w-40 bg-[#EEF1F5] rounded animate-pulse" />
+          </div>
+          <div className="h-10 w-36 bg-[#EEF1F5] rounded-xl animate-pulse" />
+        </div>
+        <AdminCategoriesSkeleton />
+      </div>
+    )
+  }
+
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-4xl mx-auto w-full">
       <div className="flex items-center justify-between mb-6">
@@ -76,7 +93,6 @@ export default function AdminCategoriasPage() {
             <div className="divide-y divide-gray-50">
               {grouped[rubric].map(cat => (
                 <div key={cat.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50/50 transition-colors group">
-                  <GripVertical className="h-4 w-4 text-gray-300 cursor-grab" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className={`font-medium text-sm ${cat.visible ? 'text-gray-900' : 'text-gray-400'}`}>

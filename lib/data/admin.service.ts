@@ -14,6 +14,7 @@ export type AdminDistributor = {
   address: string
   city: string
   status: 'active' | 'paused' | 'review'
+  commissionStatus?: 'ok' | 'overdue' | 'blocked'
   categories: string[]
   totalOrders: number
   totalRevenue: number
@@ -118,14 +119,18 @@ const MOCK_COMMISSIONS: AdminCommission[] = [
 ]
 
 const MOCK_CATEGORIES: AdminCategory[] = [
-  { id: 'cat-1', name: 'Bebidas', rubric: 'Alimentos y Bebidas', iconName: 'GlassWater', visible: true, order: 1, distributorCount: 3 },
-  { id: 'cat-2', name: 'Almacén', rubric: 'Alimentos y Bebidas', iconName: 'ShoppingBasket', visible: true, order: 2, distributorCount: 4 },
-  { id: 'cat-3', name: 'Lácteos', rubric: 'Alimentos y Bebidas', iconName: 'Milk', visible: true, order: 3, distributorCount: 2 },
-  { id: 'cat-4', name: 'Panadería', rubric: 'Alimentos y Bebidas', iconName: 'Croissant', visible: true, order: 4, distributorCount: 0 },
-  { id: 'cat-5', name: 'Limpieza', rubric: 'Limpieza e Higiene', iconName: 'Sparkles', visible: true, order: 5, distributorCount: 1 },
-  { id: 'cat-6', name: 'Higiene Personal', rubric: 'Limpieza e Higiene', iconName: 'Bath', visible: true, order: 6, distributorCount: 0 },
-  { id: 'cat-7', name: 'Snacks', rubric: 'Alimentos y Bebidas', iconName: 'Cookie', visible: false, order: 7, distributorCount: 1 },
-  { id: 'cat-8', name: 'Farmacia', rubric: 'Salud', iconName: 'Pill', visible: false, order: 8, distributorCount: 0 },
+  { id: 'cat-1',  name: 'Bebidas',           rubric: 'Alimentos y Bebidas', iconName: 'GlassWater',    visible: true,  order: 1,  distributorCount: 3 },
+  { id: 'cat-2',  name: 'Almacén',           rubric: 'Alimentos y Bebidas', iconName: 'ShoppingBasket',visible: true,  order: 2,  distributorCount: 4 },
+  { id: 'cat-3',  name: 'Lácteos',           rubric: 'Alimentos y Bebidas', iconName: 'Milk',          visible: true,  order: 3,  distributorCount: 2 },
+  { id: 'cat-4',  name: 'Panadería',         rubric: 'Alimentos y Bebidas', iconName: 'Croissant',     visible: true,  order: 4,  distributorCount: 0 },
+  { id: 'cat-5',  name: 'Snacks',            rubric: 'Alimentos y Bebidas', iconName: 'Cookie',        visible: true,  order: 5,  distributorCount: 1 },
+  { id: 'cat-6',  name: 'Fiambres',          rubric: 'Alimentos y Bebidas', iconName: 'UtensilsCrossed',visible: true, order: 6,  distributorCount: 0 },
+  { id: 'cat-7',  name: 'Congelados',        rubric: 'Alimentos y Bebidas', iconName: 'Snowflake',     visible: true,  order: 7,  distributorCount: 0 },
+  { id: 'cat-8',  name: 'Golosinas y Kiosco',rubric: 'Alimentos y Bebidas', iconName: 'Cookie',        visible: true,  order: 8,  distributorCount: 0 },
+  { id: 'cat-9',  name: 'Limpieza',          rubric: 'Limpieza e Higiene',  iconName: 'Sparkles',      visible: true,  order: 9,  distributorCount: 1 },
+  { id: 'cat-10', name: 'Perfumería',        rubric: 'Limpieza e Higiene',  iconName: 'Sparkles',      visible: true,  order: 10, distributorCount: 0 },
+  { id: 'cat-11', name: 'Mascotas',          rubric: 'Otros',               iconName: 'Package',       visible: true,  order: 11, distributorCount: 0 },
+  { id: 'cat-12', name: 'Otros',             rubric: 'Otros',               iconName: 'Package',       visible: true,  order: 12, distributorCount: 0 },
 ]
 
 const MOCK_REVIEWS: AdminReview[] = [
@@ -147,15 +152,22 @@ function fsToDistributor(doc: Record<string, unknown> & { id: string }): AdminDi
     address: String(doc.address ?? ''),
     city: String(doc.city ?? ''),
     status: (doc.status as AdminDistributor['status']) ?? 'active',
+    commissionStatus: (doc.commissionStatus as AdminDistributor['commissionStatus']) ?? undefined,
     categories: Array.isArray(doc.categories) ? doc.categories : [],
     totalOrders: 0,
     totalRevenue: 0,
     pendingCommission: 0,
-    joinedAt: doc.createdAt ? String(doc.createdAt).slice(0, 10) : '',
+    joinedAt:
+      (doc.createdAt as any)?.toDate?.()?.toISOString?.()?.slice(0, 10) ??
+      (typeof doc.createdAt === 'string' && doc.createdAt ? doc.createdAt.slice(0, 10) : ''),
   }
 }
 
 function fsToCommerce(doc: Record<string, unknown> & { id: string }): AdminCommerce {
+  const rawCreatedAt = doc.createdAt
+  const joinedAt =
+    (rawCreatedAt as any)?.toDate?.()?.toISOString?.()?.slice(0, 10) ??
+    (typeof rawCreatedAt === 'string' && rawCreatedAt ? rawCreatedAt.slice(0, 10) : '')
   return {
     id: doc.id,
     businessName: String(doc.businessName ?? ''),
@@ -166,12 +178,16 @@ function fsToCommerce(doc: Record<string, unknown> & { id: string }): AdminComme
     status: (doc.status as AdminCommerce['status']) ?? 'active',
     totalOrders: 0,
     totalSpent: 0,
-    joinedAt: doc.createdAt ? String(doc.createdAt).slice(0, 10) : '',
+    joinedAt,
   }
 }
 
 function fsToOrder(doc: Record<string, unknown> & { id: string }): AdminOrder {
   const items = Array.isArray(doc.items) ? doc.items : []
+  const rawCreatedAt = doc.createdAt
+  const createdAt =
+    (rawCreatedAt as any)?.toDate?.()?.toISOString?.() ??
+    (typeof rawCreatedAt === 'string' && rawCreatedAt ? rawCreatedAt : new Date().toISOString())
   return {
     id: doc.id,
     orderNumber: doc.id.slice(0, 8).toUpperCase(),
@@ -180,7 +196,7 @@ function fsToOrder(doc: Record<string, unknown> & { id: string }): AdminOrder {
     total: Number(doc.total ?? 0),
     paymentMethod: (doc.paymentMethod as AdminOrder['paymentMethod']) ?? 'external',
     orderStatus: (doc.orderStatus as AdminOrder['orderStatus']) ?? 'pending_confirmation',
-    createdAt: doc.createdAt ? String(doc.createdAt) : new Date().toISOString(),
+    createdAt,
     itemCount: items.length,
   }
 }
@@ -269,18 +285,31 @@ export async function getAdminOrders(): Promise<AdminOrder[]> {
 export async function getAdminCommissions(): Promise<AdminCommission[]> {
   try {
     const commDocs = await getCollection<Record<string, unknown>>(COLLECTIONS.commissions)
-    return commDocs
-      .map(fsToCommission)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  } catch {
-    return []
-  }
+    if (commDocs.length > 0) {
+      return commDocs
+        .map(fsToCommission)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    }
+  } catch { /* fall through */ }
+  return MOCK_COMMISSIONS
 }
 
 export async function getAdminCategories(): Promise<AdminCategory[]> {
   try {
-    const docs = await getCollection<Record<string, unknown>>(COLLECTIONS.categories)
-    if (docs.length > 0) return docs.map(fsToCategory).sort((a, b) => a.order - b.order)
+    const [catDocs, distDocs] = await Promise.all([
+      getCollection<Record<string, unknown>>(COLLECTIONS.categories),
+      getCollection<Record<string, unknown>>(COLLECTIONS.distributors),
+    ])
+    if (catDocs.length > 0) {
+      const countByName: Record<string, number> = {}
+      distDocs.forEach(d => {
+        const cats = Array.isArray(d.categories) ? (d.categories as string[]) : []
+        cats.forEach(cat => { countByName[cat] = (countByName[cat] ?? 0) + 1 })
+      })
+      return catDocs
+        .map(doc => ({ ...fsToCategory(doc), distributorCount: countByName[String(doc.name ?? '')] ?? 0 }))
+        .sort((a, b) => a.order - b.order)
+    }
   } catch { /* fall through */ }
   return MOCK_CATEGORIES
 }
@@ -311,6 +340,10 @@ export async function adminSetCommerceStatus(
 
 export async function adminMarkCommissionPaid(id: string): Promise<void> {
   await updateDocument(COLLECTIONS.commissions, id, { status: 'paid', paidAt: new Date().toISOString() })
+}
+
+export async function adminRevertCommission(id: string): Promise<void> {
+  await updateDocument(COLLECTIONS.commissions, id, { status: 'pending' })
 }
 
 export async function adminWaiveCommission(id: string): Promise<void> {

@@ -13,8 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { categories } from '@/lib/mock-data'
-import { useProduct, invalidateProductsCache } from '@/hooks/use-data'
+import { useProduct, invalidateProductsCache, useCategories } from '@/hooks/use-data'
 import { CategoryIcon } from '@/components/category-icon'
 import { useApp } from '@/lib/app-context'
 import { updateProduct, deleteProduct } from '@/lib/data/products.service'
@@ -29,6 +28,7 @@ import type { Product } from '@/lib/types'
 function EditProductoForm({ product }: { product: Product }) {
   const router = useRouter()
   const { currentUser } = useApp()
+  const { data: categories } = useCategories()
 
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)

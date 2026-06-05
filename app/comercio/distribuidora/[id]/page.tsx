@@ -144,7 +144,7 @@ export default function DistribuidoraCatalogPage({
             />
 
             {/* Products */}
-            <div className="px-4 md:px-0 mt-6">
+            <div className="px-2.5 mt-5 md:mt-6 md:px-0">
               {isLoading ? (
                 <ProductCardSkeleton count={6} className="md:grid-cols-2 lg:grid-cols-3" />
               ) : filteredProducts.length === 0 ? (
@@ -156,7 +156,7 @@ export default function DistribuidoraCatalogPage({
               ) : (
                 <>
                   {/* Mobile — 2-col grid */}
-                  <div className="grid grid-cols-2 gap-3 md:hidden pb-12 px-4">
+                  <div className="grid grid-cols-2 gap-2 pb-12 md:hidden">
                     {filteredProducts.map(product => (
                       <ProductCard
                         key={product.id}

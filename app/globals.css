@@ -307,6 +307,26 @@
   }
 }
 
+@keyframes stockia-session-float {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+@keyframes stockia-session-bar {
+  0%, 100% {
+    opacity: 0.38;
+    transform: scaleX(0.72) scaleY(0.86);
+  }
+  45% {
+    opacity: 1;
+    transform: scaleX(1) scaleY(1);
+  }
+}
+
 @keyframes stockia-splash-orbit {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
@@ -335,6 +355,17 @@
 
 @utility animate-stockia-loader-ring {
   animation: stockia-loader-ring 1.35s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+}
+
+@utility animate-stockia-session-float {
+  animation: stockia-session-float 3.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+@utility animate-stockia-session-bar {
+  animation: stockia-session-bar 0.78s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
 }
 
 @utility animate-onboarding-step {

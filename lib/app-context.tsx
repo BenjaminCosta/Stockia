@@ -35,7 +35,7 @@ interface AppContextType {
   firebaseUser: FirebaseUser | null
 
   // Auth actions
-  login: (email: string, password: string) => Promise<UserRole>
+  login: (email: string, password: string) => Promise<UserRole | 'admin'>
   logout: () => Promise<void>
   refreshCurrentUser: () => Promise<void>
 
@@ -273,19 +273,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe()
   }, [])
 
-  const login = useCallback(async (email: string, password: string): Promise<UserRole> => {
+  const login = useCallback(async (email: string, password: string): Promise<UserRole | 'admin'> => {
     const credential = await signInWithEmailAndPassword(auth, email, password)
     // Fetch role so we can redirect immediately after
     const userDoc = await getUserById(credential.user.uid)
     // Cache userDoc so onAuthStateChanged doesn't need to re-fetch it
     loginCacheRef.current = { uid: credential.user.uid, userDoc: userDoc as unknown as Record<string, unknown> }
-    const role: UserRole =
-      userDoc?.role === 'comercio' || userDoc?.role === 'distribuidora'
+    const role: UserRole | 'admin' =
+      userDoc?.role === 'comercio' || userDoc?.role === 'distribuidora' || userDoc?.role === 'admin'
         ? userDoc.role
         : 'comercio'
     // Set session cookie NOW — before router.push() — so the middleware finds it
     // when the navigation request arrives. onAuthStateChanged will also set it later (no-op).
-    setSessionCookie(userDoc?.role === 'admin' ? 'admin' : role)
+    setSessionCookie(role)
     return role
   }, [])
 

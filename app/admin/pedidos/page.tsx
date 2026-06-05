@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Search, CreditCard, Handshake, AlertTriangle } from 'lucide-react'
 import { getAdminOrders, type AdminOrder } from '@/lib/data/admin.service'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/utils'
+import { AdminListSkeleton } from '@/components/ui/SkeletonCard'
 
 type StatusFilter = AdminOrder['orderStatus'] | 'all'
 type PaymentFilter = 'all' | 'mercado_pago' | 'external'
@@ -23,18 +25,30 @@ const statusFilters: { value: StatusFilter; label: string }[] = [
   { value: 'pending_confirmation', label: 'Pendientes' },
   { value: 'confirmed',            label: 'Confirmados' },
   { value: 'preparing',            label: 'En preparación' },
+  { value: 'ready_or_on_the_way',  label: 'En camino' },
   { value: 'delivered',            label: 'Entregados' },
   { value: 'cancelled',            label: 'Cancelados' },
   { value: 'not_delivered',        label: 'No entregados' },
 ]
 
+const VALID_STATUS_PARAMS: StatusFilter[] = [
+  'pending_confirmation', 'confirmed', 'preparing', 'ready_or_on_the_way',
+  'delivered', 'cancelled', 'not_delivered',
+]
+
 export default function AdminPedidosPage() {
+  const searchParams = useSearchParams()
   const [orders, setOrders] = useState<AdminOrder[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all')
 
-  useEffect(() => { getAdminOrders().then(setOrders) }, [])
+  const paramStatus = searchParams.get('status') as StatusFilter | null
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(
+    paramStatus && VALID_STATUS_PARAMS.includes(paramStatus) ? paramStatus : 'all'
+  )
+
+  useEffect(() => { getAdminOrders().then(data => { setOrders(data); setLoading(false) }) }, [])
 
   const filtered = orders.filter(o => {
     const matchSearch =
@@ -48,6 +62,18 @@ export default function AdminPedidosPage() {
 
   const pendingExternal = orders.filter(o => o.orderStatus === 'pending_confirmation' && o.paymentMethod === 'external').length
   const cancelledCount = orders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'not_delivered').length
+
+  if (loading) {
+    return (
+      <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
+        <div className="mb-6">
+          <div className="h-7 w-24 bg-[#EEF1F5] rounded-xl animate-pulse mb-2" />
+          <div className="h-4 w-20 bg-[#EEF1F5] rounded animate-pulse" />
+        </div>
+        <AdminListSkeleton rows={6} label="Cargando pedidos" />
+      </div>
+    )
+  }
 
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
@@ -133,7 +159,7 @@ export default function AdminPedidosPage() {
                   <span className="font-mono text-xs font-bold text-gray-400">{o.orderNumber}</span>
                   <span className="text-gray-300">·</span>
                   <span className="text-xs text-gray-400">
-                    {new Date(o.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                    {o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }) : '—'}
                   </span>
                 </div>
                 <p className="font-semibold text-gray-900 truncate">{o.commerceName}</p>
@@ -206,7 +232,7 @@ export default function AdminPedidosPage() {
                     )}
                   </td>
                   <td className="px-4 py-4 text-gray-400 text-xs hidden lg:table-cell">
-                    {new Date(o.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                    {o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }) : '—'}
                   </td>
                 </tr>
               ))}

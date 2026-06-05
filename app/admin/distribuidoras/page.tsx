@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Search, Pause, Play, ChevronRight } from 'lucide-react'
+import { Search, Pause, Play } from 'lucide-react'
 import { getAdminDistributors, adminSetDistributorStatus, type AdminDistributor } from '@/lib/data/admin.service'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/utils'
+import { AdminListSkeleton } from '@/components/ui/SkeletonCard'
 
 const statusConfig = {
   active:  { label: 'Activa',      className: 'bg-green-50 text-green-700' },
@@ -13,10 +14,11 @@ const statusConfig = {
 
 export default function AdminDistribuidorasPage() {
   const [distributors, setDistributors] = useState<AdminDistributor[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<AdminDistributor['status'] | 'all'>('all')
 
-  useEffect(() => { getAdminDistributors().then(setDistributors) }, [])
+  useEffect(() => { getAdminDistributors().then(data => { setDistributors(data); setLoading(false) }) }, [])
 
   const filtered = distributors.filter(d => {
     const matchSearch = d.companyName.toLowerCase().includes(search.toLowerCase()) || d.city.toLowerCase().includes(search.toLowerCase())
@@ -33,6 +35,18 @@ export default function AdminDistribuidorasPage() {
       console.error('Error updating distributor status:', err)
       setDistributors(prev => prev.map(d => d.id === id ? { ...d, status: currentStatus } : d))
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
+        <div className="mb-6">
+          <div className="h-7 w-36 bg-[#EEF1F5] rounded-xl animate-pulse mb-2" />
+          <div className="h-4 w-28 bg-[#EEF1F5] rounded animate-pulse" />
+        </div>
+        <AdminListSkeleton rows={5} label="Cargando distribuidoras" />
+      </div>
+    )
   }
 
   return (
@@ -146,18 +160,13 @@ export default function AdminDistribuidorasPage() {
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="flex items-center gap-2 justify-end">
-                      <button
-                        onClick={() => toggleStatus(d.id, d.status)}
-                        title={d.status === 'active' ? 'Pausar catálogo' : 'Reactivar catálogo'}
-                        className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${d.status === 'active' ? 'text-gray-400 hover:bg-amber-50 hover:text-amber-600' : 'text-gray-400 hover:bg-green-50 hover:text-green-600'}`}
-                      >
-                        {d.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                      </button>
-                      <button className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors">
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => toggleStatus(d.id, d.status)}
+                      title={d.status === 'active' ? 'Pausar catálogo' : 'Reactivar catálogo'}
+                      className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${d.status === 'active' ? 'text-gray-400 hover:bg-amber-50 hover:text-amber-600' : 'text-gray-400 hover:bg-green-50 hover:text-green-600'}`}
+                    >
+                      {d.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </button>
                   </td>
                 </tr>
               ))}

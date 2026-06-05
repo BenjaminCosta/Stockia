@@ -39,7 +39,8 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       const role = await login(email.trim(), password)
-      router.push(role === 'distribuidora' ? '/distribuidora' : '/comercio')
+      if (role === 'admin') router.push('/admin')
+      else router.push(role === 'distribuidora' ? '/distribuidora' : '/comercio')
     } catch (err: unknown) {
       const code = (err as { code?: string }).code ?? ''
       setError(authErrorMessage(code))

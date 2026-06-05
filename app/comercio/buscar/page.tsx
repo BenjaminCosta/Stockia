@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo, type ReactNode } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Package, ShoppingCart, ChevronRight, X, Store, MapPin, Star, SlidersHorizontal } from 'lucide-react'
+import { Package, ChevronRight, X, Store, MapPin, Star, SlidersHorizontal } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger
 import { formatCurrency } from '@/lib/mock-data'
 import { useApp } from '@/lib/app-context'
 import { useProducts, useDistributors, useCategories } from '@/hooks/use-data'
+import { getDistributorById } from '@/lib/data/distributors.service'
 import { Comercio, DistributorCard, Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { ProductCard } from '@/components/product-card'
@@ -192,88 +193,6 @@ function CatalogFilters({ filters, distributors, brands, onFilterChange, onClear
     </div>
   )
 }
-// ── Floating Cart Bar ────────────────────────────────────────────────────────
-
-function FloatingCartBar() {
-  const { cart, getCartTotal, removeFromCart } = useApp()
-  const { data: distributors } = useDistributors()
-  const total = getCartTotal()
-
-  if (!cart || cart.items.length === 0) return null
-
-  const itemCount = cart.items.reduce((s, i) => s + i.quantity, 0)
-  const dist = distributors.find(d => d.id === cart.distribuidoraId)
-  const minOrder = dist?.minOrder ?? 0
-  const remaining = Math.max(0, minOrder - total)
-
-  return (
-    <div className="fixed bottom-16 lg:bottom-6 left-0 right-0 z-40 px-4 lg:px-8 pointer-events-none">
-      <div className="max-w-350 mx-auto pointer-events-auto">
-        <div className="bg-[#0B1A45] rounded-2xl shadow-[0_8px_32px_rgba(11,26,69,0.32)] border border-white/10 overflow-hidden">
-
-          {/* Items row — scrollable chips with remove */}
-          <div className="px-3 pt-2.5 pb-1.5 flex gap-1.5 overflow-x-auto scrollbar-hide">
-            {cart.items.map(({ product, quantity }) => (
-              <div
-                key={product.id}
-                className="flex-none flex items-center gap-1.5 bg-white/8 hover:bg-white/12 rounded-full pl-2.5 pr-1.5 py-1 transition-colors"
-              >
-                <span className="text-white text-[11px] font-medium whitespace-nowrap max-w-28 truncate">
-                  {quantity > 1 && (
-                    <span className="text-[#C8FF00] font-bold mr-1">{quantity}×</span>
-                  )}
-                  {product.name}
-                </span>
-                <button
-                  onClick={() => removeFromCart(product.id)}
-                  aria-label={`Quitar ${product.name}`}
-                  className="h-4 w-4 rounded-full bg-white/15 hover:bg-red-500/70 flex items-center justify-center text-white/60 hover:text-white transition-all flex-none"
-                >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Main action row */}
-          <div className="px-4 pb-3 flex items-center gap-3 lg:gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="bg-[#C8FF00] text-[#0B1A45] text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0 leading-tight">
-                  {itemCount} {itemCount === 1 ? 'ítem' : 'ítems'}
-                </span>
-                {cart.distribuidoraName && (
-                  <span className="text-white/50 text-xs truncate hidden sm:block">
-                    {cart.distribuidoraName}
-                  </span>
-                )}
-              </div>
-              {remaining > 0 ? (
-                <p className="text-amber-300 text-[11px] font-medium mt-0.5">
-                  Faltan {formatCurrency(remaining)} para el mínimo
-                </p>
-              ) : minOrder > 0 ? (
-                <p className="text-[#C8FF00] text-[11px] font-semibold mt-0.5">✓ Mínimo alcanzado</p>
-              ) : null}
-            </div>
-
-            <span className="text-white font-bold text-base shrink-0">
-              {formatCurrency(total)}
-            </span>
-
-            <Link
-              href="/comercio/carrito"
-              className="shrink-0 h-9 px-4 rounded-xl bg-[#C8FF00] text-[#0B1A45] font-bold text-sm flex items-center gap-1.5 hover:bg-[#d4ff1a] active:scale-[0.97] transition-all duration-150"
-            >
-              Ver carrito <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BuscarPage() {
@@ -294,8 +213,7 @@ export default function BuscarPage() {
   const [debouncedQuery, setDebouncedQuery] = useState(queryParam)
   const [quantities, setQuantities]   = useState<Record<string, number>>({})
   const [justAdded, setJustAdded]     = useState<Record<string, boolean>>({})
-  const { addToCart, getCartItemCount, cart, currentUser } = useApp()
-  const cartItemCount = getCartItemCount()
+  const { addToCart, cart, currentUser } = useApp()
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
   const loc = comercio?.location
   const commerceContext = loc
@@ -303,6 +221,7 @@ export default function BuscarPage() {
     : undefined
   const { data: products, loading: isLoading } = useProducts()
   const { data: distributors } = useDistributors(commerceContext)
+  const { data: allDistributors } = useDistributors()
   const { data: allCategories } = useCategories()
 
   const updateSearchParams = useCallback((updates: Record<string, string | null>) => {
@@ -337,6 +256,20 @@ export default function BuscarPage() {
   }
 
   const distributorMap = useMemo(() => new Map(distributors.map(d => [d.id, d])), [distributors])
+  const allDistributorMap = useMemo(() => new Map(allDistributors.map(d => [d.id, d])), [allDistributors])
+
+  // Resolved names for distributors not found in either map (e.g. inactive or unsynced)
+  const [resolvedDistributorNames, setResolvedDistributorNames] = useState<Record<string, string>>({})
+  const fetchingIdsRef = useRef(new Set<string>())
+  useEffect(() => {
+    const missing = Array.from(new Set(products.map(p => p.distribuidoraId))).filter(
+      id => !distributorMap.has(id) && !allDistributorMap.has(id) && !fetchingIdsRef.current.has(id)
+    )
+    if (missing.length === 0) return
+    missing.forEach(id => fetchingIdsRef.current.add(id))
+    Promise.all(missing.map(id => getDistributorById(id).then(d => [id, d?.companyName ?? ''] as const).catch(() => [id, ''] as const)))
+      .then(entries => setResolvedDistributorNames(prev => Object.assign({ ...prev }, Object.fromEntries(entries))))
+  }, [products, distributorMap, allDistributorMap])
 
   const catalogProducts = useMemo(() => products.filter((p: Product) => p.status !== 'paused'), [products])
 
@@ -515,14 +448,14 @@ export default function BuscarPage() {
   ])
 
   const handleAdd = useCallback((product: Product) => {
-    const dist = distributorMap.get(product.distribuidoraId)
-    if (!dist) return
+    const dist = distributorMap.get(product.distribuidoraId) ?? allDistributorMap.get(product.distribuidoraId)
+    const distribuidoraName = dist?.companyName ?? resolvedDistributorNames[product.distribuidoraId] ?? ''
     const qty = Math.min(quantities[product.id] ?? 1, Math.max(1, product.stock))
-    const added = addToCart(product, dist.companyName, qty)
+    const added = addToCart(product, distribuidoraName, qty)
     if (!added) return
     setJustAdded(prev => ({ ...prev, [product.id]: true }))
     setTimeout(() => setJustAdded(prev => ({ ...prev, [product.id]: false })), 2000)
-  }, [addToCart, quantities, distributorMap])
+  }, [addToCart, quantities, distributorMap, allDistributorMap, resolvedDistributorNames])
 
   const hasCartItems = !!(cart && cart.items.length > 0)
 
@@ -531,7 +464,7 @@ export default function BuscarPage() {
 
       {/* Sticky sub-header */}
       <div className="sticky top-12 z-30 bg-white border-b border-[#DFE1E8] shadow-[0_1px_4px_rgba(11,26,69,0.05)] lg:hidden">
-        <div className="max-w-350 mx-auto px-4 md:px-8 py-3">
+        <div className="max-w-350 mx-auto px-3 py-3 md:px-8">
           <div className="flex items-center gap-3">
             <SearchInput
               placeholder="Buscar productos, marcas o categorías..."
@@ -539,21 +472,10 @@ export default function BuscarPage() {
               onChange={setSearchQuery}
               className="flex-1 max-w-xl"
             />
-            <Link
-              href="/comercio/carrito"
-              className="lg:hidden relative h-10 w-10 flex items-center justify-center bg-[#F7F8FA] rounded-xl border border-[#DFE1E8] shrink-0"
-            >
-              <ShoppingCart className="h-5 w-5 text-[#0B1A45]" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#C8FF00] text-[#0B1A45] text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
-                  {cartItemCount}
-                </span>
-              )}
-            </Link>
           </div>
 
           {/* Category pills — all visible categories */}
-          <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide -mx-3 px-3 md:mx-0 md:px-0">
             <button
               onClick={() => handleCategoryClick(null)}
               className={cn(
@@ -584,7 +506,7 @@ export default function BuscarPage() {
       </div>
 
       {/* Main content */}
-      <main className={cn('flex-1 max-w-350 mx-auto px-4 md:px-8 py-5 w-full', hasCartItems && 'pb-32 lg:pb-28')}>
+      <main className={cn('flex-1 max-w-350 mx-auto px-2.5 py-4 w-full md:px-8 md:py-5', hasCartItems && 'lg:pb-28')}>
         <header className="mb-4 md:mb-5">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div className="min-w-0">
@@ -792,7 +714,7 @@ export default function BuscarPage() {
         <section className="flex-1 min-w-0">
             {isLoading ? (
               <>
-                <ProductCardSkeleton count={4} className="px-4 lg:hidden" />
+                <ProductCardSkeleton count={4} className="px-0 lg:hidden" />
                 <ProductCardSkeleton count={8} className="hidden lg:grid" />
               </>
             ) : filteredProducts.length === 0 && matchingDistributors.length === 0 ? (
@@ -818,7 +740,7 @@ export default function BuscarPage() {
                 )}
 
                 {/* Mobile — 2-col grid */}
-                <div className="grid grid-cols-2 gap-3 lg:hidden px-4">
+                <div className="grid grid-cols-2 gap-2 lg:hidden">
                   {filteredProducts.map((product: Product) => {
                     const dist = distributorMap.get(product.distribuidoraId)
                     return (
@@ -860,8 +782,6 @@ export default function BuscarPage() {
             )}
         </section>
       </main>
-
-      <FloatingCartBar />
     </div>
   )
 }

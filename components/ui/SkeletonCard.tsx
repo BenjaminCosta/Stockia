@@ -525,4 +525,215 @@ export function EditProductSkeleton() {
   )
 }
 
+// ─── Admin skeletons ──────────────────────────────────────────────────────────
+
+export function AdminDashboardSkeleton() {
+  return (
+    <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full" aria-busy="true" aria-label="Cargando dashboard">
+      <div className="mb-8">
+        <SkeletonBlock className="h-8 w-44 mb-2" />
+        <SkeletonBlock className="h-4 w-64" />
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div className="flex items-start justify-between mb-4">
+              <SkeletonBlock className="h-11 w-11 rounded-xl" />
+              <SkeletonBlock className="h-4 w-4 rounded" />
+            </div>
+            <SkeletonBlock className="h-7 w-20 mb-1.5" />
+            <SkeletonBlock className="h-3 w-28 mt-0.5" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <SkeletonBlock className="h-4 w-4 rounded-full" />
+              <SkeletonBlock className="h-4 w-36" />
+            </div>
+            <SkeletonBlock className="h-8 w-16 mb-1" />
+            <SkeletonBlock className="h-3 w-20 mt-1" />
+            <SkeletonBlock className="h-3 w-24 mt-4" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function AdminListSkeleton({ rows = 5, label = 'Cargando' }: { rows?: number; label?: string }) {
+  return (
+    <div aria-busy="true" aria-label={label}>
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="min-w-0 flex-1 space-y-2">
+                <SkeletonBlock className="h-4 w-3/4" />
+                <SkeletonBlock className="h-3 w-1/2" />
+                <SkeletonBlock className="h-3 w-1/3" />
+              </div>
+              <SkeletonBlock className="h-6 w-20 rounded-full shrink-0" />
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+              <div className="flex gap-4">
+                <div className="space-y-1.5">
+                  <SkeletonBlock className="h-2.5 w-12" />
+                  <SkeletonBlock className="h-4 w-14" />
+                </div>
+                <div className="space-y-1.5">
+                  <SkeletonBlock className="h-2.5 w-16" />
+                  <SkeletonBlock className="h-4 w-20" />
+                </div>
+              </div>
+              <SkeletonBlock className="h-9 w-9 rounded-xl" />
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="h-10 bg-gray-50/80 border-b border-gray-100 px-5 flex items-center gap-6">
+          <SkeletonBlock className="h-2.5 w-24" />
+          <SkeletonBlock className="h-2.5 w-16" />
+          <SkeletonBlock className="h-2.5 w-16" />
+          <SkeletonBlock className="h-2.5 w-20 hidden lg:block" />
+          <SkeletonBlock className="h-2.5 w-12" />
+        </div>
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex items-center gap-6 px-5 py-4 border-b border-gray-50 last:border-0">
+            <div className="flex-1 space-y-1.5">
+              <SkeletonBlock className="h-4 w-40" />
+              <SkeletonBlock className="h-3 w-28" />
+            </div>
+            <SkeletonBlock className="h-3.5 w-20 hidden lg:block" />
+            <SkeletonBlock className="h-3.5 w-12" />
+            <SkeletonBlock className="h-3.5 w-24 hidden lg:block" />
+            <SkeletonBlock className="h-6 w-20 rounded-full" />
+            <SkeletonBlock className="h-8 w-8 rounded-lg" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function AdminCategoriesSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Cargando categorías">
+      {[4, 3].map((count, gi) => (
+        <div key={gi} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-50 bg-gray-50/50">
+            <SkeletonBlock className="h-3.5 w-36" />
+          </div>
+          <div className="divide-y divide-gray-50">
+            {Array.from({ length: count }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-5 py-3.5">
+                <SkeletonBlock className="h-4 w-4 rounded" />
+                <div className="flex-1 space-y-1.5">
+                  <SkeletonBlock className="h-3.5 w-32" />
+                  <SkeletonBlock className="h-2.5 w-24" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function AdminCommissionSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Cargando comisiones">
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+            <SkeletonBlock className="h-3 w-20 mx-auto mb-2" />
+            <SkeletonBlock className="h-7 w-28 mx-auto" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-start justify-between mb-3">
+              <SkeletonBlock className="h-4 w-36" />
+            </div>
+            <div className="space-y-2.5 mb-4">
+              <div className="flex justify-between">
+                <SkeletonBlock className="h-3 w-20" />
+                <SkeletonBlock className="h-3 w-16" />
+              </div>
+              <div className="flex justify-between">
+                <SkeletonBlock className="h-3 w-16" />
+                <SkeletonBlock className="h-3 w-14" />
+              </div>
+            </div>
+            <SkeletonBlock className="h-8 w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="h-10 bg-gray-50/80 border-b border-gray-100 px-5 flex items-center gap-6">
+          <SkeletonBlock className="h-2.5 w-28" />
+          <SkeletonBlock className="h-2.5 w-16 hidden md:block" />
+          <SkeletonBlock className="h-2.5 w-12 hidden lg:block" />
+          <SkeletonBlock className="h-2.5 w-20" />
+          <SkeletonBlock className="h-2.5 w-14" />
+        </div>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-6 px-5 py-4 border-b border-gray-50 last:border-0">
+            <SkeletonBlock className="flex-1 h-4 max-w-36" />
+            <SkeletonBlock className="h-3 w-20 hidden md:block" />
+            <SkeletonBlock className="h-3 w-12 hidden lg:block" />
+            <SkeletonBlock className="h-4 w-20" />
+            <SkeletonBlock className="h-6 w-20 rounded-full" />
+            <div className="flex gap-1">
+              <SkeletonBlock className="h-8 w-20 rounded-lg" />
+              <SkeletonBlock className="h-8 w-16 rounded-lg" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function AdminReviewsSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div className="space-y-3" aria-busy="true" aria-label="Cargando reseñas">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <SkeletonBlock className="h-5 w-24 rounded-full" />
+                <SkeletonBlock className="h-5 w-16 rounded-full" />
+              </div>
+              <SkeletonBlock className="h-3.5 w-full" />
+              <SkeletonBlock className="h-3.5 w-4/5" />
+              <div className="flex gap-1.5">
+                <SkeletonBlock className="h-5 w-24 rounded-full" />
+                <SkeletonBlock className="h-5 w-20 rounded-full" />
+                <SkeletonBlock className="h-5 w-22 rounded-full" />
+                <SkeletonBlock className="h-5 w-18 rounded-full" />
+              </div>
+              <div className="flex gap-2">
+                <SkeletonBlock className="h-3 w-28" />
+                <SkeletonBlock className="h-3 w-4" />
+                <SkeletonBlock className="h-3 w-28" />
+              </div>
+            </div>
+            <SkeletonBlock className="h-9 w-9 rounded-xl shrink-0" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export { SkeletonBlock }

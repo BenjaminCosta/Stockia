@@ -38,14 +38,17 @@ import { isValidLocality, isValidProvince, normalizeLocationInput } from '@/lib/
 
 const PRODUCT_CATEGORIES = [
   'Bebidas',
-  'Snacks y golosinas',
   'Almacén',
-  'Lácteos y frescos',
+  'Lácteos',
+  'Panadería',
   'Limpieza',
-  'Higiene personal',
-  'Cigarrillos',
+  'Snacks',
+  'Fiambres',
   'Congelados',
-  'Panificados',
+  'Golosinas y Kiosco',
+  'Perfumería',
+  'Mascotas',
+  'Otros',
 ]
 
 const COMMERCE_TYPES = [

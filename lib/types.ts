@@ -106,6 +106,7 @@ export interface Product {
   imageUrl?: string
   brand?: string
   sku?: string
+  unit?: string
   active: boolean
   status: 'active' | 'paused' | 'out_of_stock'
   rating: number

@@ -3,9 +3,8 @@
 import { useState, useMemo } from 'react'
 import { MapPin, Package } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { categories } from '@/lib/mock-data'
 import { DistributorCardSkeleton } from '@/components/ui/SkeletonCard'
-import { useDistributors } from '@/hooks/use-data'
+import { useDistributors, useCategories } from '@/hooks/use-data'
 import { useApp } from '@/lib/app-context'
 import { Comercio } from '@/lib/types'
 import { DistribuidoraCard } from '@/components/distribuidora-card'
@@ -24,6 +23,7 @@ export default function DistribuidorasPage() {
     : undefined
 
   const { data: distributors, loading: isLoading } = useDistributors(commerceContext)
+  const { data: categories } = useCategories()
 
   const filtered = useMemo(() => distributors.filter(d => {
     const q = searchQuery.toLowerCase()

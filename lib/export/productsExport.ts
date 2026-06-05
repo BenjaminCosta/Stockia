@@ -5,6 +5,7 @@ function buildSheet(rows: Record<string, unknown>[]) {
   const ws = XLSX.utils.json_to_sheet(rows)
   // Set column widths for readability
   ws['!cols'] = [
+    { wch: 24 }, // id_interno
     { wch: 30 }, // nombre
     { wch: 18 }, // categoria
     { wch: 15 }, // marca
@@ -20,15 +21,16 @@ function buildSheet(rows: Record<string, unknown>[]) {
 
 export function exportProductsToXlsx(products: Product[], filename = 'productos') {
   const rows = products.map((p) => ({
+    id_interno: p.id,
     nombre: p.name,
     categoria: p.category,
-    marca: '',
-    sku: '',
+    marca: p.brand ?? '',
+    sku: p.sku ?? '',
     descripcion: p.description ?? '',
     precio: p.price,
     stock: p.stock,
-    unidad: 'un.',
-    estado: p.active ? 'active' : 'paused',
+    unidad: p.unit ?? 'un.',
+    estado: p.status,
   }))
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, buildSheet(rows), 'Productos')

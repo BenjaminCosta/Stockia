@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { Search, ShieldOff, ShieldCheck } from 'lucide-react'
 import { getAdminCommerces, adminSetCommerceStatus, type AdminCommerce } from '@/lib/data/admin.service'
-import { formatCurrency } from '@/lib/mock-data'
+import { formatCurrency } from '@/lib/utils'
+import { AdminListSkeleton } from '@/components/ui/SkeletonCard'
 
 const statusConfig = {
   active:  { label: 'Activo',       className: 'bg-green-50 text-green-700' },
@@ -13,10 +14,11 @@ const statusConfig = {
 
 export default function AdminComerciosPage() {
   const [commerces, setCommerces] = useState<AdminCommerce[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<AdminCommerce['status'] | 'all'>('all')
 
-  useEffect(() => { getAdminCommerces().then(setCommerces) }, [])
+  useEffect(() => { getAdminCommerces().then(data => { setCommerces(data); setLoading(false) }) }, [])
 
   const filtered = commerces.filter(c => {
     const matchSearch = c.businessName.toLowerCase().includes(search.toLowerCase()) || c.city.toLowerCase().includes(search.toLowerCase())
@@ -33,6 +35,18 @@ export default function AdminComerciosPage() {
       console.error('Error updating commerce status:', err)
       setCommerces(prev => prev.map(c => c.id === id ? { ...c, status: currentStatus } : c))
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
+        <div className="mb-6">
+          <div className="h-7 w-28 bg-[#EEF1F5] rounded-xl animate-pulse mb-2" />
+          <div className="h-4 w-24 bg-[#EEF1F5] rounded animate-pulse" />
+        </div>
+        <AdminListSkeleton rows={5} label="Cargando comercios" />
+      </div>
+    )
   }
 
   return (
@@ -96,7 +110,7 @@ export default function AdminComerciosPage() {
                 <div>
                   <p className="text-gray-400">Miembro desde</p>
                   <p className="font-semibold text-gray-700 mt-0.5">
-                    {new Date(c.joinedAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: '2-digit' })}
+                    {c.joinedAt ? new Date(c.joinedAt + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
                   </p>
                 </div>
               </div>
@@ -140,7 +154,7 @@ export default function AdminComerciosPage() {
                   <td className="px-4 py-4 font-medium text-gray-700">{c.totalOrders}</td>
                   <td className="px-4 py-4 font-medium text-gray-700 hidden lg:table-cell">{formatCurrency(c.totalSpent)}</td>
                   <td className="px-4 py-4 text-gray-400 text-xs hidden lg:table-cell">
-                    {new Date(c.joinedAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {c.joinedAt ? new Date(c.joinedAt + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                   </td>
                   <td className="px-4 py-4">
                     <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${statusConfig[c.status].className}`}>

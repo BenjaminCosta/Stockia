@@ -13,9 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { categories } from '@/lib/mock-data'
 import { CategoryIcon } from '@/components/category-icon'
 import { useApp } from '@/lib/app-context'
+import { useCategories } from '@/hooks/use-data'
 import { createProduct } from '@/lib/data/products.service'
 import { ImageUploader } from '@/components/ui/ImageUploader'
 import { useImageUpload } from '@/hooks/use-image-upload'
@@ -31,6 +31,8 @@ export default function NuevoProductoPage() {
   const [stock, setStock] = useState('')
   const [description, setDescription] = useState('')
   const [isOffer, setIsOffer] = useState(false)
+
+  const { data: categories } = useCategories()
 
   const imageUpload = useImageUpload({
     type: 'product',
