@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Package, ClipboardList, User, LogOut, MapPin, TrendingUp, Star, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Package, ClipboardList, User, LogOut, MapPin, TrendingUp, Star, ShieldCheck, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/lib/app-context'
 import { StockiaLogo } from '@/components/stockia-logo'
@@ -72,17 +72,18 @@ export function DistribuidoraSidebar() {
         </div>
       </div>
 
-      {/* User profile chip */}
+      {/* User profile chip — clickeable a perfil */}
       <div className="px-4 py-3 border-b border-white/5">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-white/4">
+        <Link href="/distribuidora/perfil" className="flex items-center gap-3 px-2 py-2 rounded-xl bg-white/4 hover:bg-white/8 transition-colors duration-150 group">
           <div className="h-8 w-8 rounded-full bg-[#C8FF00] flex items-center justify-center text-[#0B1A45] font-bold text-xs shrink-0">
             {initials}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-white truncate">{companyName.length > 18 ? companyName.slice(0, 18) + '…' : companyName}</p>
             <p className="text-[10px] text-white/40 font-medium">Distribuidora</p>
           </div>
-        </div>
+          <ChevronRight className="h-3.5 w-3.5 text-white/25 shrink-0 group-hover:text-white/50 transition-colors" />
+        </Link>
       </div>
 
       {/* Navigation */}
@@ -105,7 +106,7 @@ export function DistribuidoraSidebar() {
         </div>
       </nav>
 
-      {/* Footer */}
+      {/* Footer — logout */}
       <div className="px-3 py-4 border-t border-white/8">
         <button
           onClick={handleLogout}
