@@ -26,7 +26,6 @@ export default function DistribuidoraCatalogPage({
   const { addToCart } = useApp()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Todos')
-  const [cartItems, setCartItems] = useState<Record<string, number>>({})
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set())
 
@@ -40,8 +39,6 @@ export default function DistribuidoraCatalogPage({
     getDistributorRatingSummary(id).then(setRatingSummary)
   }, [id])
 
-  const productMap = useMemo(() => new Map(products.map(p => [p.id, p])), [products])
-
   const categoryList = useMemo(() => {
     const cats = [...new Set(products.map(p => p.category))]
     return ['Todos', ...cats]
@@ -53,12 +50,6 @@ export default function DistribuidoraCatalogPage({
     return matchesSearch && matchesCategory && p.active
   }), [products, searchQuery, selectedCategory])
 
-  const totalItems = useMemo(() => Object.values(cartItems).reduce((a, b) => a + b, 0), [cartItems])
-  const totalAmount = useMemo(() => Object.entries(cartItems).reduce((sum, [pId, qty]) => {
-    const p = productMap.get(pId)
-    return sum + (p?.price || 0) * qty
-  }, 0), [cartItems, productMap])
-
   const handleAgregar = useCallback((productId: string) => {
     const product = products.find(p => p.id === productId)
     if (!product || !distribuidora) return
@@ -66,7 +57,6 @@ export default function DistribuidoraCatalogPage({
     const added = addToCart(product, distribuidora.companyName, qty)
     if (!added) return
     setAddedProducts(prev => new Set(prev).add(productId))
-    setCartItems(prev => ({ ...prev, [productId]: Math.min((prev[productId] || 0) + qty, product.stock) }))
     window.setTimeout(() => {
       setAddedProducts(prev => {
         const next = new Set(prev)
@@ -227,72 +217,7 @@ export default function DistribuidoraCatalogPage({
             )}
           </div>
         </div>
-
-        {/* Desktop sticky cart sidebar */}
-        {totalItems > 0 && (
-          <div className="sticky top-8 hidden w-90 shrink-0 md:block">
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-              <div className="bg-gray-50 p-6 border-b border-gray-100 flex justify-between items-center">
-                <h2 className="font-heading font-bold text-xl text-foreground">Tu Pedido</h2>
-                <span className="bg-primary/10 text-primary font-bold px-3 py-1 rounded-lg text-sm">
-                  {totalItems} ítems
-                </span>
-              </div>
-              <div className="p-6">
-                <div className="mb-6 max-h-100 space-y-4 overflow-y-auto pr-2">
-                  {Object.entries(cartItems).map(([pId, qty]) => {
-                    const p = productMap.get(pId)
-                    if (!p) return null
-                    return (
-                      <div key={pId} className="flex justify-between items-start gap-4 text-sm">
-                        <div className="flex-1">
-                          <p className="font-bold text-foreground leading-tight">{p.name}</p>
-                          <p className="text-muted-foreground mt-1">{formatCurrency(p.price)} x {qty}</p>
-                        </div>
-                        <div className="font-heading font-bold text-foreground shrink-0">
-                          {formatCurrency(p.price * qty)}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-                <div className="border-t border-gray-100 pt-6 space-y-3 mb-6">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Subtotal</span>
-                    <span className="font-medium">{formatCurrency(totalAmount)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-xl text-foreground pt-2 border-t border-gray-100 mt-2">
-                    <span>Total</span>
-                    <span className="font-heading text-primary">{formatCurrency(totalAmount)}</span>
-                  </div>
-                </div>
-                <Link href="/comercio/carrito">
-                  <button className="w-full h-14 text-base font-bold bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
-                    Ir al checkout
-                  </button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Mobile sticky bottom bar */}
-      {totalItems > 0 && (
-        <div className="md:hidden fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-200 z-40 shadow-[0_-8px_30px_-18px_rgba(31,41,55,0.45)]">
-          <Link href="/comercio/carrito">
-            <div className="bg-primary text-white rounded-2xl p-4 flex justify-between items-center shadow-xl shadow-primary/20 active:scale-[0.98] cursor-pointer transition-all animate-cart-pulse">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 rounded-xl h-10 w-10 flex items-center justify-center font-bold text-lg">
-                  {totalItems}
-                </div>
-                <span className="font-bold text-lg">Ver carrito</span>
-              </div>
-              <div className="font-heading font-bold text-2xl">{formatCurrency(totalAmount)}</div>
-            </div>
-          </Link>
-        </div>
-      )}
     </div>
   )
 }

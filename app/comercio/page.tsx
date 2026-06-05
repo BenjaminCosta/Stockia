@@ -762,21 +762,33 @@ export default function ComercioHomePage() {
             </div>
           ) : filteredDistributors.length === 1 ? (
             <div className="space-y-3">
-              <NearbyDistributorFeature
-                distributor={filteredDistributors[0]}
-                city={currentLocation.city}
-                productCount={getDistributorProductCount(filteredDistributors[0].id)}
-              />
+              <div className="md:hidden">
+                <DistribuidoraCard distributor={filteredDistributors[0]} index={0} />
+              </div>
+              <div className="hidden md:block">
+                <NearbyDistributorFeature
+                  distributor={filteredDistributors[0]}
+                  city={currentLocation.city}
+                  productCount={getDistributorProductCount(filteredDistributors[0].id)}
+                />
+              </div>
               <p className="text-sm font-medium text-muted-foreground">
                 Pronto vas a ver más distribuidoras disponibles en tu zona.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 md:gap-5">
-              {filteredDistributors.slice(0, 3).map((distributor, index) => (
-                <DistribuidoraCard key={distributor.id} distributor={distributor} index={index} showProductCount={false} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-3 md:hidden">
+                {filteredDistributors.slice(0, 3).map((distributor, index) => (
+                  <DistribuidoraCard key={distributor.id} distributor={distributor} index={index} />
+                ))}
+              </div>
+              <div className="hidden grid-cols-1 gap-3 md:grid lg:grid-cols-3 md:gap-5">
+                {filteredDistributors.slice(0, 3).map((distributor, index) => (
+                  <DistribuidoraCard key={distributor.id} distributor={distributor} index={index} showProductCount={false} />
+                ))}
+              </div>
+            </>
           )}
         </section>
 

@@ -223,7 +223,7 @@ export default function CheckoutPage() {
     : `Confirmar y pagar ${formatCurrency(total)}`
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-44 md:pb-12">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-10 md:pb-12">
       <div className="max-w-5xl mx-auto px-4 py-6 md:px-8 md:py-8">
 
         {/* Header */}
@@ -425,8 +425,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Desktop button */}
-              <div className="hidden md:block mt-6 space-y-3">
+              <div className="mt-6 space-y-3">
                 <button
                   onClick={handleConfirmar}
                   disabled={isPlacingOrder}
@@ -448,27 +447,6 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Mobile — barra fija */}
-      <div className="md:hidden fixed bottom-20 left-0 right-0 bg-white border-t border-gray-100 p-4 z-40 shadow-[0_-6px_24px_rgba(11,26,69,0.07)] space-y-2">
-        {!isExternal && (
-          <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-            <Lock className="h-3 w-3" /> Tu información está cifrada y protegida
-          </p>
-        )}
-        <button
-          onClick={handleConfirmar}
-          disabled={isPlacingOrder}
-          className={cn(
-            'w-full h-13 text-sm font-bold rounded-xl shadow-lg transition-[background-color,transform] active:scale-[0.98] disabled:opacity-60',
-            isExternal
-              ? 'bg-amber-500 text-white hover:bg-amber-600'
-              : 'bg-primary text-white hover:bg-primary/90'
-          )}
-        >
-          {isPlacingOrder ? 'Procesando...' : btnLabel}
-        </button>
       </div>
     </div>
   )

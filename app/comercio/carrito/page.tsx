@@ -163,7 +163,7 @@ export default function CarritoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-44 md:pb-12">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-10 md:pb-12">
       <div className="max-w-5xl mx-auto px-4 py-6 md:px-8 md:py-8">
 
         <ComercioPageHeader
@@ -283,7 +283,7 @@ export default function CarritoPage() {
               </div>
 
               <LoadingButton
-                className="hidden md:flex w-full h-13 text-base font-bold shadow-lg shadow-primary/15 rounded-xl"
+                className="w-full h-13 text-base font-bold shadow-lg shadow-primary/15 rounded-xl"
                 onClick={handleConfirm}
                 loading={isConfirming}
                 loadingLabel="Un momento..."
@@ -293,46 +293,17 @@ export default function CarritoPage() {
               </LoadingButton>
 
               {hasStockIssues ? (
-                <p className="hidden md:block text-xs text-center text-amber-700">
+                <p className="text-xs text-center text-amber-700">
                   Ajustá las cantidades sin stock para continuar
                 </p>
               ) : remainingToMin > 0 && (
-                <p className="hidden md:block text-xs text-center text-muted-foreground">
+                <p className="text-xs text-center text-muted-foreground">
                   Agregá {formatCurrency(remainingToMin)} más para continuar
                 </p>
               )}
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Mobile — barra fija */}
-      <div className="md:hidden fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-gray-100 z-40 shadow-[0_-6px_24px_rgba(11,26,69,0.07)] space-y-3">
-        <MinimumOrderProgress
-          total={total}
-          minOrder={minOrder}
-          minProgress={minProgress}
-          remainingToMin={remainingToMin}
-          compact
-        />
-        <LoadingButton
-          className="w-full h-13 text-base font-bold shadow-lg rounded-xl"
-          onClick={handleConfirm}
-          loading={isConfirming}
-          loadingLabel="Un momento..."
-          disabled={remainingToMin > 0 || hasStockIssues || productsLoading}
-        >
-          Ir al checkout →
-        </LoadingButton>
-        {hasStockIssues ? (
-          <p className="text-xs text-center text-amber-700">
-            Ajustá las cantidades sin stock para continuar
-          </p>
-        ) : remainingToMin > 0 && (
-          <p className="text-xs text-center text-muted-foreground">
-            Agregá {formatCurrency(remainingToMin)} más para continuar
-          </p>
-        )}
       </div>
     </div>
   )
