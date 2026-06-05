@@ -308,21 +308,53 @@ export async function createOrder(data: {
 /**
  * Cancel an order from the commerce side.
  *
- * The commerce user does NOT have write access to the `products` collection,
- * so stock release cannot happen in the same transaction. Instead:
- * - The order is marked as 'cancelled' with the reason.
- * - `pendingStockRelease: true` is written so a Cloud Function or the
- *   distributor's reconciliation flow can release the stock later.
+ * Runs a full transaction that:
+ * 1. Returns stock to each product in the distributor's inventory.
+ * 2. Marks the order as cancelled and the stock reservation as released.
  *
- * This writes ONLY to the `orders` collection, which the commerce user can do.
+ * The Firestore rule isCommerceStockAdjustment() allows the commerce to
+ * increase product stock (stock release), mirroring the decrease allowed
+ * during order creation.
  */
 export async function cancelOrderByCommerce(id: string): Promise<void> {
-  const orderRef = doc(db, COLLECTIONS.orders, id)
-  await updateDocument(COLLECTIONS.orders, id, {
-    orderStatus: 'cancelled' as OrderStatus,
-    cancellationReason: 'Cancelado por el comercio',
-    pendingStockRelease: true,
-    updatedAt: serverTimestamp(),
+  await runTransaction(db, async transaction => {
+    const orderRef = doc(db, COLLECTIONS.orders, id)
+    const orderSnap = await transaction.get(orderRef)
+    if (!orderSnap.exists()) return
+
+    const order = orderSnap.data() as FirestoreOrder
+
+    // Release stock if still reserved
+    if (order.stockReservationStatus === 'reserved') {
+      const itemsToRelease = aggregateItems(order.items ?? [])
+      const productReads = await Promise.all(itemsToRelease.map(async item => {
+        const productRef = doc(db, COLLECTIONS.products, item.productId)
+        const snap = await transaction.get(productRef)
+        return { item, productRef, snap }
+      }))
+
+      productReads.forEach(({ item, productRef, snap }) => {
+        if (!snap.exists()) return
+        const product = snap.data() as FirestoreProductForStock
+        if (product.distributorId !== order.distributorId) return
+        const nextStock = Math.max(0, product.stock ?? 0) + item.quantity
+        transaction.update(productRef, {
+          stock: nextStock,
+          status: product.status === 'out_of_stock' ? 'active' : product.status,
+          updatedAt: serverTimestamp(),
+        })
+      })
+    }
+
+    transaction.update(orderRef, {
+      orderStatus: 'cancelled' as OrderStatus,
+      cancellationReason: 'Cancelado por el comercio',
+      stockReservationStatus: 'released',
+      stockReleasedAt: serverTimestamp(),
+      stockReleaseReason: 'cancelled_by_commerce',
+      pendingStockRelease: false,
+      updatedAt: serverTimestamp(),
+    })
   })
 }
 

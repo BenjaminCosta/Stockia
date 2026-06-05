@@ -76,6 +76,8 @@ export interface Distribuidora extends User {
   // Commission fields
   commissionRate?: number                            // e.g. 0.015 = 1.5%
   commissionStatus?: 'ok' | 'overdue' | 'blocked'   // platform sets this
+  // Stock alert config
+  lowStockThreshold?: number                         // units — default 10
 }
 
 /**

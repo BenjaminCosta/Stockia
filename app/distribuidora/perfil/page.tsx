@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Truck, MapPin, Phone, Mail, FileText, Shield, ChevronRight, LogOut, Edit, Settings, TrendingUp, Package, Users, MessageSquare, Save, X, Star } from 'lucide-react'
+import { Truck, MapPin, Phone, Mail, FileText, Shield, ChevronRight, LogOut, Edit, Settings, TrendingUp, Package, Users, MessageSquare, Save, X, Star, Bell } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { Distribuidora } from '@/lib/types'
 import { formatCurrency } from '@/lib/mock-data'
@@ -157,6 +157,93 @@ function EditableCompanySection({ distribuidora }: { distribuidora: Distribuidor
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Stock alert config ────────────────────────────────────────────────────────
+
+function StockAlertConfigSection({ distribuidora }: { distribuidora: Distribuidora | null }) {
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [value, setValue] = useState<number>(distribuidora?.lowStockThreshold ?? 10)
+
+  useEffect(() => {
+    setValue(distribuidora?.lowStockThreshold ?? 10)
+  }, [distribuidora])
+
+  const handleSave = async () => {
+    if (!distribuidora?.id) return
+    const parsed = Math.max(1, Math.min(9999, Math.floor(value)))
+    setSaving(true)
+    try {
+      await updateDocument(COLLECTIONS.distributors, distribuidora.id, { lowStockThreshold: parsed })
+      setValue(parsed)
+      setSaved(true)
+      setEditing(false)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      console.error('[perfil] lowStockThreshold save failed', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-3xl shadow-sm border border-border p-6 md:p-8">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+            <Bell className="h-4 w-4 text-amber-500" />
+          </div>
+          <h2 className="font-bold text-foreground text-sm uppercase tracking-wider">Alertas de stock</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          {saved && <span className="text-xs text-emerald-600 font-semibold">¡Guardado!</span>}
+          {editing ? (
+            <>
+              <button onClick={() => { setEditing(false); setValue(distribuidora?.lowStockThreshold ?? 10) }} className="h-8 w-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+              <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#C8FF00] text-[#0B1A45] text-xs font-bold hover:bg-[#b8ef00] disabled:opacity-50 transition-colors">
+                <Save className="h-3.5 w-3.5" /> {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </>
+          ) : (
+            <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+              <Edit className="h-3.5 w-3.5" /> Editar
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-start gap-4 p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
+        <div className="h-10 w-10 rounded-xl bg-white shadow-sm text-amber-500 flex items-center justify-center shrink-0">
+          <Bell className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Umbral de stock bajo</p>
+          {editing ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={9999}
+                value={value}
+                onChange={e => setValue(Number(e.target.value))}
+                className="w-24 font-bold text-sm text-foreground bg-white border border-[#C8FF00]/60 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#C8FF00]/40"
+              />
+              <span className="text-sm text-gray-500">unidades</span>
+            </div>
+          ) : (
+            <p className="font-bold text-sm text-foreground">{value} unidades</p>
+          )}
+          <p className="text-xs text-gray-400 mt-1.5 leading-snug">
+            Se muestra alerta cuando el stock de un producto sea igual o menor a este valor.
+          </p>
+        </div>
       </div>
     </div>
   )
@@ -429,6 +516,9 @@ export default function PerfilDistribuidoraPage() {
                 ))}
               </div>
             </div>
+
+            {/* Stock alert config */}
+            <StockAlertConfigSection distribuidora={distribuidora} />
 
             {/* Reviews */}
             {distribuidora?.id && <DistribuidoraReviewsSection distId={distribuidora.id} />}

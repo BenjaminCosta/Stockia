@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Plus, Pencil, Package, Upload, Download, FileSpreadsheet,
-  AlertTriangle, CheckCircle2, Trash2, CheckSquare, Square, ImageOff,
+  AlertTriangle, CheckCircle2, Trash2, CheckSquare, Square, ImageOff, Bell,
 } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -20,6 +20,8 @@ import { exportProductsToXlsx, downloadTemplate } from '@/lib/export/productsExp
 import type { ParsedProductRow } from '@/lib/import/productsImport'
 import type { ImportResult } from '@/components/products/ImportProductsModal'
 import { createProduct, updateProduct, deleteProduct, getProductsByDistributorAll } from '@/lib/data/products.service'
+import { updateDocument } from '@/lib/firebase/firestore'
+import { COLLECTIONS } from '@/lib/firebase/collections'
 
 export default function ProductosPage() {
   const { currentUser } = useApp()
@@ -44,6 +46,30 @@ export default function ProductosPage() {
 
   // Toggle active state per product
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
+
+  const lowStockThreshold = distribuidora?.lowStockThreshold ?? 10
+
+  // Threshold inline edit (desktop header)
+  const [showThresholdEdit, setShowThresholdEdit] = useState(false)
+  const [thresholdDraft, setThresholdDraft]       = useState(lowStockThreshold)
+  const [savingThreshold, setSavingThreshold]     = useState(false)
+  const [thresholdSaved, setThresholdSaved]       = useState(false)
+
+  const handleSaveThreshold = async () => {
+    if (!distribuidora?.id) return
+    const parsed = Math.max(1, Math.min(9999, Math.floor(thresholdDraft)))
+    setSavingThreshold(true)
+    try {
+      await updateDocument(COLLECTIONS.distributors, distribuidora.id, { lowStockThreshold: parsed })
+      setThresholdSaved(true)
+      setShowThresholdEdit(false)
+      setTimeout(() => setThresholdSaved(false), 2500)
+    } catch {
+      // silent — user can retry
+    } finally {
+      setSavingThreshold(false)
+    }
+  }
 
   const { data: products, loading: isLoading } = useProductsAll(distributorId, refreshKey)
 
@@ -257,6 +283,55 @@ export default function ProductosPage() {
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">Importar</span>
             </button>
+            {/* Threshold button — desktop only */}
+            <div className="relative hidden md:block shrink-0">
+              <button
+                onClick={() => { setThresholdDraft(lowStockThreshold); setShowThresholdEdit(v => !v) }}
+                title="Umbral de stock bajo"
+                className={`h-10 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                  thresholdSaved
+                    ? 'border-[#89B317]/40 bg-[#F1FFD1] text-[#4A662E]'
+                    : 'border-[#DFE1E8]/80 bg-white hover:bg-[#F7F8FA] text-[#5F6880]'
+                }`}
+              >
+                <Bell className="h-3.5 w-3.5 shrink-0" />
+                <span>{thresholdSaved ? '¡Guardado!' : `Alerta: ${lowStockThreshold} un.`}</span>
+              </button>
+
+              {showThresholdEdit && (
+                <div className="absolute right-0 top-12 z-30 w-64 rounded-2xl border border-[#DFE1E8]/80 bg-white shadow-[0_4px_20px_rgba(11,26,69,0.12)] p-4">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7A839C] mb-2">Umbral de stock bajo</p>
+                  <p className="text-xs text-[#7A839C] mb-3 leading-snug">Alertar cuando el stock sea igual o menor a este número.</p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <input
+                      type="number"
+                      min={1}
+                      max={9999}
+                      value={thresholdDraft}
+                      onChange={e => setThresholdDraft(Number(e.target.value))}
+                      className="w-20 font-bold text-sm text-[#0B1A45] bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#C8FF00]/40 focus:border-[#C8FF00]/60"
+                    />
+                    <span className="text-sm text-[#7A839C]">unidades</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowThresholdEdit(false)}
+                      className="flex-1 h-8 rounded-xl border border-[#DFE1E8]/80 text-xs font-semibold text-[#5F6880] hover:bg-[#F7F8FA] transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleSaveThreshold}
+                      disabled={savingThreshold}
+                      className="flex-1 h-8 rounded-xl bg-[#0B1A45] hover:bg-[#14265f] text-white text-xs font-bold transition-colors disabled:opacity-50"
+                    >
+                      {savingThreshold ? 'Guardando...' : 'Guardar'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {isBlocked ? (
               <button
                 disabled
@@ -488,13 +563,13 @@ export default function ProductosPage() {
                       <div className="flex items-center gap-1.5 md:flex-col md:items-start">
                         <span className="font-bold text-sm text-[#0B1A45]">{product.stock} un.</span>
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                          product.stock > 10
+                          product.stock > lowStockThreshold
                             ? 'bg-[#F4FBE7] text-[#4A662E]'
                             : product.stock > 0
                             ? 'bg-amber-50 text-amber-700'
                             : 'bg-red-50 text-red-600'
                         }`}>
-                          {product.stock > 10 ? 'En stock' : product.stock > 0 ? 'Poco stock' : 'Sin stock'}
+                          {product.stock > lowStockThreshold ? 'En stock' : product.stock > 0 ? 'Poco stock' : 'Sin stock'}
                         </span>
                       </div>
                     </div>

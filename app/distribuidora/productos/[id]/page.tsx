@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useProduct, invalidateProductsCache, useCategories } from '@/hooks/use-data'
+import { useProduct, invalidateProductsCache, invalidateProductCache, useCategories } from '@/hooks/use-data'
 import { CategoryIcon } from '@/components/category-icon'
 import { useApp } from '@/lib/app-context'
 import { updateProduct, deleteProduct } from '@/lib/data/products.service'
@@ -59,6 +59,7 @@ function EditProductoForm({ product }: { product: Product }) {
     setIsDeleting(true)
     try {
       await deleteProduct(product.id)
+      invalidateProductCache(product.id)
       invalidateProductsCache(currentUser?.id)
     } catch (err) {
       console.error('[edit-producto] deleteProduct failed', err)
@@ -81,6 +82,7 @@ function EditProductoForm({ product }: { product: Product }) {
         isOffer,
         ...(activeImageUrl ? { imageUrl: activeImageUrl } : {}),
       })
+      invalidateProductCache(product.id)
       invalidateProductsCache(currentUser?.id)
     } catch (err) {
       console.error('[edit-producto] updateProduct failed', err)

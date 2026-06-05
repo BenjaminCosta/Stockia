@@ -94,6 +94,10 @@ export function invalidateProductsCache(distributorId?: string) {
   dataCache.delete(`prods-all:${distributorId ?? 'all'}`)
 }
 
+export function invalidateProductCache(productId: string) {
+  dataCache.delete(`prod:${productId}`)
+}
+
 export function useProducts(distributorId?: string, refreshKey?: number) {
   const { data, loading } = useAsyncData<Product[]>(
     () => (distributorId ? getProductsByDistributor(distributorId) : getAllProducts()) as Promise<Product[]>,

@@ -15,7 +15,6 @@ import { Distribuidora, Order, DistributorRatingSummary } from '@/lib/types'
 import { DistribuidoraDashboardSkeleton } from '@/components/ui/SkeletonCard'
 import { getDistributorRatingSummary } from '@/lib/data/reviews.service'
 
-const LOW_STOCK_THRESHOLD = 10
 const NON_SELLABLE_ORDER_STATUSES = new Set(['cancelled', 'not_delivered'])
 
 function isToday(dateValue: string) {
@@ -114,9 +113,10 @@ export default function DistribuidoraDashboardPage() {
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, 3)
 
+    const threshold = distribuidora?.lowStockThreshold ?? 10
     const catalogProducts = products.filter(p => p.status !== 'paused')
-    const lowStock = catalogProducts.filter(p => p.stock <= LOW_STOCK_THRESHOLD)
-    const healthyCount = catalogProducts.filter(p => p.stock > LOW_STOCK_THRESHOLD).length
+    const lowStock = catalogProducts.filter(p => p.stock <= threshold)
+    const healthyCount = catalogProducts.filter(p => p.stock > threshold).length
     const coverage = catalogProducts.length > 0
       ? Math.round((healthyCount / catalogProducts.length) * 100)
       : null
@@ -169,7 +169,7 @@ export default function DistribuidoraDashboardPage() {
         productosActivos: catalogProducts.length,
       },
     }
-  }, [orders, products])
+  }, [orders, products, distribuidora])
 
   const stockOk = lowStockCount === 0 && products.length > 0
   const avgRating = ratingSummary?.averageGeneral ?? null

@@ -66,6 +66,7 @@ export interface FirestoreDistributor {
     provinces: string[]
     locationKeys: string[]
   }
+  lowStockThreshold?: number
   location?: {
     province?: string
     provinceSlug?: string
@@ -108,6 +109,7 @@ function toDistribuidora(doc: FirestoreDistributor & { id: string }): Distribuid
     deliveryZoneKeys: doc.deliveryZoneKeys ?? [],
     deliveryHours: doc.deliveryHours ?? '',
     coverage: doc.coverage as DistributorCoverage | undefined,
+    lowStockThreshold: doc.lowStockThreshold,
     location: {
       ...normalizedLocation,
       provinceSlug: doc.location?.provinceSlug || doc.provinceSlug || normalizedLocation.provinceSlug,
