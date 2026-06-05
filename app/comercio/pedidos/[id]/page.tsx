@@ -11,7 +11,7 @@ import { StatusBadge } from '@/components/status-badge'
 import { formatCurrency } from '@/lib/mock-data'
 import { useDistributor, useOrder } from '@/hooks/use-data'
 import { getReviewByOrder } from '@/lib/data/reviews.service'
-import { updateOrderStatus, type OrderStatus as FirestoreOrderStatus } from '@/lib/data/orders.service'
+import { cancelOrderByCommerce, type OrderStatus as FirestoreOrderStatus } from '@/lib/data/orders.service'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -121,7 +121,7 @@ function PedidoDetail({ id }: { id: string }) {
   const handleCancelOrder = async () => {
     setIsCancelling(true)
     try {
-      await updateOrderStatus(order.id, 'cancelled', 'Cancelado por el comercio')
+      await cancelOrderByCommerce(order.id)
       setShowCancelDialog(false)
       setActionMessage('Pedido cancelado.')
     } catch {

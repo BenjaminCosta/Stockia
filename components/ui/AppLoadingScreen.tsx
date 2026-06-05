@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react'
 
 export function AppLoadingScreen() {
+  const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(true)
   const [fading, setFading] = useState(false)
 
   useEffect(() => {
-    // Start fade-out after 1.4s, fully unmount after 1.8s
+    setMounted(true)
     const fadeTimer = setTimeout(() => setFading(true), 1400)
     const hideTimer = setTimeout(() => setVisible(false), 1850)
     return () => {
@@ -16,7 +17,7 @@ export function AppLoadingScreen() {
     }
   }, [])
 
-  if (!visible) return null
+  if (!mounted || !visible) return null
 
   return (
     <div

@@ -100,9 +100,18 @@ service cloud.firestore {
     }
 
     // ─── Orders ─────────────────────────────────────────────────────────────────
-    // Commerce: create orders & read their own.
+    // Commerce: create orders & read their own. Can cancel while pending/confirmed.
     // Distributor: read and update orders assigned to them.
     // Admin: full access.
+
+    function isCommerceOrderCancellation() {
+      return isComercio()
+        && resource.data.commerceId == request.auth.uid
+        && (resource.data.orderStatus == 'pending_confirmation' || resource.data.orderStatus == 'confirmed')
+        && request.resource.data.orderStatus == 'cancelled'
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['orderStatus', 'cancellationReason', 'pendingStockRelease', 'updatedAt']);
+    }
 
     match /orders/{orderId} {
       allow read: if isSignedIn() && (
@@ -113,7 +122,8 @@ service cloud.firestore {
       allow create: if isComercio() && request.resource.data.commerceId == request.auth.uid;
       allow update: if isSignedIn() && (
         resource.data.distributorId == request.auth.uid ||
-        isAdmin()
+        isAdmin() ||
+        isCommerceOrderCancellation()
       );
       allow delete: if isAdmin();
     }

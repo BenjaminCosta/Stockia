@@ -6,7 +6,7 @@ import { ArrowLeft, MapPin, Phone, Package, Clock, CheckCircle, Truck, X, AlertT
 import { formatCurrency, getEstimatedDeliveryDate } from '@/lib/mock-data'
 import { useOrder, useDistributor } from '@/hooks/use-data'
 import { getCommerceById, type FirestoreCommerce } from '@/lib/data/users.service'
-import { updateOrderStatus } from '@/lib/data/orders.service'
+import { updateOrderStatus, releasePendingStock } from '@/lib/data/orders.service'
 import type { OrderStatus as FSOrderStatus } from '@/lib/data/orders.service'
 import { LoadingButton } from '@/components/ui/LoadingButton'
 import { getCommerceReviewByOrder } from '@/lib/data/commerce-reviews.service'
@@ -137,6 +137,13 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
       setCurrentFSStatus(fs ?? toFirestoreStatus(order.status))
       if (order.comercioId) {
         getCommerceById(order.comercioId).then(c => setComercioData(c))
+      }
+      // If commerce cancelled the order but stock wasn't released (no product write perms),
+      // the distributor panel resolves it now since it has the required access.
+      if ((fs === 'cancelled' || order.status === 'cancelado') && (order as any).pendingStockRelease) {
+        releasePendingStock(order.id).catch(err =>
+          console.error('[distribuidora/pedido] releasePendingStock failed', err)
+        )
       }
     }
   }, [order])
