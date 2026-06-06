@@ -4,9 +4,9 @@ import { useState, useMemo } from 'react'
 import { MapPin, Package } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { DistributorCardSkeleton } from '@/components/ui/SkeletonCard'
-import { useDistributors, useCategories } from '@/hooks/use-data'
+import { useDistributors, useCategories, useProducts } from '@/hooks/use-data'
 import { useApp } from '@/lib/app-context'
-import { Comercio } from '@/lib/types'
+import { Comercio, Product } from '@/lib/types'
 import { DistribuidoraCard } from '@/components/distribuidora-card'
 import { EmptyState } from '@/components/ui/EmptyState'
 
@@ -24,14 +24,21 @@ export default function DistribuidorasPage() {
 
   const { data: distributors, loading: isLoading } = useDistributors(commerceContext)
   const { data: categories } = useCategories()
+  const { data: products } = useProducts()
 
-  const filtered = useMemo(() => distributors.filter(d => {
+  const filtered = useMemo(() => {
+    const enriched = distributors.map(d => ({
+      ...d,
+      productCount: products.filter((p: Product) => p.distribuidoraId === d.id && p.status !== 'paused').length,
+    }))
     const q = searchQuery.toLowerCase()
-    const matchesSearch = d.companyName.toLowerCase().includes(q) ||
-      d.categories.some(c => c.toLowerCase().includes(q))
-    const matchesCategory = !selectedCategory || d.categories.includes(selectedCategory)
-    return matchesSearch && matchesCategory
-  }), [distributors, searchQuery, selectedCategory])
+    return enriched.filter(d => {
+      const matchesSearch = d.companyName.toLowerCase().includes(q) ||
+        d.categories.some(c => c.toLowerCase().includes(q))
+      const matchesCategory = !selectedCategory || d.categories.includes(selectedCategory)
+      return matchesSearch && matchesCategory
+    })
+  }, [distributors, products, searchQuery, selectedCategory])
 
   const locationLabel = [loc?.city, loc?.province].filter(Boolean).join(', ')
 
