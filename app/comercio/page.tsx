@@ -201,6 +201,7 @@ type ReorderProduct = {
   orderCount: number
   totalQuantity: number
   lastOrderedAt: number
+  suggestedQty: number
 }
 
 function ReorderProductCard({
@@ -214,7 +215,7 @@ function ReorderProductCard({
   justAdded: boolean
   onReorder: (item: ReorderProduct) => void
 }) {
-  const { product, distributorName, orderCount, totalQuantity } = item
+  const { product, distributorName, orderCount, totalQuantity, suggestedQty } = item
   const outOfStock = product.stock <= 0 || product.status !== 'active'
 
   return (
@@ -260,7 +261,7 @@ function ReorderProductCard({
         )}
       >
         {justAdded ? <Check className="h-3.5 w-3.5" /> : <ShoppingCart className="h-3.5 w-3.5" />}
-        <span>{outOfStock ? 'Sin stock' : justAdded ? 'Agregado' : 'Repetir'}</span>
+        <span>{outOfStock ? 'Sin stock' : justAdded ? 'Agregado' : `Repetir · ${suggestedQty} u.`}</span>
       </button>
     </article>
   )
@@ -364,15 +365,23 @@ export default function ComercioHomePage() {
   const { commerceOrders, ordersLoading: isOrdersLoading } = useApp()
   const distributorMap = useMemo(() => new Map(distributors.map(distributor => [distributor.id, distributor])), [distributors])
 
+  const enrichedDistributors = useMemo(() =>
+    distributors.map(d => ({
+      ...d,
+      productCount: products.filter((p: Product) => p.distribuidoraId === d.id && p.status !== 'paused').length,
+    })),
+    [distributors, products]
+  )
+
   const filteredDistributors = useMemo(() => {
     const query = searchQuery.toLowerCase()
-    return distributors.filter((distributor) => {
+    return enrichedDistributors.filter((distributor) => {
       const distributorProducts = products.filter((product: Product) => product.distribuidoraId === distributor.id)
       return distributor.companyName.toLowerCase().includes(query) ||
         distributor.categories.some((category: string) => category.toLowerCase().includes(query)) ||
         distributorProducts.some((product: Product) => product.name.toLowerCase().includes(query))
     })
-  }, [distributors, products, searchQuery])
+  }, [enrichedDistributors, products, searchQuery])
 
   const zoneProducts = useMemo(() => {
     const distributorIds = new Set(distributors.map(distributor => distributor.id))
@@ -417,6 +426,7 @@ export default function ComercioHomePage() {
           orderCount: (existing?.orderCount ?? 0) + 1,
           totalQuantity: (existing?.totalQuantity ?? 0) + item.quantity,
           lastOrderedAt: Math.max(existing?.lastOrderedAt ?? 0, orderedAt),
+          suggestedQty: 0, // computed below after accumulation
         })
       })
     })
@@ -428,6 +438,10 @@ export default function ComercioHomePage() {
         b.lastOrderedAt - a.lastOrderedAt
       )
       .slice(0, 3)
+      .map(item => ({
+        ...item,
+        suggestedQty: Math.max(1, Math.round(item.totalQuantity / item.orderCount)),
+      }))
   }, [commerceOrders, products])
 
   const hasReorderProducts = reorderProducts.length > 0
@@ -440,7 +454,7 @@ export default function ComercioHomePage() {
     ).length
 
   const handleReorder = (item: ReorderProduct) => {
-    const added = addToCart(item.product, item.distributorName, 1)
+    const added = addToCart(item.product, item.distributorName, item.suggestedQty)
     if (!added) return
 
     setReorderedProducts(prev => new Set(prev).add(item.product.id))

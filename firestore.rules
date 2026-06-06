@@ -127,7 +127,11 @@ service cloud.firestore {
         && (resource.data.orderStatus == 'pending_confirmation' || resource.data.orderStatus == 'confirmed')
         && request.resource.data.orderStatus == 'cancelled'
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['orderStatus', 'cancellationReason', 'pendingStockRelease', 'updatedAt']);
+             .hasOnly([
+               'orderStatus', 'cancellationReason', 'pendingStockRelease',
+               'stockReservationStatus', 'stockReleaseReason', 'stockReleasedAt',
+               'updatedAt'
+             ]);
     }
 
     match /orders/{orderId} {

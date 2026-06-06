@@ -206,6 +206,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { data: commerceOrders, loading: ordersLoading } = useComercioOrders(comercio?.id || '')
   const { data: distribuidoraOrders, loading: distribuidoraOrdersLoading } = useDistribuidoraOrders(distribuidora?.id || '')
 
+  // Hydrate cart from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('stockia_cart')
+      if (stored) setCart(JSON.parse(stored))
+    } catch {}
+  }, [])
+
+  // Persist cart to localStorage on every change
+  useEffect(() => {
+    try {
+      if (cart) {
+        localStorage.setItem('stockia_cart', JSON.stringify(cart))
+      } else {
+        localStorage.removeItem('stockia_cart')
+      }
+    } catch {}
+  }, [cart])
+
   // Hydrate wishlist from localStorage on mount
   useEffect(() => {
     try {
@@ -292,6 +311,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     setCart(null)
     setPendingCartReplacement(null)
+    try { localStorage.removeItem('stockia_cart') } catch {}
     clearSessionCookie()
     await signOut(auth)
     // onAuthStateChanged will clear remaining state
