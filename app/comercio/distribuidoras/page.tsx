@@ -9,6 +9,7 @@ import { useApp } from '@/lib/app-context'
 import { Comercio, Product } from '@/lib/types'
 import { DistribuidoraCard } from '@/components/distribuidora-card'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { cn } from '@/lib/utils'
 
 export default function DistribuidorasPage() {
   const { currentUser } = useApp()
@@ -43,8 +44,49 @@ export default function DistribuidorasPage() {
   const locationLabel = [loc?.city, loc?.province].filter(Boolean).join(', ')
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)]">
-      <section className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8 md:py-8">
+    <div className="flex min-h-screen flex-col bg-[#F7F8FA]">
+      {hasLocation && (
+        <div className="border-b border-[#DFE1E8] bg-white shadow-[0_1px_4px_rgba(11,26,69,0.05)] lg:hidden">
+          <div className="mx-auto max-w-350 px-3 py-3 md:px-8">
+            <SearchInput
+              placeholder="Buscar distribuidoras..."
+              value={searchQuery}
+              onChange={setSearchQuery}
+              className="max-w-xl"
+            />
+
+            <div className="-mx-3 mt-3 flex gap-2 overflow-x-auto px-3 pb-1 scrollbar-hide md:mx-0 md:px-0">
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className={cn(
+                  'shrink-0 rounded-full border px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors',
+                  selectedCategory === null
+                    ? 'border-[#0B1A45] bg-[#0B1A45] text-white'
+                    : 'border-[#DFE1E8] bg-white text-[#7A839C] hover:border-[#0B1A45]/30',
+                )}
+              >
+                Todas
+              </button>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className={cn(
+                    'shrink-0 rounded-full border px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors',
+                    selectedCategory === cat.name
+                      ? 'border-[#0B1A45] bg-[#0B1A45] text-white'
+                      : 'border-[#DFE1E8] bg-white text-[#7A839C] hover:border-[#0B1A45]/30',
+                  )}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <section className="mx-auto w-full max-w-350 flex-1 px-2.5 py-4 md:px-8 md:py-5">
         <header className="mb-5 md:mb-6">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Proveedores
@@ -68,41 +110,10 @@ export default function DistribuidorasPage() {
             description="Completá tu ubicación para ver las distribuidoras disponibles en tu localidad."
             actionLabel="Completar ubicación"
             actionHref="/comercio/cuenta"
+            className="border-0 bg-transparent shadow-none"
           />
         ) : (
           <>
-            <div className="mb-4 rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-sm md:mb-6 md:p-4 lg:hidden">
-              <SearchInput
-                placeholder="Buscar distribuidoras..."
-                value={searchQuery}
-                onChange={setSearchQuery}
-                className="max-w-2xl"
-              />
-
-              {/* Category pills */}
-              <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-                <button
-                  onClick={() => setSelectedCategory(null)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
-                    selectedCategory === null ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  Todas
-                </button>
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.name)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
-                      selectedCategory === cat.name ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {isLoading ? (
               <DistributorCardSkeleton count={6} />
             ) : filtered.length === 0 && searchQuery === '' && !selectedCategory ? (
@@ -113,6 +124,7 @@ export default function DistribuidorasPage() {
                 description={`Todavía no hay distribuidoras que entreguen en ${locationLabel || 'tu localidad'}. Revisá tu ubicación o volvé más tarde.`}
                 actionLabel="Editar ubicación"
                 actionHref="/comercio/cuenta"
+                className="border-0 bg-transparent shadow-none"
               />
             ) : filtered.length === 0 ? (
               <EmptyState
@@ -120,6 +132,7 @@ export default function DistribuidorasPage() {
                 imageSrc="/assets/distri-3d.png"
                 title="Sin resultados"
                 description="Probá con otro término o categoría"
+                className="border-0 bg-transparent shadow-none"
               />
             ) : (
               <>

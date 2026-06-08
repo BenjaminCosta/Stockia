@@ -22,3 +22,14 @@ contras.md
 
 # Local editor settings
 .vscode/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# FooDI local raw data
+data/foodi/
+
+# TypeScript cache
+tsconfig.tsbuildinfo
