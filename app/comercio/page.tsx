@@ -407,6 +407,9 @@ export default function ComercioHomePage() {
 
   const reorderProducts = useMemo(() => {
     const productById = new Map(products.map((product: Product) => [product.id, product]))
+    const zoneDistributorIds = new Set(distributors.map(d => d.id))
+    // Only apply zone filter once distributors have loaded and commerce has a location
+    const applyZoneFilter = !!currentLocation && !isLoading
     const byProduct = new Map<string, ReorderProduct>()
 
     commerceOrders.forEach(order => {
@@ -415,6 +418,8 @@ export default function ComercioHomePage() {
       order.items.forEach(item => {
         const product = productById.get(item.productId)
         if (!product) return
+        // Skip products from distributors that no longer deliver to this zone
+        if (applyZoneFilter && !zoneDistributorIds.has(product.distribuidoraId)) return
 
         const existing = byProduct.get(item.productId)
         byProduct.set(item.productId, {
@@ -442,7 +447,7 @@ export default function ComercioHomePage() {
         ...item,
         suggestedQty: Math.max(1, Math.round(item.totalQuantity / item.orderCount)),
       }))
-  }, [commerceOrders, products])
+  }, [commerceOrders, products, distributors, currentLocation, isLoading])
 
   const hasReorderProducts = reorderProducts.length > 0
   const locationLabel = [currentLocation?.city, currentLocation?.province].filter(Boolean).join(', ')

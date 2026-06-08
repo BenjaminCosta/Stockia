@@ -274,12 +274,13 @@ export default function BuscarPage() {
 
   const catalogProducts = useMemo(() => {
     const base = products.filter((p: Product) => p.status !== 'paused')
-    // Apply zone filter once distributors have loaded: only show products from distributors in the comercio's zone
-    if (commerceContext && !distributorsLoading && distributors.length > 0) {
+    // Apply zone filter once distributors have loaded: only show products from distributors in the comercio's zone.
+    // When distributors is [] (no coverage for this zone), distributorMap is empty → 0 products shown (correct).
+    if (commerceContext && !distributorsLoading) {
       return base.filter((p: Product) => distributorMap.has(p.distribuidoraId))
     }
     return base
-  }, [products, distributors, distributorMap, distributorsLoading, commerceContext])
+  }, [products, distributorMap, distributorsLoading, commerceContext])
 
   const normalizedQuery = debouncedQuery.trim()
   const normalizedSearch = normalizedQuery.toLowerCase()
