@@ -202,5 +202,14 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // ─── Master Products ─────────────────────────────────────────────────────────
+    // Shared product catalog. Any authenticated user can read (to match on import).
+    // Only admin can write (create, update, delete catalog entries).
+
+    match /masterProducts/{productId} {
+      allow read:  if isSignedIn();
+      allow write: if isAdmin();
+    }
+
   }
 }

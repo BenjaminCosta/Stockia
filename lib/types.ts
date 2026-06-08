@@ -114,6 +114,62 @@ export interface Product {
   rating: number
   reviewCount: number
   isOffer?: boolean
+  masterProductId?: string
+  imageSource?: 'master' | 'custom' | 'category_fallback' | 'none'
+}
+
+// ─── Master Product Catalog ────────────────────────────────────────────────────
+
+/** Canonical product in the master catalog. Shared across all distributors. */
+export interface MasterProduct {
+  id: string
+  name: string
+  normalizedName: string
+  brand: string
+  categoryId: string
+  aliases: string[]
+  barcode?: string
+  unit: string
+  imageUrl: string
+  fallbackImageUrl?: string
+  imageSource?: 'foodi_ml' | 'admin_upload' | 'external'
+  imageStatus?: 'approved' | 'needs_review' | 'missing'
+  status: 'active' | 'review' | 'disabled'
+  /** Provenance metadata (populated from FooDI-ML or other data sources). */
+  source?: {
+    dataset?: string
+    countryCode?: string
+    cityCode?: string
+    storeName?: string
+    s3Path?: string
+  }
+  createdAt?: unknown
+  updatedAt?: unknown
+}
+
+/**
+ * Shape produced by scripts/foodi/download_foodi_images.py.
+ * Matches the structure in lib/data/masterProducts.foodi.ts.
+ */
+export interface FoodiSeedProduct {
+  id: string
+  name: string
+  normalizedName: string
+  brand: string
+  categoryId: string
+  unit: string
+  aliases: string[]
+  imageUrl: string
+  imageSource: 'foodi_ml'
+  imageStatus: 'needs_review' | 'missing' | 'approved'
+  source: {
+    dataset: string
+    countryCode: string
+    cityCode: string
+    storeName: string
+    s3Path: string
+  }
+  status: 'review' | 'approved' | 'rejected'
 }
 
 // Category type

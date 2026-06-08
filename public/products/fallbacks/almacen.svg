@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#FFFBEB"/>
+  <rect x="28" y="28" width="144" height="144" rx="24" fill="#FEF3C7"/>
+  <rect x="55" y="90" width="40" height="50" rx="4" fill="#F59E0B"/>
+  <rect x="105" y="80" width="40" height="60" rx="4" fill="#D97706"/>
+  <rect x="55" y="70" width="40" height="22" rx="4" fill="#FBBF24"/>
+  <rect x="105" y="62" width="40" height="20" rx="4" fill="#F59E0B"/>
+  <rect x="48" y="135" width="104" height="8" rx="3" fill="#92400E" opacity="0.3"/>
+  <text x="100" y="158" font-family="system-ui,sans-serif" font-size="12" font-weight="800" text-anchor="middle" fill="#92400E">ALMACÉN</text>
+</svg>

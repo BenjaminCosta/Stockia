@@ -8,6 +8,7 @@ import { categories, formatCurrency } from '@/lib/mock-data'
 import { Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/lib/app-context'
+import { getCategoryFallbackImage } from '@/lib/data/categoryFallbacks'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -129,12 +130,15 @@ function ProductCardComponent({
     ? '64px'
     : '(max-width: 640px) calc(50vw - 16px), (max-width: 1024px) 200px, 180px'
 
+  // Resolve fallback image: category-specific SVG when no product imageUrl
+  const fallbackSrc = catObj?.image || getCategoryFallbackImage(product.category)
+
   const productImg = (sizeClass: string, rounded = 'rounded-xl') => (
     <div className={cn('relative flex items-center justify-center bg-white overflow-hidden', rounded, sizeClass)}>
       {product.imageUrl ? (
         <Image src={product.imageUrl} alt={product.name} fill className="object-cover" sizes={imgSizes} />
-      ) : catObj ? (
-        <Image src={catObj.image} alt={product.category} width={64} height={64} className="h-2/3 w-2/3 object-contain" />
+      ) : fallbackSrc ? (
+        <Image src={fallbackSrc} alt={product.category} width={64} height={64} className="h-2/3 w-2/3 object-contain" unoptimized />
       ) : (
         <Package className="h-8 w-8 text-gray-200" />
       )}

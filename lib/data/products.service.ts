@@ -168,3 +168,26 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<void> {
   await deleteDocument(COLLECTIONS.products, id)
 }
+
+/**
+ * Backfill images for existing products by linking them to master catalog entries.
+ * Only updates imageUrl, imageSource, and masterProductId.
+ * Never touches price, stock, name, or any other field.
+ */
+export async function backfillProductImages(
+  updates: Array<{ productId: string; imageUrl: string; masterProductId: string }>
+): Promise<{ ok: number; failed: number }> {
+  const results = await Promise.allSettled(
+    updates.map(u =>
+      updateDocument(COLLECTIONS.products, u.productId, {
+        imageUrl: u.imageUrl,
+        imageSource: 'master',
+        masterProductId: u.masterProductId,
+      })
+    )
+  )
+  return {
+    ok: results.filter(r => r.status === 'fulfilled').length,
+    failed: results.filter(r => r.status === 'rejected').length,
+  }
+}

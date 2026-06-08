@@ -13,6 +13,7 @@ export const COLLECTIONS = {
   commerceReviews: 'commerceReviews',
   platformFeedback: 'platformFeedback',
   adminSettings: 'adminSettings',
+  masterProducts: 'masterProducts',
 } as const
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS]

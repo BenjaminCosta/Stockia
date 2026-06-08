@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#FFF0F9"/>
+  <rect x="28" y="28" width="144" height="144" rx="24" fill="#FCE7F3"/>
+  <circle cx="78" cy="85" r="18" fill="#EC4899"/>
+  <circle cx="122" cy="85" r="18" fill="#F472B6"/>
+  <circle cx="78" cy="112" r="18" fill="#F472B6"/>
+  <circle cx="122" cy="112" r="18" fill="#EC4899"/>
+  <circle cx="100" cy="98" r="14" fill="#DB2777"/>
+  <circle cx="78" cy="85" r="6" fill="white" opacity="0.4"/>
+  <circle cx="122" cy="85" r="6" fill="white" opacity="0.4"/>
+  <text x="100" y="156" font-family="system-ui,sans-serif" font-size="10" font-weight="800" text-anchor="middle" fill="#9D174D">GOLOSINAS</text>
+</svg>

@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx'
+import type { MatchConfidence } from '@/lib/import/productMatcher'
 
 export interface ParsedProductRow {
   rowIndex: number
@@ -14,6 +15,11 @@ export interface ParsedProductRow {
   estado: 'active' | 'paused' | 'out_of_stock'
   errors: string[]
   hasErrors: boolean
+  // ── Master catalog match (populated by matchBulk after parsing) ──
+  masterProductId?: string
+  imageUrl?: string
+  imageSource?: 'master' | 'category_fallback' | 'none'
+  matchConfidence?: MatchConfidence
 }
 
 // ─── Normalización ─────────────────────────────────────────────────────────────
@@ -254,7 +260,7 @@ export async function parseProductsFile(
   const headers = Object.keys(rawRows[0])
   const colMap = buildColumnMap(headers)
 
-  const rows: ParsedProductRow[] = rawRows.map((raw, i) => {
+  const parsedRows: ParsedProductRow[] = rawRows.map((raw, i) => {
     const id_interno  = getString(raw, colMap.id_interno)
     const nombre      = getString(raw, colMap.nombre)
     const categoria   = getString(raw, colMap.categoria)
@@ -294,6 +300,15 @@ export async function parseProductsFile(
       hasErrors: errors.length > 0,
     }
   })
+
+  // ── Master catalog matching (best-effort — never blocks the import) ──────────
+  let rows = parsedRows
+  try {
+    const { matchBulk } = await import('@/lib/import/productMatcher')
+    rows = await matchBulk(parsedRows)
+  } catch (err) {
+    console.warn('[parseProductsFile] master catalog match skipped:', err)
+  }
 
   return { rows, totalErrors: rows.filter((r) => r.hasErrors).length }
 }

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#F0F9FF"/>
+  <rect x="28" y="28" width="144" height="144" rx="24" fill="#E0F2FE"/>
+  <line x1="100" y1="55" x2="100" y2="135" stroke="#0EA5E9" stroke-width="4" stroke-linecap="round"/>
+  <line x1="60" y1="75" x2="140" y2="115" stroke="#0EA5E9" stroke-width="4" stroke-linecap="round"/>
+  <line x1="140" y1="75" x2="60" y2="115" stroke="#0EA5E9" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="100" cy="95" r="10" fill="#BAE6FD"/>
+  <circle cx="100" cy="55" r="5" fill="#7DD3FC"/>
+  <circle cx="100" cy="135" r="5" fill="#7DD3FC"/>
+  <circle cx="60" cy="75" r="5" fill="#7DD3FC"/>
+  <circle cx="140" cy="75" r="5" fill="#7DD3FC"/>
+  <circle cx="60" cy="115" r="5" fill="#7DD3FC"/>
+  <circle cx="140" cy="115" r="5" fill="#7DD3FC"/>
+  <text x="100" y="158" font-family="system-ui,sans-serif" font-size="10" font-weight="800" text-anchor="middle" fill="#0369A1">CONGELADOS</text>
+</svg>

@@ -12,6 +12,7 @@ import {
   Star,
   LogOut,
   ShieldCheck,
+  Library,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useApp } from '@/lib/app-context'
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/admin/pedidos', label: 'Pedidos', icon: ClipboardList, exact: false },
   { href: '/admin/comisiones', label: 'Comisiones', icon: Receipt, exact: false },
   { href: '/admin/categorias', label: 'Categorías', icon: Tag, exact: false },
+  { href: '/admin/catalogo', label: 'Catálogo', icon: Library, exact: false },
   { href: '/admin/ratings', label: 'Reseñas', icon: Star, exact: false },
 ]
 

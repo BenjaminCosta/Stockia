@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Package } from 'lucide-react'
+import Image from 'next/image'
+import { ArrowLeft, Package, Sparkles, X } from 'lucide-react'
 import { LoadingButton } from '@/components/ui/LoadingButton'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -19,6 +20,9 @@ import { useCategories } from '@/hooks/use-data'
 import { createProduct } from '@/lib/data/products.service'
 import { ImageUploader } from '@/components/ui/ImageUploader'
 import { useImageUpload } from '@/hooks/use-image-upload'
+import { getMasterProducts } from '@/lib/data/masterProducts.service'
+import { matchProduct } from '@/lib/import/productMatcher'
+import type { MasterProduct } from '@/lib/types'
 
 export default function NuevoProductoPage() {
   const router = useRouter()
@@ -32,12 +36,53 @@ export default function NuevoProductoPage() {
   const [description, setDescription] = useState('')
   const [isOffer, setIsOffer] = useState(false)
 
+  // Master catalog match state
+  const [masterMatch, setMasterMatch] = useState<{ product: MasterProduct; confidence: string } | null>(null)
+  const [matchDismissed, setMatchDismissed] = useState(false)
+  const [masterProductId, setMasterProductId] = useState<string | undefined>()
+  const allMasterRef = useRef<MasterProduct[]>([])
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const { data: categories } = useCategories()
 
   const imageUpload = useImageUpload({
     type: 'product',
     ownerId: currentUser?.id ?? '',
   })
+
+  // Load master products once on mount (cached by service)
+  useEffect(() => {
+    getMasterProducts().then(all => { allMasterRef.current = all })
+  }, [])
+
+  // Debounced match on name change
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    setMatchDismissed(false)
+    if (!name.trim() || name.length < 4) {
+      setMasterMatch(null)
+      return
+    }
+    debounceRef.current = setTimeout(() => {
+      const result = matchProduct(name, allMasterRef.current)
+      if (result && (result.confidence === 'strong' || result.confidence === 'medium')) {
+        setMasterMatch({ product: result.masterProduct, confidence: result.confidence })
+      } else {
+        setMasterMatch(null)
+      }
+    }, 600)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [name])
+
+  // Accept match suggestion
+  const acceptMatch = () => {
+    if (!masterMatch) return
+    const mp = masterMatch.product
+    setMasterProductId(mp.id)
+    if (mp.categoryId && !category) setCategory(mp.categoryId)
+    setMatchDismissed(true)
+    setMasterMatch(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,6 +99,7 @@ export default function NuevoProductoPage() {
         status: 'active',
         isOffer,
         ...(imageUpload.imageUrl ? { imageUrl: imageUpload.imageUrl } : {}),
+        ...(masterProductId ? { masterProductId } : {}),
       })
     } catch (err) {
       console.error('[nuevo-producto] createProduct failed', err)
@@ -117,6 +163,42 @@ export default function NuevoProductoPage() {
                 className="w-full bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#0B1A45] placeholder:text-[#7A839C] focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 focus:border-[#0B1A45]/30 transition-colors"
               />
             </div>
+
+            {/* Master catalog match hint */}
+            {masterMatch && !matchDismissed && (
+              <div className="flex items-center gap-3 p-3 bg-[#F1FFD1] border border-[#C8FF00]/50 rounded-xl">
+                {masterMatch.product.imageUrl && (
+                  <Image
+                    src={masterMatch.product.imageUrl}
+                    alt=""
+                    width={40}
+                    height={40}
+                    className="rounded-lg object-contain bg-white shrink-0"
+                    unoptimized
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-[#4A662E] flex items-center gap-1 mb-0.5">
+                    <Sparkles className="h-3 w-3" /> Coincide con catálogo maestro
+                  </p>
+                  <p className="text-xs text-[#0B1A45] font-semibold truncate">{masterMatch.product.name}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={acceptMatch}
+                  className="h-7 px-3 rounded-lg bg-[#0B1A45] text-white text-[11px] font-bold shrink-0 hover:bg-[#14265f] transition-colors"
+                >
+                  Usar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMatchDismissed(true)}
+                  className="h-7 w-7 rounded-lg flex items-center justify-center text-[#4A662E] hover:bg-[#C8FF00]/20 transition-colors shrink-0"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
 
             {/* Category */}
             <div>

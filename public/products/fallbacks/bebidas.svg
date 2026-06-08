@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#EFF6FF"/>
+  <rect x="28" y="28" width="144" height="144" rx="24" fill="#DBEAFE"/>
+  <path d="M100 55 C78 55 60 73 60 95 C60 117 78 135 100 135 C122 135 140 117 140 95 C140 73 122 55 100 55Z" fill="#3B82F6" opacity="0.25"/>
+  <rect x="85" y="50" width="30" height="12" rx="4" fill="#2563EB"/>
+  <rect x="72" y="62" width="56" height="70" rx="10" fill="#3B82F6"/>
+  <rect x="72" y="90" width="56" height="20" fill="#60A5FA" opacity="0.5"/>
+  <rect x="72" y="132" width="56" height="12" rx="0 0 10 10" fill="#2563EB"/>
+  <text x="100" y="106" font-family="system-ui,sans-serif" font-size="13" font-weight="800" text-anchor="middle" fill="white">BEBIDAS</text>
+</svg>

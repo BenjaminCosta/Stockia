@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Plus, Pencil, Package, Upload, Download, FileSpreadsheet,
-  AlertTriangle, CheckCircle2, Trash2, CheckSquare, Square, ImageOff, Bell,
+  AlertTriangle, CheckCircle2, Trash2, CheckSquare, Square, ImageOff, Bell, Sparkles,
 } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -16,6 +16,7 @@ import { Distribuidora } from '@/lib/types'
 import { CategoryIcon } from '@/components/category-icon'
 import { InventoryTableSkeleton } from '@/components/ui/SkeletonCard'
 import ImportProductsModal from '@/components/products/ImportProductsModal'
+import { BackfillImagesDialog } from '@/components/products/BackfillImagesDialog'
 import { exportProductsToXlsx, downloadTemplate } from '@/lib/export/productsExport'
 import type { ParsedProductRow } from '@/lib/import/productsImport'
 import type { ImportResult } from '@/components/products/ImportProductsModal'
@@ -43,6 +44,9 @@ export default function ProductosPage() {
   const [selectMode, setSelectMode]   = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
+
+  // Backfill state
+  const [showBackfill, setShowBackfill] = useState(false)
 
   // Toggle active state per product
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
@@ -203,7 +207,8 @@ export default function ProductosPage() {
 
   // ─── Filter ───────────────────────────────────────────────────────────────
 
-  const noImageCount = useMemo(() => products.filter(p => !p.imageUrl).length, [products])
+  const noImageProducts = useMemo(() => products.filter(p => !p.imageUrl), [products])
+  const noImageCount = noImageProducts.length
 
   const existingSkus = useMemo(() => {
     const map = new Map<string, string>()
@@ -368,6 +373,31 @@ export default function ProductosPage() {
                 ? `Importando ${importedCount} productos al catálogo...`
                 : `${importedCount} productos importados correctamente`}
             </span>
+          </div>
+        )}
+
+        {/* Backfill banner — shown when there are products without images */}
+        {!isLoading && noImageCount > 0 && !selectMode && (
+          <div className="mb-4 flex items-center gap-3 rounded-2xl border border-amber-200/70 bg-amber-50 px-4 py-3 shadow-[0_1px_3px_rgba(245,158,11,0.06)]">
+            <div className="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <ImageOff className="h-4 w-4 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm text-amber-900">
+                {noImageCount} {noImageCount === 1 ? 'producto sin imagen' : 'productos sin imagen'}
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5 leading-snug">
+                Buscamos coincidencias en el catálogo maestro para completar automáticamente.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowBackfill(true)}
+              className="h-9 px-3 rounded-xl bg-[#0B1A45] text-white text-xs font-bold flex items-center gap-1.5 shrink-0 hover:bg-[#14265f] transition-colors"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Buscar imágenes</span>
+              <span className="sm:hidden">Buscar</span>
+            </button>
           </div>
         )}
 
@@ -633,6 +663,15 @@ export default function ProductosPage() {
           onClose={() => setShowImport(false)}
           onImport={handleImport}
           existingSkus={existingSkus}
+        />
+      )}
+
+      {/* Backfill images dialog */}
+      {showBackfill && (
+        <BackfillImagesDialog
+          products={noImageProducts}
+          onClose={() => setShowBackfill(false)}
+          onSuccess={() => triggerRefresh()}
         />
       )}
     </div>
