@@ -9,15 +9,22 @@ __v0_jsx-dev-runtime.ts
 # Environment variables
 .env*.local
 
-# Common ignores
-node_modules
+# Dependencies
+node_modules/
+
+# Next.js
 .next/
+out/
+
+# OS files
 .DS_Store
-# Replit reference folder
+
+# Replit / reference folders
 /Reference Replit/
 /Reference Lovable/
 /StockiA_full set_final/
 
+# Private notes
 contras.md
 
 # Local editor settings
@@ -29,7 +36,7 @@ __pycache__/
 *.pyc
 
 # FooDI local raw data
-data/foodi/glovo-foodi-ml-dataset.csv
+data/foodi/
 
 # TypeScript cache
-tsconfig.tsbuildinfodata/foodi/
+tsconfig.tsbuildinfo
