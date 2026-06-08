@@ -8,6 +8,9 @@ interface EmptyStateProps {
   actionLabel?: string
   actionHref?: string
   className?: string
+  imageSrc?: string
+  imageAlt?: string
+  imageClassName?: string
 }
 
 export function EmptyState({
@@ -17,6 +20,9 @@ export function EmptyState({
   actionLabel,
   actionHref,
   className,
+  imageSrc,
+  imageAlt = '',
+  imageClassName,
 }: EmptyStateProps) {
   return (
     <div className={cn(
@@ -25,12 +31,20 @@ export function EmptyState({
       'shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.04)]',
       className
     )}>
-      {/* Icon well — layered rings for depth */}
-      <div className="relative mb-5">
-        <div className="h-16 w-16 bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-2xl flex items-center justify-center shadow-[0_1px_4px_rgba(11,26,69,0.06)] mx-auto">
-          <Icon className="h-7 w-7 text-[#7A839C]" />
+      {imageSrc ? (
+        <img
+          src={imageSrc}
+          alt={imageAlt}
+          aria-hidden={imageAlt ? undefined : true}
+          className={cn('mb-4 h-40 w-40 object-contain md:h-56 md:w-56', imageClassName)}
+        />
+      ) : (
+        <div className="relative mb-5">
+          <div className="h-16 w-16 bg-[#F7F8FA] border border-[#DFE1E8]/80 rounded-2xl flex items-center justify-center shadow-[0_1px_4px_rgba(11,26,69,0.06)] mx-auto">
+            <Icon className="h-7 w-7 text-[#7A839C]" />
+          </div>
         </div>
-      </div>
+      )}
       <h3 className="font-heading font-bold text-foreground text-base md:text-lg">{title}</h3>
       {description && (
         <p className="text-[#7A839C] text-sm mt-1.5 max-w-xs leading-relaxed">{description}</p>

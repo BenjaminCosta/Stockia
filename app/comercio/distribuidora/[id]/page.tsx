@@ -140,6 +140,7 @@ export default function DistribuidoraCatalogPage({
               ) : filteredProducts.length === 0 ? (
                 <EmptyState
                   icon={Package}
+                  imageSrc="/assets/product-3d.png"
                   title="Sin resultados"
                   description="No se encontraron productos con ese nombre o categoría"
                 />

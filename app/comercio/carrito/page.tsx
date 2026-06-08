@@ -8,6 +8,7 @@ import { ComercioPageHeader } from '@/components/comercio-page-header'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
 import { useDistributors, useProducts } from '@/hooks/use-data'
+import type { Comercio } from '@/lib/types'
 import { LoadingButton } from '@/components/ui/LoadingButton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { QuantityStepper } from '@/components/quantity-stepper'
@@ -94,8 +95,14 @@ function MinimumOrderProgress({
 
 export default function CarritoPage() {
   const router = useRouter()
-  const { cart, removeFromCart, getCartTotal, updateCartItemQuantity } = useApp()
+  const { cart, removeFromCart, getCartTotal, updateCartItemQuantity, currentUser } = useApp()
+  const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
+  const loc = comercio?.location
+  const commerceContext = loc
+    ? { lat: loc.lat ?? undefined, lng: loc.lng ?? undefined, locationKey: loc.locationKey, citySlug: loc.citySlug }
+    : undefined
   const { data: distributors } = useDistributors()
+  const { data: zoneDistributors, loading: zoneLoading } = useDistributors(commerceContext)
   const { data: distributorProducts, loading: productsLoading } = useProducts(cart?.distribuidoraId)
   const [isConfirming, setIsConfirming] = useState(false)
 
@@ -131,6 +138,8 @@ export default function CarritoPage() {
           <ComercioPageHeader label="Pedido" title="Carrito" />
           <EmptyState
             icon={ShoppingBag}
+            imageSrc="/assets/carrito-3d.png"
+            imageClassName="h-36 w-52 md:h-52 md:w-72"
             title="Tu carrito está vacío"
             description="Explorá las distribuidoras y sumá productos para armar tu pedido"
             actionLabel="Explorar distribuidoras"
@@ -148,6 +157,7 @@ export default function CarritoPage() {
   const minProgress = Math.min((total / minOrder) * 100, 100)
   const remainingToMin = Math.max(minOrder - total, 0)
   const hasStockIssues = stockIssues.length > 0
+  const isOutOfZone = !!commerceContext && !zoneLoading && !zoneDistributors.some(d => d.id === cart.distribuidoraId)
   const distInitials = cart.distribuidoraName
     .split(' ')
     .map((w: string) => w[0])
@@ -282,17 +292,30 @@ export default function CarritoPage() {
                 </div>
               </div>
 
+              {isOutOfZone && (
+                <div className="flex items-start gap-2.5 rounded-2xl border border-red-200/80 bg-red-50 p-3.5">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                  <p className="text-xs font-semibold text-red-700">
+                    Esta distribuidora no realiza envíos a tu zona.
+                  </p>
+                </div>
+              )}
+
               <LoadingButton
                 className="w-full h-13 text-base font-bold shadow-lg shadow-primary/15 rounded-xl"
                 onClick={handleConfirm}
                 loading={isConfirming}
                 loadingLabel="Un momento..."
-                disabled={remainingToMin > 0 || hasStockIssues || productsLoading}
+                disabled={remainingToMin > 0 || hasStockIssues || productsLoading || isOutOfZone}
               >
                 Ir al checkout →
               </LoadingButton>
 
-              {hasStockIssues ? (
+              {isOutOfZone ? (
+                <p className="text-xs text-center text-red-600 font-semibold">
+                  No podés completar el pedido con esta distribuidora
+                </p>
+              ) : hasStockIssues ? (
                 <p className="text-xs text-center text-amber-700">
                   Ajustá las cantidades sin stock para continuar
                 </p>

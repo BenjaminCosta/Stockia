@@ -63,6 +63,7 @@ export default function DistribuidorasPage() {
         {!hasLocation ? (
           <EmptyState
             icon={MapPin}
+            imageSrc="/assets/distri-3d.png"
             title="Ubicación no configurada"
             description="Completá tu ubicación para ver las distribuidoras disponibles en tu localidad."
             actionLabel="Completar ubicación"
@@ -107,6 +108,7 @@ export default function DistribuidorasPage() {
             ) : filtered.length === 0 && searchQuery === '' && !selectedCategory ? (
               <EmptyState
                 icon={Package}
+                imageSrc="/assets/distri-3d.png"
                 title="Sin distribuidoras en tu zona"
                 description={`Todavía no hay distribuidoras que entreguen en ${locationLabel || 'tu localidad'}. Revisá tu ubicación o volvé más tarde.`}
                 actionLabel="Editar ubicación"
@@ -115,6 +117,7 @@ export default function DistribuidorasPage() {
             ) : filtered.length === 0 ? (
               <EmptyState
                 icon={Package}
+                imageSrc="/assets/distri-3d.png"
                 title="Sin resultados"
                 description="Probá con otro término o categoría"
               />

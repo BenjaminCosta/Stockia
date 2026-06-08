@@ -9,10 +9,10 @@ import {
 } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency, getEstimatedDeliveryDate } from '@/lib/mock-data'
-import { useDistributor } from '@/hooks/use-data'
+import { useDistributor, useDistributors } from '@/hooks/use-data'
 import { createOrder, StockValidationError, type StockValidationIssue } from '@/lib/data/orders.service'
 import type { FirebaseError } from 'firebase/app'
-import type { OrderItem } from '@/lib/types'
+import type { Comercio, OrderItem } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 type PaymentMethod = 'mp' | 'external'
@@ -141,6 +141,13 @@ export default function CheckoutPage() {
   const hasCart = !!cart && cart.items.length > 0
   const isExternal = paymentMethod === 'external'
   const { data: distribuidora } = useDistributor(cart?.distribuidoraId || '')
+  const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
+  const loc = (comercio as any)?.location
+  const commerceContext = loc
+    ? { lat: loc.lat ?? undefined, lng: loc.lng ?? undefined, locationKey: loc.locationKey, citySlug: loc.citySlug }
+    : undefined
+  const { data: zoneDistributors, loading: zoneLoading } = useDistributors(commerceContext)
+  const isOutOfZone = !!commerceContext && !zoneLoading && !!cart && !zoneDistributors.some(d => d.id === cart.distribuidoraId)
 
   useEffect(() => {
     if (!hasCart && !confirmed) router.push('/comercio/carrito')
@@ -156,7 +163,7 @@ export default function CheckoutPage() {
 
   const total = getCartTotal()
   const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0)
-  const comercio = currentUser as { storeName?: string; address?: string } | null
+  const comercioStore = currentUser as { storeName?: string; address?: string } | null
   const deliveryDate = distribuidora
     ? getEstimatedDeliveryDate((distribuidora as any).deliveryTimeHours)
     : 'Próximos días hábiles'
@@ -263,9 +270,9 @@ export default function CheckoutPage() {
                   <MapPin className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="font-bold text-foreground text-sm">{comercio?.storeName || 'Mi comercio'}</p>
+                  <p className="font-bold text-foreground text-sm">{comercioStore?.storeName || 'Mi comercio'}</p>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {comercio?.address || 'Actualizá tu dirección en Cuenta'}
+                    {comercioStore?.address || 'Actualizá tu dirección en Cuenta'}
                   </p>
                 </div>
               </div>
@@ -426,9 +433,20 @@ export default function CheckoutPage() {
               </div>
 
               <div className="mt-6 space-y-3">
+                {isOutOfZone && (
+                  <div className="flex items-start gap-2.5 rounded-2xl border border-red-200/80 bg-red-50 p-3.5">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                    <div>
+                      <p className="text-xs font-bold text-red-800">Sin envíos a tu zona</p>
+                      <p className="mt-0.5 text-xs text-red-700">
+                        Esta distribuidora no realiza envíos a tu zona. No podés confirmar este pedido.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={handleConfirmar}
-                  disabled={isPlacingOrder}
+                  disabled={isPlacingOrder || isOutOfZone}
                   className={cn(
                     'w-full h-13 text-sm font-bold rounded-xl shadow-lg transition-[background-color,transform] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed',
                     isExternal

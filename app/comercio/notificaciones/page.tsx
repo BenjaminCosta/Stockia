@@ -98,9 +98,12 @@ export default function ComercioNotificacionesPage() {
         <div className="space-y-4">
           {orderedNotifications.length === 0 ? (
             <div className="rounded-3xl border border-border bg-white px-6 py-12 text-center shadow-sm md:px-8">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F1FFD1] text-[#0B1A45]">
-                <Bell className="h-6 w-6" />
-              </div>
+              <img
+                src="/assets/notifi-3d.png"
+                alt=""
+                aria-hidden="true"
+                className="mx-auto h-36 w-60 object-contain md:h-52 md:w-80"
+              />
               <h2 className="mt-4 font-heading text-2xl font-bold text-foreground">Todavía no hay actividad</h2>
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
                 Cuando empieces a enviar pedidos, acá vas a ver confirmaciones, avances de entrega y cierres recientes.
