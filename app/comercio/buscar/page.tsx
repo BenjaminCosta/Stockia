@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo, type ReactNode } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Package, ChevronRight, X, Store, MapPin, Star, SlidersHorizontal } from 'lucide-react'
+import { ChevronRight, X, Store, MapPin, Star, SlidersHorizontal } from 'lucide-react'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -727,10 +727,13 @@ export default function BuscarPage() {
                 <ProductCardSkeleton count={8} className="hidden lg:grid" />
               </>
             ) : filteredProducts.length === 0 && matchingDistributors.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-                <div className="h-14 w-14 rounded-2xl bg-white border border-[#DFE1E8] flex items-center justify-center shadow-sm">
-                  <Package className="h-7 w-7 text-gray-300" />
-                </div>
+              <div className="flex flex-col items-center justify-center gap-3 py-16 text-center md:py-20">
+                <img
+                  src="/assets/product-3d.png"
+                  alt=""
+                  aria-hidden="true"
+                  className="h-40 w-40 object-contain md:h-56 md:w-56"
+                />
                 <p className="font-bold text-[#0B1A45]">Sin resultados</p>
                 <p className="text-sm text-[#7A839C]">Probá con otro término o categoría</p>
                 <button

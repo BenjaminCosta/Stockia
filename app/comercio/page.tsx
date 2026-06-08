@@ -28,6 +28,12 @@ import { InternalHeaderBackground } from '@/components/internal-header-backgroun
 const bannerImage =
   '/assets/banner-image.png'
 
+const commerceEmptyImages = {
+  products: '/assets/product-3d.png',
+  distributors: '/assets/distri-3d.png',
+  reorder: '/assets/recomendados-3d.png',
+}
+
 const categoryPhotos: Record<string, string> = {
   'Bebidas':            '/assets/categories/bebidas.jpg',
   'Almacén':            '/assets/categories/almacen.jpg',
@@ -559,10 +565,10 @@ export default function ComercioHomePage() {
         <section className="mb-12 md:mb-20">
           <div className="mb-5 flex items-end justify-between gap-4 md:mb-7">
             <div>
-              <h2 className="font-heading text-base font-bold text-foreground md:text-2xl">
+              <h2 className="font-heading text-base font-bold tracking-tight text-foreground md:text-4xl">
                 Explorar por categoría
               </h2>
-              <p className="mt-0.5 text-xs text-muted-foreground md:mt-1 md:text-sm">
+              <p className="mt-0.5 max-w-xl text-xs leading-relaxed text-muted-foreground md:mt-1.5 md:text-base">
                 Accesos rápidos para reponer lo que más rota.
               </p>
             </div>
@@ -674,8 +680,14 @@ export default function ComercioHomePage() {
           </div>
 
           {zoneProducts.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#C8D0DF] bg-white/70 px-4 py-8 text-center">
-              <p className="font-heading text-sm font-bold text-foreground">Sin productos para este filtro</p>
+            <div className="flex min-h-[250px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#C8D0DF] bg-white/70 px-4 py-7 text-center md:min-h-[320px] md:py-8">
+              <img
+                src={commerceEmptyImages.products}
+                alt=""
+                aria-hidden="true"
+                className="mb-3 h-36 w-36 object-contain md:mb-4 md:h-56 md:w-56"
+              />
+              <p className="font-heading text-sm font-bold text-foreground md:text-base">Sin productos para este filtro</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 Probá con otra categoría o explorá el catálogo completo.
               </p>
@@ -741,38 +753,44 @@ export default function ComercioHomePage() {
               <DistributorCardSkeleton />
             </div>
           ) : !currentLocation?.city ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[#C8D0DF] bg-white/70 px-4 py-8 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F7F8FA] border border-[#DFE1E8]/80">
-                <MapPin className="h-5 w-5 text-[#7A839C]" />
-              </div>
+            <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#C8D0DF] bg-white/70 px-4 py-7 text-center md:min-h-[320px] md:py-8">
+              <img
+                src={commerceEmptyImages.distributors}
+                alt=""
+                aria-hidden="true"
+                className="mb-3 h-40 w-40 object-contain md:mb-4 md:h-60 md:w-60"
+              />
               <div>
-                <p className="font-heading font-bold text-foreground text-sm">Ubicación no configurada</p>
+                <p className="font-heading font-bold text-foreground text-sm md:text-base">Ubicación no configurada</p>
                 <p className="mt-1 text-xs text-muted-foreground max-w-[22ch] leading-relaxed">
                   Completá tu ubicación para ver distribuidoras disponibles.
                 </p>
               </div>
               <Link
                 href="/comercio/cuenta"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white transition-[transform,background-color] duration-150 hover:bg-primary/90 active:scale-[0.97]"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white transition-[transform,background-color] duration-150 hover:bg-primary/90 active:scale-[0.97]"
               >
                 <MapPin className="h-3.5 w-3.5" />
                 Completar ubicación
               </Link>
             </div>
           ) : filteredDistributors.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[#C8D0DF] bg-white/70 px-4 py-8 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F7F8FA] border border-[#DFE1E8]/80">
-                <MapPin className="h-5 w-5 text-[#7A839C]" />
-              </div>
+            <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#C8D0DF] bg-white/70 px-4 py-7 text-center md:min-h-[320px] md:py-8">
+              <img
+                src={commerceEmptyImages.distributors}
+                alt=""
+                aria-hidden="true"
+                className="mb-3 h-40 w-40 object-contain md:mb-4 md:h-60 md:w-60"
+              />
               <div>
-                <p className="font-heading font-bold text-foreground text-sm">Sin distribuidoras en tu zona</p>
+                <p className="font-heading font-bold text-foreground text-sm md:text-base">Sin distribuidoras en tu zona</p>
                 <p className="mt-1 text-xs text-muted-foreground max-w-[28ch] leading-relaxed">
                   Todavía no hay distribuidoras que entreguen en {[currentLocation.city, currentLocation.province].filter(Boolean).join(', ')}.
                 </p>
               </div>
               <Link
                 href="/comercio/cuenta"
-                className="text-xs font-bold text-primary hover:underline"
+                className="mt-3 text-xs font-bold text-primary hover:underline"
               >
                 Editar ubicación
               </Link>
@@ -815,10 +833,10 @@ export default function ComercioHomePage() {
               <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-lima/[0.60] md:text-xs">
                 Reposición rápida
               </p>
-              <h2 className="max-w-md font-heading text-lg font-bold leading-tight tracking-tight md:text-[2rem]">
+              <h2 className="max-w-xl font-heading text-base font-bold leading-tight tracking-tight md:text-4xl">
                 {hasReorderProducts ? '¿Se te está terminando el stock?' : 'Tu historial de reposición'}
               </h2>
-              <p className="mt-1.5 max-w-md text-sm leading-relaxed text-white/[0.68] md:mt-3 md:text-base">
+              <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-white/[0.68] md:mt-3 md:text-base">
                 {hasReorderProducts
                   ? 'Repetí tus productos más pedidos en segundos y asegurá el flujo de ventas de la semana.'
                   : 'Cuando hagas pedidos, acá vas a ver tus productos más repetidos para volver a comprarlos rápido.'}
@@ -866,8 +884,16 @@ export default function ComercioHomePage() {
                     />
                   ))
                 ) : (
-                  <div className="rounded-xl border border-white/[0.10] bg-white/[0.08] p-5 text-sm font-medium leading-relaxed text-white/70 sm:col-span-3">
-                    Todavía no hay productos repetidos en tu historial.
+                  <div className="flex min-h-[260px] flex-col items-center justify-center rounded-xl text-center sm:col-span-3 md:min-h-[310px]">
+                    <img
+                      src={commerceEmptyImages.reorder}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-44 w-44 object-contain md:h-72 md:w-72"
+                    />
+                    <p className="mt-2 text-sm font-medium leading-relaxed text-white/75 md:text-base">
+                      Todavía no hay productos repetidos en tu historial.
+                    </p>
                   </div>
                 )}
               </div>

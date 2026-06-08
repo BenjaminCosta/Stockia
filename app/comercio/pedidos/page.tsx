@@ -185,6 +185,8 @@ function PedidosContent() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={Package}
+            imageSrc="/assets/pedidos-3d.png"
+            imageClassName="h-36 w-56 md:h-52 md:w-80"
             title="No hay pedidos"
             description={activeTab === 'Activos' ? 'No tenés pedidos activos por ahora.' : 'Tu historial de pedidos aparecerá aquí.'}
             actionLabel={activeTab === 'Activos' ? 'Explorar distribuidoras' : undefined}

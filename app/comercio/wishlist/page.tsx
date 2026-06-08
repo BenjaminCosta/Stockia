@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Heart, Trash2, ShoppingCart } from 'lucide-react'
+import { Trash2, ShoppingCart } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { useDistributors } from '@/hooks/use-data'
 import { ProductCard } from '@/components/product-card'
@@ -38,14 +38,12 @@ export default function WishlistPage() {
 
           {/* Empty */}
           <div className="flex flex-col items-center justify-center px-4 py-16 text-center md:py-24">
-            <div className="relative mb-6">
-              <div className="h-24 w-24 rounded-full bg-[#F1FFD1] flex items-center justify-center">
-                <Heart className="h-12 w-12 text-[#DFE1E8]" strokeWidth={1.5} />
-              </div>
-              <div className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-[#C8FF00] flex items-center justify-center text-[#0B1A45]">
-                <span className="text-sm font-bold">0</span>
-              </div>
-            </div>
+            <img
+              src="/assets/favorito-3d.png"
+              alt=""
+              aria-hidden="true"
+              className="mb-4 h-36 w-56 object-contain md:h-56 md:w-80"
+            />
             <h2 className="text-lg font-bold text-[#0B1A45] mb-2">Todavía no guardaste nada</h2>
             <p className="text-sm text-[#7A839C] max-w-xs leading-relaxed mb-8">
               Tocá el corazón en cualquier producto para guardarlo acá y comprarlo cuando quieras.

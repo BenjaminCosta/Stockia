@@ -138,6 +138,8 @@ export default function CarritoPage() {
           <ComercioPageHeader label="Pedido" title="Carrito" />
           <EmptyState
             icon={ShoppingBag}
+            imageSrc="/assets/carrito-3d.png"
+            imageClassName="h-36 w-52 md:h-52 md:w-72"
             title="Tu carrito está vacío"
             description="Explorá las distribuidoras y sumá productos para armar tu pedido"
             actionLabel="Explorar distribuidoras"
