@@ -35,18 +35,18 @@ const commerceEmptyImages = {
 }
 
 const categoryPhotos: Record<string, string> = {
-  'Bebidas':            '/assets/categories/bebidas.jpg',
-  'Almacén':            '/assets/categories/almacen.jpg',
-  'Limpieza':           '/assets/categories/limpieza.jpg',
-  'Lácteos':            '/assets/categories/lacteos.jpg',
-  'Panadería':          '/assets/categories/panaderia.jpg',
-  'Snacks':             '/assets/categories/snacks.jpg',
-  'Fiambres':           '/assets/categories/fiambres.jpg',
-  'Congelados':         '/assets/categories/congelados.jpg',
-  'Golosinas y Kiosco': '/assets/categories/golosinas.jpg',
-  'Perfumería':         '/assets/categories/perfumeria.jpg',
-  'Mascotas':           '/assets/categories/mascotas.jpg',
-  'Otros':              '/assets/categories/otros.jpg',
+  'Bebidas':            '/assets/categories-comercio/bebidas.jpg',
+  'Almacén':            '/assets/categories-comercio/almacen.jpg',
+  'Limpieza':           '/assets/categories-comercio/limpieza.jpg',
+  'Lácteos':            '/assets/categories-comercio/lacteos.jpg',
+  'Panadería':          '/assets/categories-comercio/panaderia.jpg',
+  'Snacks':             '/assets/categories-comercio/snacks.jpg',
+  'Fiambres':           '/assets/categories-comercio/fiambres.jpg',
+  'Congelados':         '/assets/categories-comercio/congelados.jpg',
+  'Golosinas y Kiosco': '/assets/categories-comercio/golosinas.jpg',
+  'Perfumería':         '/assets/categories-comercio/perfumeria.jpg',
+  'Mascotas':           '/assets/categories-comercio/mascotas.jpg',
+  'Otros':              '/assets/categories-comercio/otros.jpg',
 }
 
 const productFilters = ['Todos', 'Ofertas', 'Bebidas', 'Almacén', 'Limpieza'] as const
@@ -70,7 +70,7 @@ function CategoryCard({ category }: { category: Category }) {
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center bg-[#0B1A45]">
-            <img src={category.image} alt={category.name} loading="lazy" className="h-16 w-16 md:h-20 md:w-20 object-contain" />
+            {category.image && <img src={category.image} alt={category.name} loading="lazy" className="h-16 w-16 md:h-20 md:w-20 object-contain" />}
           </div>
         )}
       </div>
@@ -596,7 +596,7 @@ export default function ComercioHomePage() {
                         <img src={photo} alt={category.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-[#F7F8FA]">
-                          <img src={category.image} alt={category.name} className="w-8 h-8 object-contain" />
+                          {category.image && <img src={category.image} alt={category.name} className="w-8 h-8 object-contain" />}
                         </div>
                       )}
                     </div>
@@ -626,7 +626,7 @@ export default function ComercioHomePage() {
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center bg-[#0B1A45]">
-                        <img src={category.image} alt={category.name} className="h-16 w-16 object-contain" />
+                        {category.image && <img src={category.image} alt={category.name} className="h-16 w-16 object-contain" />}
                       </div>
                     )}
                     <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/5 to-transparent" />

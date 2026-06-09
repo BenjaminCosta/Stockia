@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Eye, EyeOff } from 'lucide-react'
-import { getAdminCategories, adminSetCategoryVisibility, adminCreateCategory, type AdminCategory } from '@/lib/data/admin.service'
+import { Plus, Eye, EyeOff, RotateCcw } from 'lucide-react'
+import { getAdminCategories, adminSetCategoryVisibility, adminCreateCategory, adminRestoreStandardCategories, type AdminCategory } from '@/lib/data/admin.service'
 import { AdminCategoriesSkeleton } from '@/components/ui/SkeletonCard'
 
 // Group categories by rubric
@@ -19,10 +19,26 @@ export default function AdminCategoriasPage() {
   const [categories, setCategories] = useState<AdminCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false)
+  const [restoring, setRestoring] = useState(false)
   const [newName, setNewName] = useState('')
   const [newRubric, setNewRubric] = useState('')
 
-  useEffect(() => { getAdminCategories().then(data => { setCategories(data); setLoading(false) }) }, [])
+  const reload = () => getAdminCategories().then(data => { setCategories(data); setLoading(false) })
+  useEffect(() => { reload() }, [])
+
+  const handleRestore = async () => {
+    setRestoring(true)
+    setShowRestoreConfirm(false)
+    try {
+      await adminRestoreStandardCategories()
+      await reload()
+    } catch (err) {
+      console.error('Error restoring categories:', err)
+    } finally {
+      setRestoring(false)
+    }
+  }
 
   const toggleVisibility = async (id: string, currentVisible: boolean) => {
     setCategories(prev => prev.map(c => c.id === id ? { ...c, visible: !currentVisible } : c))
@@ -75,12 +91,23 @@ export default function AdminCategoriasPage() {
           <h1 className="font-heading font-bold text-2xl text-gray-900">Categorías</h1>
           <p className="text-gray-500 text-sm mt-1">{categories.length} categorías · {rubrics.length} rubros</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm"
-        >
-          <Plus className="h-4 w-4" /> Nueva categoría
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowRestoreConfirm(true)}
+            disabled={restoring}
+            title="Restaurar las 12 categorías estándar y eliminar las no estándar"
+            className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            <RotateCcw className={`h-4 w-4 ${restoring ? 'animate-spin' : ''}`} />
+            {restoring ? 'Restaurando…' : 'Restaurar estándar'}
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            <Plus className="h-4 w-4" /> Nueva categoría
+          </button>
+        </div>
       </div>
 
       {/* Rubrics + Categories */}
@@ -121,6 +148,32 @@ export default function AdminCategoriasPage() {
           </div>
         ))}
       </div>
+
+      {/* Restore confirmation modal */}
+      {showRestoreConfirm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h2 className="font-heading font-bold text-lg text-gray-900 mb-2">Restaurar categorías estándar</h2>
+            <p className="text-sm text-gray-500 mb-5">
+              Esto va a restaurar las 12 categorías estándar y eliminar cualquier categoría no estándar (como Carnes, Pescados, etc). Las categorías estándar se van a sobreescribir con los valores por defecto.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRestoreConfirm(false)}
+                className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleRestore}
+                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors"
+              >
+                Restaurar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New category modal */}
       {showModal && (

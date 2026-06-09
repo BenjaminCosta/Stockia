@@ -1,7 +1,7 @@
 // Admin data service — Firestore-first with realistic mock fallback.
 // Admin users have full read access via security rules (isAdmin()).
 
-import { getCollection, getDocument, getDocumentsByField, updateDocument, createDocument } from '../firebase/firestore'
+import { getCollection, getDocument, getDocumentsByField, updateDocument, createDocument, setDocument, deleteDocument } from '../firebase/firestore'
 import { COLLECTIONS } from '../firebase/collections'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -489,4 +489,49 @@ export async function getAdminDashboardStats() {
     pausedDistributors:  distributors.filter(d => d.status === 'paused'),
     overdueDistributors: [...new Set(commissions.filter(c => c.status === 'overdue').map(c => c.distributorName))],
   }
+}
+
+// ─── Seed / restore standard categories ──────────────────────────────────────
+
+const STANDARD_CATEGORIES = [
+  { id: 'cat-1',  name: 'Bebidas',            iconName: 'GlassWater',      image: '/categorias/01_bebidas.png',          rubric: 'Alimentos y Bebidas', order: 1,  visible: true },
+  { id: 'cat-2',  name: 'Almacén',            iconName: 'ShoppingBasket',  image: '/categorias/02_almacen.png',          rubric: 'Alimentos y Bebidas', order: 2,  visible: true },
+  { id: 'cat-3',  name: 'Lácteos',            iconName: 'Milk',            image: '/categorias/04_lacteos.png',          rubric: 'Alimentos y Bebidas', order: 3,  visible: true },
+  { id: 'cat-4',  name: 'Panadería',          iconName: 'Croissant',       image: '/categorias/05_panaderia.png',        rubric: 'Alimentos y Bebidas', order: 4,  visible: true },
+  { id: 'cat-5',  name: 'Snacks',             iconName: 'Cookie',          image: '/categorias/06_snacks.png',           rubric: 'Alimentos y Bebidas', order: 5,  visible: true },
+  { id: 'cat-6',  name: 'Fiambres',           iconName: 'UtensilsCrossed', image: '/categorias/07_fiambres.png',         rubric: 'Alimentos y Bebidas', order: 6,  visible: true },
+  { id: 'cat-7',  name: 'Congelados',         iconName: 'Snowflake',       image: '/categorias/08_congelados.png',       rubric: 'Alimentos y Bebidas', order: 7,  visible: true },
+  { id: 'cat-8',  name: 'Golosinas y Kiosco', iconName: 'Cookie',          image: '/categorias/09_golosinas_kiosco.png', rubric: 'Alimentos y Bebidas', order: 8,  visible: true },
+  { id: 'cat-9',  name: 'Limpieza',           iconName: 'Sparkles',        image: '/categorias/03_limpieza.png',         rubric: 'Limpieza e Higiene',  order: 9,  visible: true },
+  { id: 'cat-10', name: 'Perfumería',         iconName: 'Sparkles',        image: '/categorias/10_perfumeria.png',       rubric: 'Limpieza e Higiene',  order: 10, visible: true },
+  { id: 'cat-11', name: 'Mascotas',           iconName: 'Package',         image: '/categorias/11_mascotas.png',         rubric: 'Otros',               order: 11, visible: true },
+  { id: 'cat-12', name: 'Otros',              iconName: 'Package',         image: '/categorias/12_otros.png',            rubric: 'Otros',               order: 12, visible: true },
+]
+
+export async function adminRestoreStandardCategories(): Promise<{ seeded: number; deleted: number }> {
+  const standardIds   = new Set(STANDARD_CATEGORIES.map(c => c.id))
+  const standardNames = new Set(STANDARD_CATEGORIES.map(c => c.name))
+
+  // Get current state
+  const existing = await getCollection<Record<string, unknown>>(COLLECTIONS.categories)
+
+  // Delete docs that are NOT one of the 12 standard (by id OR by name)
+  const toDelete = existing.filter(d => !standardIds.has(d.id) && !standardNames.has(String(d.name ?? '')))
+  await Promise.all(toDelete.map(d => deleteDocument(COLLECTIONS.categories, d.id)))
+
+  // Upsert all 12 standard categories (overwrites to guarantee clean state)
+  await Promise.all(
+    STANDARD_CATEGORIES.map(cat =>
+      setDocument(COLLECTIONS.categories, cat.id, {
+        name:     cat.name,
+        iconName: cat.iconName,
+        image:    cat.image,
+        rubric:   cat.rubric,
+        order:    cat.order,
+        visible:  cat.visible,
+      })
+    )
+  )
+
+  return { seeded: STANDARD_CATEGORIES.length, deleted: toDelete.length }
 }
