@@ -30,6 +30,8 @@ export interface FirestoreProduct {
   thumbnailUrl?: string
   status: 'active' | 'paused' | 'out_of_stock'
   isOffer?: boolean
+  /** Set true on products belonging to internal test distributors. */
+  isInternalTest?: boolean
   createdAt: unknown
   updatedAt: unknown
 }
@@ -93,11 +95,19 @@ export async function getProductsByDistributorAll(distributorId: string): Promis
   return getProductsByDistribuidora(distributorId)
 }
 
-/** Returns all products (admin / global search). */
+/** Returns all products (admin / global search). Excludes products from internal test distributors. */
 export async function getAllProducts(): Promise<Product[]> {
   try {
-    const docs = await getCollection<FirestoreProduct>(COLLECTIONS.products)
-    if (docs.length > 0) return docs.map(toProduct)
+    const [docs, internalDists] = await Promise.all([
+      getCollection<FirestoreProduct>(COLLECTIONS.products),
+      getDocumentsByField<{ isInternalTest?: boolean }>(COLLECTIONS.distributors, 'isInternalTest', '==', true),
+    ])
+    if (docs.length > 0) {
+      const internalDistIds = new Set(internalDists.map(d => d.id))
+      return docs
+        .filter(d => !d.isInternalTest && !internalDistIds.has(d.distributorId))
+        .map(toProduct)
+    }
   } catch {
     // fall through
   }

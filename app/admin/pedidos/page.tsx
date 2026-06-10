@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Search, CreditCard, Handshake, AlertTriangle } from 'lucide-react'
+import { Search, CreditCard, Handshake, AlertTriangle, FlaskConical } from 'lucide-react'
 import { getAdminOrders, type AdminOrder } from '@/lib/data/admin.service'
 import { formatCurrency } from '@/lib/utils'
 import { AdminListSkeleton } from '@/components/ui/SkeletonCard'
 
 type StatusFilter = AdminOrder['orderStatus'] | 'all'
 type PaymentFilter = 'all' | 'mercado_pago' | 'external'
+type ViewMode = 'real' | 'test' | 'all'
 
 const statusConfig: Record<AdminOrder['orderStatus'], { label: string; className: string }> = {
   pending_confirmation: { label: 'Pend. confirmación', className: 'bg-amber-50 text-amber-700' },
@@ -42,6 +43,7 @@ export default function AdminPedidosPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all')
+  const [viewMode, setViewMode] = useState<ViewMode>('real')
 
   const paramStatus = searchParams.get('status') as StatusFilter | null
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(
@@ -50,7 +52,13 @@ export default function AdminPedidosPage() {
 
   useEffect(() => { getAdminOrders().then(data => { setOrders(data); setLoading(false) }) }, [])
 
-  const filtered = orders.filter(o => {
+  const viewOrders = orders.filter(o =>
+    viewMode === 'real' ? !o.isInternalTest :
+    viewMode === 'test' ? !!o.isInternalTest :
+    true
+  )
+
+  const filtered = viewOrders.filter(o => {
     const matchSearch =
       o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
       o.commerceName.toLowerCase().includes(search.toLowerCase()) ||
@@ -60,8 +68,9 @@ export default function AdminPedidosPage() {
     return matchSearch && matchStatus && matchPayment
   })
 
-  const pendingExternal = orders.filter(o => o.orderStatus === 'pending_confirmation' && o.paymentMethod === 'external').length
-  const cancelledCount = orders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'not_delivered').length
+  const pendingExternal = viewOrders.filter(o => o.orderStatus === 'pending_confirmation' && o.paymentMethod === 'external').length
+  const cancelledCount = viewOrders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'not_delivered').length
+  const testCount = orders.filter(o => o.isInternalTest).length
 
   if (loading) {
     return (
@@ -77,9 +86,33 @@ export default function AdminPedidosPage() {
 
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
-      <div className="mb-6">
-        <h1 className="font-heading font-bold text-2xl text-gray-900">Pedidos</h1>
-        <p className="text-gray-500 text-sm mt-1">{orders.length} en total</p>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-heading font-bold text-2xl text-gray-900">Pedidos</h1>
+          <p className="text-gray-500 text-sm mt-1">{viewOrders.length} {viewMode === 'real' ? 'reales' : viewMode === 'test' ? 'de prueba' : 'en total'}</p>
+        </div>
+        {/* Real / Test toggle */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+          {([
+            { value: 'real', label: 'Reales' },
+            { value: 'test', label: 'Prueba', icon: FlaskConical },
+            { value: 'all',  label: 'Todos' },
+          ] as const).map(m => (
+            <button
+              key={m.value}
+              onClick={() => setViewMode(m.value)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                viewMode === m.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {'icon' in m && <m.icon className="h-3 w-3" />}
+              {m.label}
+              {m.value === 'test' && testCount > 0 && (
+                <span className="ml-0.5 bg-gray-200 text-gray-500 rounded-full px-1.5 text-[10px] font-bold">{testCount}</span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Alert chips */}

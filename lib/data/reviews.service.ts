@@ -62,14 +62,18 @@ function computeSummary(reviews: Review[]): DistributorRatingSummary {
 
 // ─── Service functions ────────────────────────────────────────────────────────
 
-/** Get all visible reviews for a distributor */
+/** Get all visible reviews for a distributor (excludes reviews from internal test commerces). */
 export async function getReviewsByDistributor(distributorId: string): Promise<Review[]> {
   try {
-    const docs = await getDocumentsByField<FirestoreReview>(COLLECTIONS.reviews, 'distributorId', '==', distributorId)
+    const [docs, internalCommerces] = await Promise.all([
+      getDocumentsByField<FirestoreReview>(COLLECTIONS.reviews, 'distributorId', '==', distributorId),
+      getDocumentsByField<{ isInternalTest?: boolean }>(COLLECTIONS.commerces, 'isInternalTest', '==', true),
+    ])
     if (docs.length > 0) {
+      const internalIds = new Set(internalCommerces.map(c => c.id))
       return docs
         .map(fsToReview)
-        .filter(r => r.status === 'visible')
+        .filter(r => r.status === 'visible' && !internalIds.has(r.commerceId))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     }
   } catch {

@@ -32,6 +32,9 @@ export interface FirestoreCommerce {
   cuit?: string
   businessType?: string
   logoUrl?: string
+  /** Internal test accounts — never shown in public marketplace listings. */
+  isInternalTest?: boolean
+  visibleInMarketplace?: boolean
   createdAt: unknown
 }
 

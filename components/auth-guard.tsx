@@ -29,6 +29,12 @@ export function AuthGuard({ children, requiredRole }: AuthGuardProps) {
       return
     }
 
+    // Authenticated but role couldn't be determined — send back to login
+    if (requiredRole && !userRole) {
+      router.replace('/login')
+      return
+    }
+
     if (requiredRole && userRole && userRole !== requiredRole) {
       // Wrong role — redirect to the correct area
       router.replace(userRole === 'distribuidora' ? '/distribuidora' : '/comercio')
@@ -40,6 +46,7 @@ export function AuthGuard({ children, requiredRole }: AuthGuardProps) {
   }
 
   if (!isAuthenticated) return null
+  if (requiredRole && !userRole) return null
 
   return <>{children}</>
 }

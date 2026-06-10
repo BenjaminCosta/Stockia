@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { TrendingUp, Truck, Store, ClipboardList, Receipt, AlertTriangle, ChevronRight, PauseCircle, XCircle } from 'lucide-react'
+import { TrendingUp, Truck, Store, ClipboardList, Receipt, AlertTriangle, ChevronRight, PauseCircle, XCircle, FlaskConical } from 'lucide-react'
 import { getAdminDashboardStats } from '@/lib/data/admin.service'
 import { formatCurrency } from '@/lib/utils'
 import { AdminDashboardSkeleton } from '@/components/ui/SkeletonCard'
@@ -54,6 +54,21 @@ export default function AdminDashboard() {
         <StatCard label="Comisiones pendientes" value={formatCurrency(stats.pendingCommissions)} sub="1.5% sobre ventas" icon={Receipt} iconBg="bg-amber-50 text-amber-600" href="/admin/comisiones" />
         <StatCard label="Ventas generadas" value={formatCurrency(stats.totalRevenue)} sub="pedidos entregados" icon={TrendingUp} iconBg="bg-[#F1FFD1] text-[#4A662E]" href="/admin/pedidos" />
       </div>
+
+      {/* Internal test activity — secondary, de-emphasized */}
+      {(stats.test.monthOrders > 0 || stats.test.totalRevenue > 0 || stats.test.pendingCommissions > 0) && (
+        <div className="mb-6 px-4 py-3 bg-gray-50 rounded-2xl border border-dashed border-gray-200 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <FlaskConical className="h-3.5 w-3.5 text-gray-400" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Actividad interna de prueba</span>
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-400">
+            <span><span className="font-semibold text-gray-500">{stats.test.monthOrders}</span> pedidos test este mes</span>
+            {stats.test.totalRevenue > 0 && <span><span className="font-semibold text-gray-500">{formatCurrency(stats.test.totalRevenue)}</span> en ventas test</span>}
+            {stats.test.pendingCommissions > 0 && <span><span className="font-semibold text-gray-500">{formatCurrency(stats.test.pendingCommissions)}</span> com. test pendiente</span>}
+          </div>
+        </div>
+      )}
 
       {/* Alerts */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

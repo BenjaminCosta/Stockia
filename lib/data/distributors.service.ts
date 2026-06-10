@@ -9,11 +9,16 @@ import type { Distribuidora, DistributorCard, CommerceContext, DistributorCovera
 
 async function fetchRatingsByDistributor(): Promise<Record<string, { avg: number; count: number }>> {
   try {
-    const reviews = await getCollection<{ distributorId: string; ratingGeneral: number; status: string }>(COLLECTIONS.reviews)
+    const [reviews, internalCommerces] = await Promise.all([
+      getCollection<{ distributorId: string; commerceId: string; ratingGeneral: number; status: string }>(COLLECTIONS.reviews),
+      getDocumentsByField<{ isInternalTest?: boolean }>(COLLECTIONS.commerces, 'isInternalTest', '==', true),
+    ])
+    const internalIds = new Set(internalCommerces.map(c => c.id))
     const map: Record<string, { sum: number; count: number }> = {}
     for (const r of reviews) {
       if (r.status !== 'visible') continue
       if (!r.distributorId) continue
+      if (internalIds.has(r.commerceId)) continue   // skip test-account reviews
       if (!map[r.distributorId]) map[r.distributorId] = { sum: 0, count: 0 }
       map[r.distributorId].sum += Number(r.ratingGeneral) || 0
       map[r.distributorId].count++
@@ -77,6 +82,9 @@ export interface FirestoreDistributor {
     lat?: number | null
     lng?: number | null
   }
+  /** Internal test accounts — never shown in public marketplace listings. */
+  isInternalTest?: boolean
+  visibleInMarketplace?: boolean
   createdAt: unknown
 }
 
@@ -232,7 +240,7 @@ export async function getDistributors(): Promise<Distribuidora[]> {
       '==',
       'active'
     )
-    if (docs.length > 0) return docs.map(toDistribuidora)
+    if (docs.length > 0) return docs.filter(d => !d.isInternalTest).map(toDistribuidora)
   } catch {
     // fall through
   }
@@ -281,7 +289,7 @@ export async function getDistributorCards(
     ])
 
     if (docs.length > 0) {
-      const matchedDocs = docs.filter(matchesCtx)
+      const matchedDocs = docs.filter(d => !d.isInternalTest).filter(matchesCtx)
       const cards: DistributorCard[] = matchedDocs
         .map(d => {
           const r = ratings[d.id]

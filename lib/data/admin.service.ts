@@ -27,6 +27,8 @@ export type AdminDistributor = {
   deliveryTimeLabel?: string
   deliveryHours?: string
   commissionRate?: number
+  /** True for internal test accounts — shown in admin but excluded from real metrics. */
+  isInternalTest?: boolean
 }
 
 export type AdminCommerce = {
@@ -43,6 +45,8 @@ export type AdminCommerce = {
   // Detail fields (populated by getAdminCommerceById)
   razonSocial?: string
   cuit?: string
+  /** True for internal test accounts — shown in admin but excluded from real metrics. */
+  isInternalTest?: boolean
 }
 
 export type AdminOrder = {
@@ -55,6 +59,8 @@ export type AdminOrder = {
   orderStatus: 'pending_confirmation' | 'confirmed' | 'preparing' | 'ready_or_on_the_way' | 'delivered' | 'cancelled' | 'not_delivered'
   createdAt: string
   itemCount: number
+  /** True when the order involves an internal test commerce or distributor. */
+  isInternalTest?: boolean
 }
 
 export type AdminCommission = {
@@ -69,6 +75,8 @@ export type AdminCommission = {
   orderId: string
   orderNumber: string
   createdAt: string
+  /** True when the commission belongs to an internal test distributor. */
+  isInternalTest?: boolean
 }
 
 export type AdminCategory = {
@@ -176,6 +184,7 @@ function fsToDistributor(doc: Record<string, unknown> & { id: string }): AdminDi
     deliveryTimeLabel: doc.deliveryTimeLabel ? String(doc.deliveryTimeLabel) : undefined,
     deliveryHours: doc.deliveryHours ? String(doc.deliveryHours) : undefined,
     commissionRate: doc.commissionRate ? Number(doc.commissionRate) : undefined,
+    isInternalTest: doc.isInternalTest === true,
   }
 }
 
@@ -197,6 +206,7 @@ function fsToCommerce(doc: Record<string, unknown> & { id: string }): AdminComme
     joinedAt,
     razonSocial: doc.razonSocial ? String(doc.razonSocial) : undefined,
     cuit: doc.cuit ? String(doc.cuit) : undefined,
+    isInternalTest: doc.isInternalTest === true,
   }
 }
 
@@ -347,13 +357,22 @@ export async function getAdminOrders(): Promise<AdminOrder[]> {
     ])
     if (orderDocs.length > 0) {
       const distNames: Record<string, string> = {}
-      distDocs.forEach(d => { distNames[d.id] = String(d.companyName ?? '') })
+      const internalDistIds = new Set<string>()
+      distDocs.forEach(d => {
+        distNames[d.id] = String(d.companyName ?? '')
+        if (d.isInternalTest === true) internalDistIds.add(d.id)
+      })
       const commerceNames: Record<string, string> = {}
-      commDocs.forEach(c => { commerceNames[c.id] = String(c.businessName ?? c.storeName ?? '') })
+      const internalCommerceIds = new Set<string>()
+      commDocs.forEach(c => {
+        commerceNames[c.id] = String(c.businessName ?? c.storeName ?? '')
+        if (c.isInternalTest === true) internalCommerceIds.add(c.id)
+      })
       return orderDocs.map(doc => ({
         ...fsToOrder(doc),
         commerceName:    commerceNames[String(doc.commerceId)]   || String(doc.commerceId ?? ''),
         distributorName: distNames[String(doc.distributorId)]    || String(doc.distributorId ?? ''),
+        isInternalTest:  internalDistIds.has(String(doc.distributorId)) || internalCommerceIds.has(String(doc.commerceId)),
       }))
     }
   } catch { /* fall through */ }
@@ -362,10 +381,14 @@ export async function getAdminOrders(): Promise<AdminOrder[]> {
 
 export async function getAdminCommissions(): Promise<AdminCommission[]> {
   try {
-    const commDocs = await getCollection<Record<string, unknown>>(COLLECTIONS.commissions)
+    const [commDocs, distDocs] = await Promise.all([
+      getCollection<Record<string, unknown>>(COLLECTIONS.commissions),
+      getDocumentsByField<Record<string, unknown>>(COLLECTIONS.distributors, 'isInternalTest', '==', true),
+    ])
     if (commDocs.length > 0) {
+      const internalDistIds = new Set(distDocs.map(d => d.id))
       return commDocs
-        .map(fsToCommission)
+        .map(doc => ({ ...fsToCommission(doc), isInternalTest: internalDistIds.has(String(doc.distributorId)) }))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     }
   } catch { /* fall through */ }
@@ -475,19 +498,32 @@ export async function getAdminDashboardStats() {
     getAdminCommissions(),
   ])
 
-  // Filter orders to current calendar month
-  const monthOrders = orders.filter(o => o.createdAt.slice(0, 7) === currentPeriod)
+  // Split real vs internal test
+  const realOrders = orders.filter(o => !o.isInternalTest)
+  const testOrders  = orders.filter(o => o.isInternalTest)
+  const realComms   = commissions.filter(c => !c.isInternalTest)
+  const testComms   = commissions.filter(c => c.isInternalTest)
+
+  const realMonthOrders = realOrders.filter(o => o.createdAt.slice(0, 7) === currentPeriod)
+  const testMonthOrders = testOrders.filter(o => o.createdAt.slice(0, 7) === currentPeriod)
 
   return {
-    activeDistributors:  distributors.filter(d => d.status === 'active').length,
-    activeCommerces:     commerces.filter(c => c.status === 'active').length,
-    monthOrders:         monthOrders.length,
-    pendingCommissions:  commissions.filter(c => c.status === 'pending').reduce((s, c) => s + c.commissionAmount, 0),
-    overdueCommissions:  commissions.filter(c => c.status === 'overdue').reduce((s, c) => s + c.commissionAmount, 0),
-    totalRevenue:        monthOrders.filter(o => o.orderStatus === 'delivered').reduce((s, o) => s + o.total, 0),
-    cancelledOrders:     monthOrders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'not_delivered').length,
-    pausedDistributors:  distributors.filter(d => d.status === 'paused'),
-    overdueDistributors: [...new Set(commissions.filter(c => c.status === 'overdue').map(c => c.distributorName))],
+    // ─── Real metrics (shown prominently in dashboard) ────────────────────
+    activeDistributors:  distributors.filter(d => d.status === 'active' && !d.isInternalTest).length,
+    activeCommerces:     commerces.filter(c => c.status === 'active' && !c.isInternalTest).length,
+    monthOrders:         realMonthOrders.length,
+    pendingCommissions:  realComms.filter(c => c.status === 'pending').reduce((s, c) => s + c.commissionAmount, 0),
+    overdueCommissions:  realComms.filter(c => c.status === 'overdue').reduce((s, c) => s + c.commissionAmount, 0),
+    totalRevenue:        realMonthOrders.filter(o => o.orderStatus === 'delivered').reduce((s, o) => s + o.total, 0),
+    cancelledOrders:     realMonthOrders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'not_delivered').length,
+    pausedDistributors:  distributors.filter(d => d.status === 'paused' && !d.isInternalTest),
+    overdueDistributors: [...new Set(realComms.filter(c => c.status === 'overdue').map(c => c.distributorName))],
+    // ─── Internal test activity (shown secondary) ─────────────────────────
+    test: {
+      monthOrders:        testMonthOrders.length,
+      totalRevenue:       testMonthOrders.filter(o => o.orderStatus === 'delivered').reduce((s, o) => s + o.total, 0),
+      pendingCommissions: testComms.filter(c => c.status === 'pending').reduce((s, c) => s + c.commissionAmount, 0),
+    },
   }
 }
 

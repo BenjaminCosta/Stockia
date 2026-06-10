@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Ban, AlertTriangle, Lock, Unlock, ChevronDown, RotateCcw } from 'lucide-react'
+import { CheckCircle2, Ban, AlertTriangle, Lock, Unlock, ChevronDown, RotateCcw, FlaskConical } from 'lucide-react'
 import {
   getAdminCommissions,
   getAdminDistributors,
@@ -17,6 +17,7 @@ import { AdminCommissionSkeleton } from '@/components/ui/SkeletonCard'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type StatusFilter = AdminCommission['status'] | 'all'
+type ViewMode = 'real' | 'test' | 'all'
 
 interface DistributorSummary {
   id: string
@@ -70,6 +71,7 @@ export default function AdminComisionesPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [distFilter, setDistFilter] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<ViewMode>('real')
   const [blockingId, setBlockingId] = useState<string | null>(null)
   // Track per-distributor blocked status locally (from summary)
   const [distBlockStatus, setDistBlockStatus] = useState<Record<string, 'ok' | 'overdue' | 'blocked'>>({})
@@ -87,14 +89,21 @@ export default function AdminComisionesPage() {
     })
   }, [])
 
-  const summary = groupByDistributor(commissions)
-  const distributorNames = [...new Set(commissions.map(c => c.distributorName))].sort()
+  const viewCommissions = commissions.filter(c =>
+    viewMode === 'real' ? !c.isInternalTest :
+    viewMode === 'test' ? !!c.isInternalTest :
+    true
+  )
+  const testCount = commissions.filter(c => c.isInternalTest).length
 
-  const totalPending = commissions.filter(c => c.status === 'pending').reduce((s, c) => s + c.commissionAmount, 0)
-  const totalOverdue = commissions.filter(c => c.status === 'overdue').reduce((s, c) => s + c.commissionAmount, 0)
-  const totalPaid    = commissions.filter(c => c.status === 'paid').reduce((s, c) => s + c.commissionAmount, 0)
+  const summary = groupByDistributor(viewCommissions)
+  const distributorNames = [...new Set(viewCommissions.map(c => c.distributorName))].sort()
 
-  const filtered = commissions.filter(c => {
+  const totalPending = viewCommissions.filter(c => c.status === 'pending').reduce((s, c) => s + c.commissionAmount, 0)
+  const totalOverdue = viewCommissions.filter(c => c.status === 'overdue').reduce((s, c) => s + c.commissionAmount, 0)
+  const totalPaid    = viewCommissions.filter(c => c.status === 'paid').reduce((s, c) => s + c.commissionAmount, 0)
+
+  const filtered = viewCommissions.filter(c => {
     if (statusFilter !== 'all' && c.status !== statusFilter) return false
     if (distFilter !== 'all' && c.distributorName !== distFilter) return false
     return true
@@ -136,9 +145,33 @@ export default function AdminComisionesPage() {
 
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
-      <div className="mb-6">
-        <h1 className="font-heading font-bold text-2xl text-gray-900">Comisiones</h1>
-        <p className="text-gray-500 text-sm mt-1">Tasa base: 1.5% sobre pedidos entregados · Pago externo coordinado con la distribuidora</p>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-heading font-bold text-2xl text-gray-900">Comisiones</h1>
+          <p className="text-gray-500 text-sm mt-1">Tasa base: 1.5% sobre pedidos entregados · Pago externo coordinado con la distribuidora</p>
+        </div>
+        {/* Real / Test toggle */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+          {([
+            { value: 'real', label: 'Reales' },
+            { value: 'test', label: 'Prueba', icon: FlaskConical },
+            { value: 'all',  label: 'Todos' },
+          ] as const).map(m => (
+            <button
+              key={m.value}
+              onClick={() => setViewMode(m.value)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                viewMode === m.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {'icon' in m && <m.icon className="h-3 w-3" />}
+              {m.label}
+              {m.value === 'test' && testCount > 0 && (
+                <span className="ml-0.5 bg-gray-200 text-gray-500 rounded-full px-1.5 text-[10px] font-bold">{testCount}</span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (

@@ -275,15 +275,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setCurrentUser(await buildCurrentUser(fbUser.uid, fbUser.email ?? '', userDoc.name as string, userDoc.role as UserRole))
           setSessionCookie(userDoc.role as string)
         } else {
-          setIsAuthenticated(true)
+          // Unknown or missing role — can't route them anywhere, send to login
+          setIsAuthenticated(false)
           setUserRole(null)
           setCurrentUser(null)
-          setSessionCookie('guest')
+          clearSessionCookie()
         }
       } catch {
-        setIsAuthenticated(true)
+        // Can't determine user role — treat as unauthenticated to avoid blank screens
+        setIsAuthenticated(false)
         setUserRole(null)
         setCurrentUser(null)
+        clearSessionCookie()
       } finally {
         setAuthLoading(false)
       }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ShieldOff, ShieldCheck, ChevronRight } from 'lucide-react'
+import { Search, ShieldOff, ShieldCheck, ChevronRight, FlaskConical } from 'lucide-react'
 import { getAdminCommerces, adminSetCommerceStatus, type AdminCommerce } from '@/lib/data/admin.service'
 import { formatCurrency } from '@/lib/utils'
 import { AdminListSkeleton } from '@/components/ui/SkeletonCard'
@@ -19,13 +19,15 @@ export default function AdminComerciosPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<AdminCommerce['status'] | 'all'>('all')
+  const [testFilter, setTestFilter] = useState<'all' | 'real' | 'test'>('all')
 
   useEffect(() => { getAdminCommerces().then(data => { setCommerces(data); setLoading(false) }) }, [])
 
   const filtered = commerces.filter(c => {
     const matchSearch = c.businessName.toLowerCase().includes(search.toLowerCase()) || c.city.toLowerCase().includes(search.toLowerCase())
     const matchStatus = statusFilter === 'all' || c.status === statusFilter
-    return matchSearch && matchStatus
+    const matchTest = testFilter === 'all' || (testFilter === 'test' ? !!c.isInternalTest : !c.isInternalTest)
+    return matchSearch && matchStatus && matchTest
   })
 
   const toggleBlock = async (id: string, currentStatus: AdminCommerce['status']) => {
@@ -55,7 +57,7 @@ export default function AdminComerciosPage() {
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-6xl mx-auto w-full">
       <div className="mb-6">
         <h1 className="font-heading font-bold text-2xl text-gray-900">Comercios</h1>
-        <p className="text-gray-500 text-sm mt-1">{commerces.length} registrados</p>
+        <p className="text-gray-500 text-sm mt-1">{filtered.length} de {commerces.length} registrados</p>
       </div>
 
       {/* Filters */}
@@ -79,6 +81,21 @@ export default function AdminComerciosPage() {
               {s === 'all' ? 'Todos' : statusConfig[s].label}
             </button>
           ))}
+          <div className="w-px bg-gray-200 mx-1 self-stretch" />
+          {([
+            { value: 'all',  label: 'Reales + Prueba' },
+            { value: 'real', label: 'Solo reales' },
+            { value: 'test', label: 'Prueba', icon: FlaskConical },
+          ] as const).map(f => (
+            <button
+              key={f.value}
+              onClick={() => setTestFilter(f.value)}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-colors ${testFilter === f.value ? 'bg-primary text-white border-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
+            >
+              {'icon' in f && <f.icon className="h-3 w-3" />}
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -95,7 +112,14 @@ export default function AdminComerciosPage() {
           >
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="min-w-0 flex-1">
-                <p className="font-semibold text-gray-900 truncate">{c.businessName}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-gray-900 truncate">{c.businessName}</p>
+                  {c.isInternalTest && (
+                    <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 bg-gray-100 text-gray-400 rounded-full">
+                      <FlaskConical className="h-2.5 w-2.5" /> Prueba
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-400 mt-0.5 truncate">{c.email}</p>
                 <p className="text-xs text-gray-500 mt-1">{c.city}</p>
               </div>
@@ -156,7 +180,14 @@ export default function AdminComerciosPage() {
                 >
                   <td className="px-5 py-4">
                     <div>
-                      <p className="font-semibold text-gray-900">{c.businessName}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900">{c.businessName}</p>
+                        {c.isInternalTest && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 bg-gray-100 text-gray-400 rounded-full">
+                            <FlaskConical className="h-2.5 w-2.5" /> Prueba
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-400 mt-0.5">{c.email}</p>
                     </div>
                   </td>
