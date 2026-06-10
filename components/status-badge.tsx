@@ -65,6 +65,16 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType | nu
     icon: Truck,
     className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   },
+  delivered_with_adjustments: {
+    label: 'Entregado c/ajustes',
+    icon: CheckCircle,
+    className: 'bg-teal-50 text-teal-700 border-teal-200',
+  },
+  entregado_con_ajustes: {
+    label: 'Entregado c/ajustes',
+    icon: CheckCircle,
+    className: 'bg-teal-50 text-teal-700 border-teal-200',
+  },
   cancelled: {
     label: 'Cancelado',
     icon: X,

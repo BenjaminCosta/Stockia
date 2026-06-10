@@ -12,29 +12,31 @@ type PaymentFilter = 'all' | 'mercado_pago' | 'external'
 type ViewMode = 'real' | 'test' | 'all'
 
 const statusConfig: Record<AdminOrder['orderStatus'], { label: string; className: string }> = {
-  pending_confirmation: { label: 'Pend. confirmación', className: 'bg-amber-50 text-amber-700' },
-  confirmed:            { label: 'Confirmado',         className: 'bg-blue-50 text-blue-700' },
-  preparing:            { label: 'En preparación',     className: 'bg-purple-50 text-purple-700' },
-  ready_or_on_the_way:  { label: 'En camino',          className: 'bg-sky-50 text-sky-700' },
-  delivered:            { label: 'Entregado',           className: 'bg-green-50 text-green-700' },
-  cancelled:            { label: 'Cancelado',           className: 'bg-red-50 text-red-700' },
-  not_delivered:        { label: 'No entregado',        className: 'bg-orange-50 text-orange-700' },
+  pending_confirmation:       { label: 'Pend. confirmación', className: 'bg-amber-50 text-amber-700' },
+  confirmed:                  { label: 'Confirmado',         className: 'bg-blue-50 text-blue-700' },
+  preparing:                  { label: 'En preparación',     className: 'bg-purple-50 text-purple-700' },
+  ready_or_on_the_way:        { label: 'En camino',          className: 'bg-sky-50 text-sky-700' },
+  delivered:                  { label: 'Entregado',           className: 'bg-green-50 text-green-700' },
+  delivered_with_adjustments: { label: 'Entregado c/ajustes', className: 'bg-teal-50 text-teal-700' },
+  cancelled:                  { label: 'Cancelado',           className: 'bg-red-50 text-red-700' },
+  not_delivered:              { label: 'No entregado',        className: 'bg-orange-50 text-orange-700' },
 }
 
 const statusFilters: { value: StatusFilter; label: string }[] = [
-  { value: 'all',                  label: 'Todos' },
-  { value: 'pending_confirmation', label: 'Pendientes' },
-  { value: 'confirmed',            label: 'Confirmados' },
-  { value: 'preparing',            label: 'En preparación' },
-  { value: 'ready_or_on_the_way',  label: 'En camino' },
-  { value: 'delivered',            label: 'Entregados' },
-  { value: 'cancelled',            label: 'Cancelados' },
-  { value: 'not_delivered',        label: 'No entregados' },
+  { value: 'all',                        label: 'Todos' },
+  { value: 'pending_confirmation',       label: 'Pendientes' },
+  { value: 'confirmed',                  label: 'Confirmados' },
+  { value: 'preparing',                  label: 'En preparación' },
+  { value: 'ready_or_on_the_way',        label: 'En camino' },
+  { value: 'delivered',                  label: 'Entregados' },
+  { value: 'delivered_with_adjustments', label: 'Entregado c/ajustes' },
+  { value: 'cancelled',                  label: 'Cancelados' },
+  { value: 'not_delivered',              label: 'No entregados' },
 ]
 
 const VALID_STATUS_PARAMS: StatusFilter[] = [
   'pending_confirmation', 'confirmed', 'preparing', 'ready_or_on_the_way',
-  'delivered', 'cancelled', 'not_delivered',
+  'delivered', 'delivered_with_adjustments', 'cancelled', 'not_delivered',
 ]
 
 export default function AdminPedidosPage() {
@@ -203,7 +205,12 @@ export default function AdminPedidosPage() {
               </span>
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-              <p className="text-base font-bold text-gray-900">{formatCurrency(o.total)}</p>
+              <div>
+                <p className="text-base font-bold text-gray-900">{formatCurrency(o.deliveredTotal ?? o.total)}</p>
+                {o.hasItemAdjustments && o.originalTotal && o.originalTotal !== (o.deliveredTotal ?? o.total) && (
+                  <p className="text-xs text-gray-400 line-through">{formatCurrency(o.originalTotal)}</p>
+                )}
+              </div>
               {o.paymentMethod === 'mercado_pago' ? (
                 <span className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-semibold bg-blue-50 px-2.5 py-1 rounded-full">
                   <CreditCard className="h-3.5 w-3.5" /> Mercado Pago
@@ -253,7 +260,12 @@ export default function AdminPedidosPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-4 font-semibold text-gray-900">{formatCurrency(o.total)}</td>
+                  <td className="px-4 py-4">
+                    <span className="font-semibold text-gray-900">{formatCurrency(o.deliveredTotal ?? o.total)}</span>
+                    {o.hasItemAdjustments && o.originalTotal && o.originalTotal !== (o.deliveredTotal ?? o.total) && (
+                      <span className="block text-xs text-gray-400 line-through">{formatCurrency(o.originalTotal)}</span>
+                    )}
+                  </td>
                   <td className="px-4 py-4">
                     <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${statusConfig[o.orderStatus].className}`}>
                       {statusConfig[o.orderStatus].label}

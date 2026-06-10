@@ -56,9 +56,12 @@ export type AdminOrder = {
   distributorName: string
   total: number
   paymentMethod: 'mercado_pago' | 'external'
-  orderStatus: 'pending_confirmation' | 'confirmed' | 'preparing' | 'ready_or_on_the_way' | 'delivered' | 'cancelled' | 'not_delivered'
+  orderStatus: 'pending_confirmation' | 'confirmed' | 'preparing' | 'ready_or_on_the_way' | 'delivered' | 'delivered_with_adjustments' | 'cancelled' | 'not_delivered'
   createdAt: string
   itemCount: number
+  originalTotal?: number
+  deliveredTotal?: number
+  hasItemAdjustments?: boolean
   /** True when the order involves an internal test commerce or distributor. */
   isInternalTest?: boolean
 }
@@ -226,6 +229,9 @@ function fsToOrder(doc: Record<string, unknown> & { id: string }): AdminOrder {
     orderStatus: (doc.orderStatus as AdminOrder['orderStatus']) ?? 'pending_confirmation',
     createdAt,
     itemCount: items.length,
+    originalTotal: doc.originalTotal ? Number(doc.originalTotal) : undefined,
+    deliveredTotal: doc.deliveredTotal ? Number(doc.deliveredTotal) : undefined,
+    hasItemAdjustments: doc.hasItemAdjustments === true,
   }
 }
 
@@ -514,14 +520,14 @@ export async function getAdminDashboardStats() {
     monthOrders:         realMonthOrders.length,
     pendingCommissions:  realComms.filter(c => c.status === 'pending').reduce((s, c) => s + c.commissionAmount, 0),
     overdueCommissions:  realComms.filter(c => c.status === 'overdue').reduce((s, c) => s + c.commissionAmount, 0),
-    totalRevenue:        realMonthOrders.filter(o => o.orderStatus === 'delivered').reduce((s, o) => s + o.total, 0),
+    totalRevenue:        realMonthOrders.filter(o => o.orderStatus === 'delivered' || o.orderStatus === 'delivered_with_adjustments').reduce((s, o) => s + (o.deliveredTotal ?? o.total), 0),
     cancelledOrders:     realMonthOrders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'not_delivered').length,
     pausedDistributors:  distributors.filter(d => d.status === 'paused' && !d.isInternalTest),
     overdueDistributors: [...new Set(realComms.filter(c => c.status === 'overdue').map(c => c.distributorName))],
     // ─── Internal test activity (shown secondary) ─────────────────────────
     test: {
       monthOrders:        testMonthOrders.length,
-      totalRevenue:       testMonthOrders.filter(o => o.orderStatus === 'delivered').reduce((s, o) => s + o.total, 0),
+      totalRevenue:       testMonthOrders.filter(o => o.orderStatus === 'delivered' || o.orderStatus === 'delivered_with_adjustments').reduce((s, o) => s + (o.deliveredTotal ?? o.total), 0),
       pendingCommissions: testComms.filter(c => c.status === 'pending').reduce((s, c) => s + c.commissionAmount, 0),
     },
   }

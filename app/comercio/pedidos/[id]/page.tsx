@@ -4,8 +4,9 @@ import { use, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   AlertCircle, ArrowLeft, Check, Clock,
-  Handshake, MapPin, Phone, Star,
+  Handshake, Info, MapPin, Phone, Star,
 } from 'lucide-react'
+import { ADJUSTMENT_REASONS } from '@/lib/types'
 import { PaymentMethodBadge, getPaymentMethodConfig } from '@/components/payment-method-badge'
 import { StatusBadge } from '@/components/status-badge'
 import { formatCurrency } from '@/lib/mock-data'
@@ -28,19 +29,24 @@ import { cn } from '@/lib/utils'
 // ─── Status timeline ───────────────────────────────────────────────────────────
 
 const statusSteps: Array<{ key: FirestoreOrderStatus; label: string; description: string }> = [
-  { key: 'pending_confirmation', label: 'Pedido enviado',       description: 'Esperando respuesta de la distribuidora' },
-  { key: 'confirmed',           label: 'Confirmado',            description: 'La distribuidora aceptó el pedido' },
-  { key: 'preparing',           label: 'En preparación',        description: 'Armando tu pedido en el depósito' },
-  { key: 'ready_or_on_the_way', label: 'En camino',             description: 'El pedido salió hacia tu comercio' },
-  { key: 'delivered',           label: 'Entregado',             description: 'Pedido recibido correctamente' },
+  { key: 'pending_confirmation', label: 'Pedido enviado',   description: 'Esperando respuesta de la distribuidora' },
+  { key: 'confirmed',            label: 'Confirmado',       description: 'La distribuidora aceptó el pedido' },
+  { key: 'preparing',            label: 'En preparación',   description: 'Armando tu pedido en el depósito' },
+  { key: 'ready_or_on_the_way',  label: 'En camino',        description: 'El pedido salió hacia tu comercio' },
+  { key: 'delivered',            label: 'Entregado',        description: 'Pedido recibido correctamente' },
 ]
 
 const statusOrder: FirestoreOrderStatus[] = [
   'pending_confirmation', 'confirmed', 'preparing', 'ready_or_on_the_way', 'delivered',
 ]
 
+// Normalize delivered_with_adjustments → delivered for index-based step comparison
+function normalizeForTimeline(s: FirestoreOrderStatus): FirestoreOrderStatus {
+  return s === 'delivered_with_adjustments' ? 'delivered' : s
+}
+
 function getStepStatus(current: FirestoreOrderStatus, step: FirestoreOrderStatus) {
-  const ci = statusOrder.indexOf(current)
+  const ci = statusOrder.indexOf(normalizeForTimeline(current))
   const si = statusOrder.indexOf(step)
   if (si < ci) return 'completed'
   if (si === ci) return 'current'
@@ -59,7 +65,7 @@ function PedidoDetail({ id }: { id: string }) {
   const prevFSStatus = useRef<string | null>(null)
 
   useEffect(() => {
-    if (order?.status === 'entregado') {
+    if (order?.status === 'entregado' || order?.status === 'entregado_con_ajustes') {
       getReviewByOrder(id).then(r => setHasReview(!!r))
     }
   }, [id, order?.status])
@@ -70,12 +76,13 @@ function PedidoDetail({ id }: { id: string }) {
     const current = order.firestoreStatus
     if (prevFSStatus.current !== null && prevFSStatus.current !== current) {
       const STATUS_CHANGE_LABELS: Record<string, string> = {
-        confirmed:           '✓ La distribuidora confirmó tu pedido',
-        preparing:           'Tu pedido está en preparación',
-        ready_or_on_the_way: 'Tu pedido está en camino',
-        delivered:           '¡Tu pedido fue entregado!',
-        cancelled:           'El pedido fue cancelado',
-        not_delivered:       'El pedido no pudo ser entregado',
+        confirmed:                  '✓ La distribuidora confirmó tu pedido',
+        preparing:                  'Tu pedido está en preparación',
+        ready_or_on_the_way:        'Tu pedido está en camino',
+        delivered:                  '¡Tu pedido fue entregado!',
+        delivered_with_adjustments: '¡Pedido entregado con ajustes! Revisá el detalle.',
+        cancelled:                  'El pedido fue cancelado',
+        not_delivered:              'El pedido no pudo ser entregado',
       }
       const msg = STATUS_CHANGE_LABELS[current]
       if (msg) setActionMessage(msg)
@@ -106,13 +113,15 @@ function PedidoDetail({ id }: { id: string }) {
 
   const isExternal = order.paymentMethod === 'external'
   const firestoreStatus = (order.firestoreStatus ?? (
-    order.status === 'entregado'      ? 'delivered'           :
-    order.status === 'en_preparacion' ? 'preparing'           :
-    order.status === 'pagado'         ? 'confirmed'           :
+    order.status === 'entregado'             ? 'delivered'                  :
+    order.status === 'entregado_con_ajustes' ? 'delivered_with_adjustments' :
+    order.status === 'en_preparacion'        ? 'preparing'                  :
+    order.status === 'pagado'                ? 'confirmed'                  :
     'pending_confirmation'
   )) as FirestoreOrderStatus
+  const isDelivered   = firestoreStatus === 'delivered' || firestoreStatus === 'delivered_with_adjustments'
   const isCancelled   = firestoreStatus === 'cancelled' || firestoreStatus === 'not_delivered'
-  const isConfirmed   = ['confirmed', 'preparing', 'ready_or_on_the_way', 'delivered'].includes(firestoreStatus)
+  const isConfirmed   = ['confirmed', 'preparing', 'ready_or_on_the_way', 'delivered', 'delivered_with_adjustments'].includes(firestoreStatus)
   const canCancel     = ['pending_confirmation', 'confirmed'].includes(firestoreStatus)
 
   const distInitials = order.distribuidoraName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -267,12 +276,17 @@ function PedidoDetail({ id }: { id: string }) {
               {statusSteps.map((step, index) => {
                 const s = getStepStatus(firestoreStatus, step.key)
                 const isLast = index === statusSteps.length - 1
+                // For the last "Entregado" step, show adjusted label/desc if status is delivered_with_adjustments
+                const isAdjusted = isLast && firestoreStatus === 'delivered_with_adjustments'
+                const label = isAdjusted ? 'Entregado (con ajustes)' : step.label
+                const description = isAdjusted ? 'Algunos productos fueron ajustados. Revisá el detalle abajo.' : step.description
                 return (
                   <div key={step.key} className="flex gap-4 pb-5 last:pb-0">
                     <div className="flex flex-col items-center">
                       <div className={cn(
                         'w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors',
                         s === 'completed' ? 'bg-[#89B317]' :
+                        s === 'current' && isAdjusted ? 'bg-teal-600 ring-4 ring-teal-600/15' :
                         s === 'current'   ? 'bg-primary ring-4 ring-primary/15' :
                         'bg-[#F7F8FA] border border-[#DFE1E8]'
                       )}>
@@ -296,10 +310,12 @@ function PedidoDetail({ id }: { id: string }) {
                         'font-semibold text-sm',
                         s === 'upcoming' ? 'text-muted-foreground' : 'text-foreground'
                       )}>
-                        {step.label}
+                        {label}
                       </p>
                       {s === 'current' && (
-                        <p className="text-xs text-primary font-medium mt-0.5">{step.description}</p>
+                        <p className={cn('text-xs font-medium mt-0.5', isAdjusted ? 'text-teal-700' : 'text-primary')}>
+                          {description}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -337,7 +353,7 @@ function PedidoDetail({ id }: { id: string }) {
         )}
 
         {/* Calificar */}
-        {order.status === 'entregado' && hasReview !== null && (
+        {isDelivered && hasReview !== null && (
           <div className="bg-white rounded-3xl shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] border border-[#DFE1E8]/80 p-5">
             {hasReview ? (
               <div className="flex items-center gap-3">
@@ -371,39 +387,107 @@ function PedidoDetail({ id }: { id: string }) {
           </div>
         )}
 
+        {/* Adjusted order info banner */}
+        {order.hasItemAdjustments && (
+          <div className="flex items-start gap-3 p-4 bg-teal-50 border border-teal-200 rounded-2xl">
+            <Info className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-teal-800">Pedido entregado con ajustes</p>
+              <p className="text-xs text-teal-700 mt-0.5">Algunos productos fueron modificados, cancelados o no entregados. El total refleja lo que realmente fue entregado.</p>
+            </div>
+          </div>
+        )}
+
         {/* Productos */}
         <div className="bg-white rounded-3xl shadow-[0_1px_3px_rgba(11,26,69,0.04),0_4px_14px_rgba(11,26,69,0.05)] border border-[#DFE1E8]/80 p-5">
           <h2 className="font-bold text-xs uppercase tracking-widest text-[#7A839C] mb-4">
             Productos · {order.items.length} {order.items.length === 1 ? 'ítem' : 'ítems'}
           </h2>
           <div className="space-y-3">
-            {order.items.map((item, index) => (
-              <div key={index} className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground leading-snug">{item.productName}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {formatCurrency(item.unitPrice)} × {item.quantity}
-                  </p>
+            {order.items.map((item, index) => {
+              const isCancelledItem = item.itemStatus === 'cancelled' || item.itemStatus === 'not_delivered' || item.itemStatus === 'rejected_by_commerce'
+              const isModified = item.itemStatus === 'modified' || item.itemStatus === 'partially_delivered'
+              const displayQty = item.deliveredQuantity ?? item.confirmedQuantity ?? item.quantity
+              const displaySubtotal = item.finalSubtotal ?? (item.unitPrice * item.quantity)
+              const reasonLabel = item.adjustmentReason ? ADJUSTMENT_REASONS[item.adjustmentReason] : null
+
+              return (
+                <div key={index} className={`${index !== 0 ? 'pt-3 border-t border-gray-100' : ''}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm font-semibold leading-snug ${isCancelledItem ? 'text-gray-400 line-through' : 'text-foreground'}`}>
+                        {item.productName}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatCurrency(item.unitPrice)} × {displayQty}
+                        {isModified && item.requestedQuantity && item.requestedQuantity !== displayQty && (
+                          <span className="text-blue-400 ml-1">(pedido: {item.requestedQuantity})</span>
+                        )}
+                      </p>
+                      {/* Adjustment info */}
+                      {isCancelledItem && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+                            {item.itemStatus === 'cancelled' ? 'Cancelado' : item.itemStatus === 'not_delivered' ? 'No entregado' : 'Rechazado'}
+                          </span>
+                          {reasonLabel && <span className="text-[10px] text-gray-400">{reasonLabel}</span>}
+                        </div>
+                      )}
+                      {isModified && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                            Cantidad ajustada
+                          </span>
+                          {reasonLabel && <span className="text-[10px] text-gray-400">{reasonLabel}</span>}
+                        </div>
+                      )}
+                    </div>
+                    <span className={`font-bold text-sm shrink-0 ${isCancelledItem ? 'text-gray-300 line-through' : 'text-foreground'}`}>
+                      {formatCurrency(displaySubtotal)}
+                    </span>
+                  </div>
                 </div>
-                <span className="font-bold text-sm text-foreground shrink-0">
-                  {formatCurrency(item.unitPrice * item.quantity)}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
           <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground font-medium">Subtotal</span>
-              <span className="font-medium">{formatCurrency(order.subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground font-medium">Envío</span>
-              <span className="font-bold text-[#4A662E]">Gratis</span>
-            </div>
-            <div className="flex justify-between items-center pt-1">
-              <span className="font-bold text-foreground">Total</span>
-              <span className="font-heading font-bold text-xl text-foreground">{formatCurrency(order.total)}</span>
-            </div>
+            {order.hasItemAdjustments ? (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground font-medium">Subtotal solicitado</span>
+                  <span className="font-medium">{formatCurrency(order.originalTotal ?? order.subtotal)}</span>
+                </div>
+                {order.cancelledTotal != null && order.cancelledTotal > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground font-medium">Ajuste aplicado</span>
+                    <span className="font-medium text-red-500">-{formatCurrency(order.cancelledTotal)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground font-medium">Envío</span>
+                  <span className="font-bold text-[#4A662E]">Gratis</span>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="font-bold text-foreground">Total entregado</span>
+                  <span className="font-heading font-bold text-xl text-teal-700">{formatCurrency(order.deliveredTotal ?? order.total)}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground font-medium">Subtotal</span>
+                  <span className="font-medium">{formatCurrency(order.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground font-medium">Envío</span>
+                  <span className="font-bold text-[#4A662E]">Gratis</span>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="font-bold text-foreground">Total</span>
+                  <span className="font-heading font-bold text-xl text-foreground">{formatCurrency(order.total)}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

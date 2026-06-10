@@ -19,12 +19,45 @@ export interface ParsedProductRow {
 // ─── Normalización ─────────────────────────────────────────────────────────────
 // Minúsculas + sin tildes + solo alfanumérico. Sirve para comparar headers y valores.
 
-function norm(s: string): string {
+export function norm(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]/g, '')
+}
+
+// ─── Mapeo de categoría libre → categoría estándar del sistema ────────────────
+
+/**
+ * Mapea cualquier texto libre de categoría (ej. "CACHI", "BEBIDAS", "LACTEOS")
+ * a una de las 12 categorías estándar de Stockia.
+ * Útil para normalizar productos importados desde CSV.
+ */
+export function mapToSystemCategory(raw: string): string {
+  const n = norm(raw)
+
+  const rules: [string, string[]][] = [
+    ['Bebidas',            ['bebida', 'bebidas', 'gaseosa', 'gaseosas', 'jugo', 'jugos', 'agua', 'aguas', 'cerveza', 'cervezas', 'vino', 'vinos', 'energizante', 'energizantes', 'isotonica', 'isotonicas', 'soda', 'sodas', 'refresco', 'refrescos', 'drink', 'drinks']],
+    ['Almacén',            ['almacen', 'despensa', 'seco', 'secos', 'abarrotes', 'enlatado', 'enlatados', 'conserva', 'conservas', 'pasta', 'pastas', 'arroz', 'harina', 'harinas', 'salsa', 'salsas', 'aceite', 'aceites', 'grano', 'granos', 'legumbre', 'legumbres', 'cereal', 'cereales', 'abarrote']],
+    ['Lácteos',            ['lacteo', 'lacteos', 'leche', 'yogur', 'yogurt', 'yogures', 'queso', 'quesos', 'manteca', 'crema', 'ricota', 'mantequilla', 'dairy']],
+    ['Panadería',          ['panaderia', 'pan', 'factura', 'facturas', 'medialuna', 'medialunas', 'bolleria', 'confiteria', 'bizcochuelo', 'tostada', 'tostadas', 'bakery']],
+    ['Snacks',             ['snack', 'snacks', 'papasfritas', 'chizito', 'chizitos', 'palito', 'palitos', 'copetines', 'copetine', 'nachos', 'chips']],
+    ['Fiambres',           ['fiambre', 'fiambres', 'embutido', 'embutidos', 'salame', 'salames', 'salchicha', 'salchichas', 'jamon', 'mortadela', 'chorizo', 'chorizos', 'deli']],
+    ['Congelados',         ['congelado', 'congelados', 'freezer', 'ultracongelado', 'ultracongelados', 'frozen']],
+    ['Golosinas y Kiosco', ['golosina', 'golosinas', 'kiosco', 'kiosco', 'caramelo', 'caramelos', 'chocolate', 'chocolates', 'chicle', 'chicles', 'alfajor', 'alfajores', 'pochoclo', 'caramelito', 'dulce', 'dulces', 'candy']],
+    ['Limpieza',           ['limpieza', 'detergente', 'detergentes', 'desinfectante', 'desinfectantes', 'lavandina', 'lustramueble', 'lustramuebles', 'trapo', 'trapos', 'escoba', 'escobas', 'cleaning', 'higienizante']],
+    ['Perfumería',         ['perfumeria', 'cosmetica', 'cosmeticos', 'higiene', 'shampoo', 'champus', 'champu', 'jabon', 'jabones', 'desodorante', 'desodorantes', 'pastadental', 'crema', 'cremas', 'maquillaje', 'beauty', 'toiletry', 'toiletries', 'perfume', 'perfumes']],
+    ['Mascotas',           ['mascota', 'mascotas', 'petfood', 'pet', 'perro', 'perros', 'gato', 'gatos', 'balanceado', 'balanceados', 'acuario', 'pajaro', 'pajaros']],
+  ]
+
+  for (const [category, aliases] of rules) {
+    if (aliases.some(alias => n === alias || n.includes(alias) || alias.includes(n))) {
+      return category
+    }
+  }
+
+  return 'Otros'
 }
 
 // ─── Aliases de columnas ───────────────────────────────────────────────────────

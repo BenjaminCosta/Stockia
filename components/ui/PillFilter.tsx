@@ -16,7 +16,7 @@ interface PillFilterProps<T extends string> {
 
 export function PillFilter<T extends string>({ items, selected, onChange, className }: PillFilterProps<T>) {
   return (
-    <div className={cn('flex gap-2 overflow-x-auto pb-1 scrollbar-hide', className)}>
+    <div className={cn('flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none', className)}>
       {items.map((item) => (
         <button
           key={item.value}

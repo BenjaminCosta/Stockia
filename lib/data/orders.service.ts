@@ -8,7 +8,7 @@ import { collection, doc, runTransaction, serverTimestamp } from 'firebase/fires
 import { db } from '../firebase/client'
 import { COLLECTIONS } from '../firebase/collections'
 import { mockOrders, getOrdersByComercio, getOrdersByDistribuidora } from '../mock-data'
-import type { Order, OrderItem } from '../types'
+import type { Order, OrderItem, AdjustmentReason, OrderItemStatus } from '../types'
 
 // ─── Firestore shape ──────────────────────────────────────────────────────────
 
@@ -20,6 +20,7 @@ export type OrderStatus =
   | 'preparing'
   | 'ready_or_on_the_way'
   | 'delivered'
+  | 'delivered_with_adjustments'
   | 'cancelled'
   | 'not_delivered'
 
@@ -46,6 +47,12 @@ export interface FirestoreOrder {
   createdAt: unknown
   updatedAt: unknown
   deliveredAt?: unknown
+  // Adjustment totals (optional — absent on legacy orders)
+  originalTotal?: number
+  confirmedTotal?: number
+  deliveredTotal?: number
+  cancelledTotal?: number
+  hasItemAdjustments?: boolean
 }
 
 interface FirestoreProductForStock {
@@ -107,6 +114,8 @@ function toOrder(doc: FirestoreOrder & { id: string }): Order {
     total: doc.total,
     status: (doc.orderStatus === 'delivered'
       ? 'entregado'
+      : doc.orderStatus === 'delivered_with_adjustments'
+      ? 'entregado_con_ajustes'
       : doc.orderStatus === 'preparing' || doc.orderStatus === 'ready_or_on_the_way'
       ? 'en_preparacion'
       : doc.orderStatus === 'confirmed'
@@ -130,6 +139,11 @@ function toOrder(doc: FirestoreOrder & { id: string }): Order {
     stockReleasedAt: doc.stockReleasedAt ? toISOString(doc.stockReleasedAt) : undefined,
     stockReleaseReason: doc.stockReleaseReason,
     deliveredAt: doc.deliveredAt ? toISOString(doc.deliveredAt) : undefined,
+    originalTotal: doc.originalTotal,
+    confirmedTotal: doc.confirmedTotal,
+    deliveredTotal: doc.deliveredTotal,
+    cancelledTotal: doc.cancelledTotal,
+    hasItemAdjustments: doc.hasItemAdjustments ?? false,
   }
 }
 
@@ -459,10 +473,223 @@ export async function updateOrderStatus(
     transaction.update(orderRef, update)
   })
 
-  // Generate commission on delivery
+  // Generate commission on delivery — generateCommissionForOrder guards against double generation internally
   if (orderStatus === 'delivered') {
     await generateCommissionForOrder(id)
   }
+}
+
+/**
+ * Adjust a single item within an order.
+ * Sets item-level status, quantities and reason. Recomputes confirmedTotal.
+ * Stock is NOT released here — that happens in finalizeOrderWithAdjustments.
+ */
+export async function adjustOrderItem(
+  orderId: string,
+  productId: string,
+  adjustment: {
+    itemStatus: OrderItemStatus
+    confirmedQuantity?: number
+    cancelledQuantity?: number
+    reason?: AdjustmentReason
+    comment?: string
+  }
+): Promise<void> {
+  await runTransaction(db, async transaction => {
+    const orderRef = doc(db, COLLECTIONS.orders, orderId)
+    const orderSnap = await transaction.get(orderRef)
+    if (!orderSnap.exists()) return
+
+    const order = orderSnap.data() as FirestoreOrder
+
+    const updatedItems = order.items.map(item => {
+      if (item.productId !== productId) return item
+      const requestedQty = (item as any).requestedQuantity ?? item.quantity
+      const confirmedQty = adjustment.confirmedQuantity ?? requestedQty
+      return {
+        ...item,
+        requestedQuantity: requestedQty,
+        confirmedQuantity: confirmedQty,
+        cancelledQuantity: adjustment.cancelledQuantity ?? (requestedQty - confirmedQty),
+        originalSubtotal: requestedQty * item.unitPrice,
+        finalSubtotal: confirmedQty * item.unitPrice,
+        itemStatus: adjustment.itemStatus,
+        adjustmentReason: adjustment.reason,
+        adjustmentComment: adjustment.comment,
+      }
+    })
+
+    // Recompute confirmedTotal from all non-cancelled items
+    const confirmedTotal = updatedItems.reduce((sum, item) => {
+      if ((item as any).itemStatus === 'cancelled') return sum
+      const qty = (item as any).confirmedQuantity ?? (item as any).requestedQuantity ?? item.quantity
+      return sum + qty * item.unitPrice
+    }, 0)
+
+    transaction.update(orderRef, {
+      items: updatedItems,
+      hasItemAdjustments: true,
+      confirmedTotal,
+      originalTotal: order.total,
+      updatedAt: serverTimestamp(),
+    })
+  })
+}
+
+/**
+ * Confirm all items in an order as-is (no adjustments).
+ * Sets itemStatus: 'confirmed' and confirmedQuantity = requestedQuantity for all unprocessed items.
+ */
+export async function bulkConfirmItems(orderId: string): Promise<void> {
+  await runTransaction(db, async transaction => {
+    const orderRef = doc(db, COLLECTIONS.orders, orderId)
+    const orderSnap = await transaction.get(orderRef)
+    if (!orderSnap.exists()) return
+
+    const order = orderSnap.data() as FirestoreOrder
+
+    const updatedItems = order.items.map(item => {
+      if ((item as any).itemStatus && (item as any).itemStatus !== 'pending') return item
+      const qty = (item as any).requestedQuantity ?? item.quantity
+      return {
+        ...item,
+        requestedQuantity: qty,
+        confirmedQuantity: qty,
+        cancelledQuantity: 0,
+        originalSubtotal: qty * item.unitPrice,
+        finalSubtotal: qty * item.unitPrice,
+        itemStatus: 'confirmed' as OrderItemStatus,
+      }
+    })
+
+    transaction.update(orderRef, {
+      items: updatedItems,
+      hasItemAdjustments: false,
+      confirmedTotal: order.total,
+      originalTotal: order.total,
+      updatedAt: serverTimestamp(),
+    })
+  })
+}
+
+/**
+ * Finalize an order with per-item adjustments at delivery time.
+ * Computes deliveredTotal, releases cancelled stock, sets final order status,
+ * then triggers commission generation on the delivered amount.
+ */
+export async function finalizeOrderWithAdjustments(orderId: string): Promise<void> {
+  await runTransaction(db, async transaction => {
+    const orderRef = doc(db, COLLECTIONS.orders, orderId)
+    const orderSnap = await transaction.get(orderRef)
+    if (!orderSnap.exists()) return
+
+    const order = orderSnap.data() as FirestoreOrder
+
+    // Compute final per-item quantities and stock to release
+    const stockReleases = new Map<string, { productId: string; releaseQty: number }>()
+
+    const finalItems = order.items.map(item => {
+      const requestedQty = (item as any).requestedQuantity ?? item.quantity
+      const itemStatus = (item as any).itemStatus as OrderItemStatus | undefined
+
+      let deliveredQty: number
+      if (itemStatus === 'cancelled' || itemStatus === 'not_delivered' || itemStatus === 'rejected_by_commerce') {
+        deliveredQty = 0
+      } else {
+        deliveredQty = (item as any).confirmedQuantity ?? requestedQty
+      }
+
+      const releaseQty = requestedQty - deliveredQty
+      if (releaseQty > 0) {
+        const existing = stockReleases.get(item.productId)
+        stockReleases.set(item.productId, {
+          productId: item.productId,
+          releaseQty: (existing?.releaseQty ?? 0) + releaseQty,
+        })
+      }
+
+      const finalSubtotal = deliveredQty * item.unitPrice
+      const finalStatus: OrderItemStatus = deliveredQty === 0
+        ? (itemStatus ?? 'cancelled')
+        : deliveredQty < requestedQty
+        ? 'partially_delivered'
+        : 'delivered'
+
+      return {
+        ...item,
+        requestedQuantity: requestedQty,
+        deliveredQuantity: deliveredQty,
+        cancelledQuantity: requestedQty - deliveredQty,
+        originalSubtotal: requestedQty * item.unitPrice,
+        finalSubtotal,
+        itemStatus: finalStatus,
+      }
+    })
+
+    // Release stock for cancelled/reduced quantities
+    if (order.stockReservationStatus === 'reserved' && stockReleases.size > 0) {
+      const productReads = await Promise.all(
+        Array.from(stockReleases.values()).map(async ({ productId }) => {
+          const productRef = doc(db, COLLECTIONS.products, productId)
+          const snap = await transaction.get(productRef)
+          return { productId, productRef, snap }
+        })
+      )
+
+      productReads.forEach(({ productId, productRef, snap }) => {
+        if (!snap.exists()) return
+        const product = snap.data() as FirestoreProductForStock
+        if (product.distributorId !== order.distributorId) return
+        const releaseQty = stockReleases.get(productId)!.releaseQty
+        const nextStock = Math.max(0, product.stock ?? 0) + releaseQty
+        transaction.update(productRef, {
+          stock: nextStock,
+          status: product.status === 'out_of_stock' && nextStock > 0 ? 'active' : product.status,
+          updatedAt: serverTimestamp(),
+        })
+      })
+    }
+
+    const deliveredTotal = finalItems.reduce((sum, item) => sum + ((item as any).finalSubtotal ?? 0), 0)
+    const cancelledTotal = finalItems.reduce((sum, item) => {
+      const status = (item as any).itemStatus as OrderItemStatus
+      if (status === 'cancelled' || status === 'not_delivered' || status === 'rejected_by_commerce') {
+        return sum + ((item as any).originalSubtotal ?? 0)
+      }
+      return sum
+    }, 0)
+
+    const allCancelled = finalItems.every(item => {
+      const status = (item as any).itemStatus as OrderItemStatus
+      return status === 'cancelled' || status === 'not_delivered' || status === 'rejected_by_commerce'
+    })
+    const anyAdjusted = finalItems.some(item => {
+      const status = (item as any).itemStatus as OrderItemStatus
+      return status !== 'delivered'
+    })
+
+    const finalOrderStatus: OrderStatus = allCancelled
+      ? 'cancelled'
+      : anyAdjusted
+      ? 'delivered_with_adjustments'
+      : 'delivered'
+
+    transaction.update(orderRef, {
+      items: finalItems,
+      orderStatus: finalOrderStatus,
+      deliveredTotal,
+      cancelledTotal,
+      originalTotal: order.originalTotal ?? order.total,
+      stockReservationStatus: 'released',
+      stockReleasedAt: serverTimestamp(),
+      stockReleaseReason: 'finalized_with_adjustments',
+      deliveredAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+  })
+
+  // Generate commission on delivered amount
+  await generateCommissionForOrder(orderId)
 }
 
 /**
@@ -483,7 +710,8 @@ async function generateCommissionForOrder(orderId: string): Promise<void> {
       // Use per-distributor rate if set, otherwise default 1.5%
       const distDoc = await getDocument<Record<string, unknown>>(COLLECTIONS.distributors, orderDoc.distributorId).catch(() => null)
       const commissionRate = Number((distDoc as any)?.commissionRate ?? 0.015)
-      const commissionAmount = Math.round(orderDoc.total * commissionRate * 100) / 100
+      const baseAmount = orderDoc.deliveredTotal ?? orderDoc.total
+      const commissionAmount = Math.round(baseAmount * commissionRate * 100) / 100
 
       const period = new Date().toISOString().slice(0, 7) // "YYYY-MM"
 
@@ -492,7 +720,7 @@ async function generateCommissionForOrder(orderId: string): Promise<void> {
         distributorName: orderDoc.distributorName ?? orderDoc.distributorId,
         orderId,
         orderNumber: orderId.slice(0, 8).toUpperCase(),
-        orderTotal: orderDoc.total,
+        orderTotal: baseAmount,
         commissionRate,
         commissionAmount,
         status: 'pending',

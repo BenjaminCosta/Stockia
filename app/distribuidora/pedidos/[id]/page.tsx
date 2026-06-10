@@ -6,8 +6,10 @@ import { ArrowLeft, MapPin, Phone, Package, Clock, CheckCircle, Truck, X, AlertT
 import { formatCurrency, getEstimatedDeliveryDate } from '@/lib/mock-data'
 import { useOrder, useDistributor } from '@/hooks/use-data'
 import { getCommerceById, type FirestoreCommerce } from '@/lib/data/users.service'
-import { updateOrderStatus, releasePendingStock } from '@/lib/data/orders.service'
+import { updateOrderStatus, releasePendingStock, adjustOrderItem, bulkConfirmItems, finalizeOrderWithAdjustments } from '@/lib/data/orders.service'
 import type { OrderStatus as FSOrderStatus } from '@/lib/data/orders.service'
+import { ADJUSTMENT_REASONS } from '@/lib/types'
+import type { OrderItem, AdjustmentReason, OrderItemStatus } from '@/lib/types'
 import { LoadingButton } from '@/components/ui/LoadingButton'
 import { getCommerceReviewByOrder } from '@/lib/data/commerce-reviews.service'
 import { CommerceReviewModal } from '@/components/CommerceReviewModal'
@@ -22,23 +24,25 @@ import { printRemito } from '@/lib/utils/remito'
 type DistribStatus = FSOrderStatus
 
 const STATUS_LABELS: Record<DistribStatus, string> = {
-  pending_confirmation:  'Pendiente de confirmación',
-  confirmed:             'Confirmado',
-  preparing:             'En preparación',
-  ready_or_on_the_way:   'En camino / listo',
-  delivered:             'Entregado',
-  cancelled:             'Cancelado',
-  not_delivered:         'No entregado',
+  pending_confirmation:       'Pendiente de confirmación',
+  confirmed:                  'Confirmado',
+  preparing:                  'En preparación',
+  ready_or_on_the_way:        'En camino / listo',
+  delivered:                  'Entregado',
+  delivered_with_adjustments: 'Entregado c/ajustes',
+  cancelled:                  'Cancelado',
+  not_delivered:              'No entregado',
 }
 
 const STATUS_COLORS: Record<DistribStatus, string> = {
-  pending_confirmation:  'bg-amber-50 text-amber-700 border-amber-200',
-  confirmed:             'bg-blue-50 text-blue-700 border-blue-200',
-  preparing:             'bg-[#F1FFD1] text-[#4A662E] border-[#89B317]/30',
-  ready_or_on_the_way:   'bg-sky-50 text-sky-700 border-sky-200',
-  delivered:             'bg-emerald-50 text-emerald-700 border-emerald-200',
-  cancelled:             'bg-red-50 text-red-600 border-red-200',
-  not_delivered:         'bg-orange-50 text-orange-700 border-orange-200',
+  pending_confirmation:       'bg-amber-50 text-amber-700 border-amber-200',
+  confirmed:                  'bg-blue-50 text-blue-700 border-blue-200',
+  preparing:                  'bg-[#F1FFD1] text-[#4A662E] border-[#89B317]/30',
+  ready_or_on_the_way:        'bg-sky-50 text-sky-700 border-sky-200',
+  delivered:                  'bg-emerald-50 text-emerald-700 border-emerald-200',
+  delivered_with_adjustments: 'bg-teal-50 text-teal-700 border-teal-200',
+  cancelled:                  'bg-red-50 text-red-600 border-red-200',
+  not_delivered:              'bg-orange-50 text-orange-700 border-orange-200',
 }
 
 const CANCELLATION_REASONS = [
@@ -52,6 +56,7 @@ const CANCELLATION_REASONS = [
 
 function toFirestoreStatus(localStatus: string): DistribStatus {
   if (localStatus === 'entregado') return 'delivered'
+  if (localStatus === 'entregado_con_ajustes') return 'delivered_with_adjustments'
   if (localStatus === 'en_preparacion') return 'preparing'
   if (localStatus === 'pagado') return 'confirmed'
   if (localStatus === 'cancelado') return 'cancelled'
@@ -114,6 +119,170 @@ function CancellationModal({
   )
 }
 
+// ─── Item adjustment sheet ────────────────────────────────────────────────────
+
+type AdjustAction = 'confirm' | 'modify' | 'cancel' | 'not_delivered'
+
+function ItemAdjustmentSheet({
+  item,
+  onSave,
+  onClose,
+  loading,
+}: {
+  item: OrderItem
+  onSave: (adjustment: { itemStatus: OrderItemStatus; confirmedQuantity?: number; cancelledQuantity?: number; reason?: AdjustmentReason; comment?: string }) => Promise<void>
+  onClose: () => void
+  loading: boolean
+}) {
+  const maxQty = item.requestedQuantity ?? item.quantity
+  const [action, setAction] = useState<AdjustAction | null>(null)
+  const [qty, setQty] = useState(maxQty)
+  const [reason, setReason] = useState<AdjustmentReason | ''>('')
+  const [comment, setComment] = useState('')
+
+  const needsReason = action && action !== 'confirm'
+  const canSave = action !== null && (!needsReason || reason !== '')
+
+  const handleSave = async () => {
+    if (!action || !canSave) return
+    if (action === 'confirm') {
+      await onSave({ itemStatus: 'confirmed', confirmedQuantity: maxQty })
+    } else if (action === 'modify') {
+      await onSave({ itemStatus: 'modified', confirmedQuantity: qty, cancelledQuantity: maxQty - qty, reason: reason as AdjustmentReason, comment: comment || undefined })
+    } else if (action === 'cancel') {
+      await onSave({ itemStatus: 'cancelled', confirmedQuantity: 0, cancelledQuantity: maxQty, reason: reason as AdjustmentReason, comment: comment || undefined })
+    } else if (action === 'not_delivered') {
+      await onSave({ itemStatus: 'not_delivered', confirmedQuantity: maxQty, reason: reason as AdjustmentReason, comment: comment || undefined })
+    }
+  }
+
+  const actionBtns: { id: AdjustAction; label: string; desc: string; color: string }[] = [
+    { id: 'confirm',       label: 'Confirmar',         desc: 'Todo como está',          color: 'border-[#89B317] bg-[#F1FFD1] text-[#4A662E]' },
+    { id: 'modify',        label: 'Modificar cantidad', desc: 'Menos unidades',          color: 'border-blue-300 bg-blue-50 text-blue-700' },
+    { id: 'cancel',        label: 'Cancelar producto',  desc: 'No se va a entregar',     color: 'border-red-300 bg-red-50 text-red-700' },
+    { id: 'not_delivered', label: 'No entregado',       desc: 'Se intentó pero no pudo', color: 'border-orange-300 bg-orange-50 text-orange-700' },
+  ]
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+      <div className="bg-white rounded-t-3xl md:rounded-3xl shadow-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h3 className="font-heading font-bold text-lg text-gray-900 leading-tight">{item.productName}</h3>
+            <p className="text-sm text-gray-400 mt-0.5">
+              {maxQty} un. · {formatCurrency((item.requestedQuantity ?? item.quantity) * item.unitPrice)}
+            </p>
+          </div>
+          <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 transition-colors shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Action selector */}
+        <div className="grid grid-cols-2 gap-2 mb-5">
+          {actionBtns.map(btn => (
+            <button
+              key={btn.id}
+              onClick={() => { setAction(btn.id); if (btn.id !== 'modify') setQty(maxQty) }}
+              className={`p-3 rounded-xl border-2 text-left transition-all ${action === btn.id ? btn.color + ' border-opacity-100' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'}`}
+            >
+              <p className="font-bold text-sm">{btn.label}</p>
+              <p className="text-[11px] opacity-70 mt-0.5">{btn.desc}</p>
+            </button>
+          ))}
+        </div>
+
+        {/* Quantity input for 'modify' */}
+        {action === 'modify' && (
+          <div className="mb-5">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cantidad confirmada</label>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setQty(q => Math.max(1, q - 1))}
+                className="h-10 w-10 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-700 font-bold text-lg hover:bg-gray-100 transition-colors"
+              >−</button>
+              <span className="flex-1 text-center font-heading font-bold text-2xl text-gray-900">{qty}</span>
+              <button
+                onClick={() => setQty(q => Math.min(maxQty, q + 1))}
+                className="h-10 w-10 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-700 font-bold text-lg hover:bg-gray-100 transition-colors"
+              >+</button>
+            </div>
+            <p className="text-xs text-gray-400 text-center mt-1">máximo {maxQty} unidades</p>
+          </div>
+        )}
+
+        {/* Reason */}
+        {needsReason && (
+          <div className="mb-4">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Motivo <span className="text-red-400">*</span></label>
+            <select
+              value={reason}
+              onChange={e => setReason(e.target.value as AdjustmentReason)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20"
+            >
+              <option value="">Seleccioná un motivo</option>
+              {(Object.entries(ADJUSTMENT_REASONS) as [AdjustmentReason, string][]).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Optional comment */}
+        {needsReason && (
+          <div className="mb-5">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Comentario (opcional)</label>
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              rows={2}
+              placeholder="Detalle adicional..."
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#0B1A45]/20 resize-none"
+            />
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!canSave || loading}
+            className="flex-1 py-3 bg-[#0B1A45] text-[#C8FF00] rounded-xl text-sm font-bold hover:bg-[#0B1A45]/90 disabled:opacity-40 transition-colors"
+          >
+            {loading ? 'Guardando...' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Item status pill ─────────────────────────────────────────────────────────
+
+function ItemStatusPill({ status }: { status: OrderItemStatus }) {
+  const config: Record<OrderItemStatus, { label: string; className: string }> = {
+    pending:              { label: 'Pendiente',          className: 'bg-gray-100 text-gray-500' },
+    confirmed:            { label: 'Confirmado',         className: 'bg-[#F1FFD1] text-[#4A662E]' },
+    modified:             { label: 'Cantidad reducida',  className: 'bg-blue-50 text-blue-700' },
+    cancelled:            { label: 'Cancelado',          className: 'bg-red-50 text-red-600' },
+    delivered:            { label: 'Entregado',          className: 'bg-emerald-50 text-emerald-700' },
+    partially_delivered:  { label: 'Entregado parcial',  className: 'bg-blue-50 text-blue-700' },
+    not_delivered:        { label: 'No entregado',       className: 'bg-orange-50 text-orange-700' },
+    rejected_by_commerce: { label: 'Rechazado',          className: 'bg-red-50 text-red-600' },
+  }
+  const c = config[status] ?? config.pending
+  return (
+    <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${c.className}`}>
+      {c.label}
+    </span>
+  )
+}
+
 // ─── Main detail component ────────────────────────────────────────────────────
 
 function PedidoDistribuidoraDetail({ id }: { id: string }) {
@@ -125,6 +294,9 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
   const [isUpdating, setIsUpdating] = useState(false)
   const [comercioData, setComercioData] = useState<(FirestoreCommerce & { id: string }) | null>(null)
   const [cancellationModal, setCancellationModal] = useState<'cancelled' | 'not_delivered' | null>(null)
+  const [adjustingItem, setAdjustingItem] = useState<OrderItem | null>(null)
+  const [isAdjusting, setIsAdjusting] = useState(false)
+  const [isBulkConfirming, setIsBulkConfirming] = useState(false)
   const [showSuccessMsg, setShowSuccessMsg] = useState<string | null>(null)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [showFeedbackAfterReview, setShowFeedbackAfterReview] = useState(false)
@@ -152,7 +324,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
   useEffect(() => {
     if (!order?.id) return
     const fsStatus = (order.firestoreStatus as DistribStatus | undefined) ?? toFirestoreStatus(order.status)
-    const isTerminalStatus = ['delivered', 'cancelled', 'not_delivered'].includes(fsStatus)
+    const isTerminalStatus = ['delivered', 'delivered_with_adjustments', 'cancelled', 'not_delivered'].includes(fsStatus)
     if (!isTerminalStatus) { setAlreadyReviewed(false); return }
     getCommerceReviewByOrder(order.id).then(r => setAlreadyReviewed(r !== null))
   }, [order])
@@ -176,24 +348,56 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
   const dateFormatted = new Date(order.createdAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
   const timeFormatted = new Date(order.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
   const isExternal = order.paymentMethod === 'external'
-  const isTerminal = currentFSStatus === 'delivered' || currentFSStatus === 'cancelled' || currentFSStatus === 'not_delivered'
+  const isTerminal = ['delivered', 'delivered_with_adjustments', 'cancelled', 'not_delivered'].includes(currentFSStatus)
   const isContactVisible = !['pending_confirmation'].includes(currentFSStatus)
   const commissionRate = distribuidoraUser?.commissionRate ?? 0.015
-  const commission = order.total * commissionRate
+  const commissionBase = order.deliveredTotal ?? order.total
+  const commission = commissionBase * commissionRate
+  const canAdjustItems = !isTerminal && ['preparing', 'ready_or_on_the_way'].includes(currentFSStatus)
 
   const handleStatusChange = async (nextStatus: DistribStatus, cancellationReason?: string) => {
     setIsUpdating(true)
     try {
-      await updateOrderStatus(order.id, nextStatus, cancellationReason)
-      setCurrentFSStatus(nextStatus)
-      if (nextStatus === 'delivered') setShowSuccessMsg('¡Pedido marcado como entregado! Se generó la comisión.')
-      else if (nextStatus === 'confirmed') setShowSuccessMsg('Pedido confirmado. Podés coordinar pago y entrega con el comercio.')
+      if (nextStatus === 'delivered' && order.hasItemAdjustments) {
+        await finalizeOrderWithAdjustments(order.id)
+        setCurrentFSStatus('delivered_with_adjustments')
+        setShowSuccessMsg('Pedido entregado con ajustes. Se generó la comisión sobre el total entregado.')
+      } else {
+        await updateOrderStatus(order.id, nextStatus, cancellationReason)
+        setCurrentFSStatus(nextStatus)
+        if (nextStatus === 'delivered') setShowSuccessMsg('¡Pedido marcado como entregado! Se generó la comisión.')
+        else if (nextStatus === 'confirmed') setShowSuccessMsg('Pedido confirmado. Podés coordinar pago y entrega con el comercio.')
+      }
       setTimeout(() => setShowSuccessMsg(null), 4000)
     } catch (err) {
       console.error('[pedido] updateOrderStatus failed', err)
     } finally {
       setIsUpdating(false)
       setCancellationModal(null)
+    }
+  }
+
+  const handleAdjustItem = async (adjustment: { itemStatus: OrderItemStatus; confirmedQuantity?: number; cancelledQuantity?: number; reason?: AdjustmentReason; comment?: string }) => {
+    if (!adjustingItem) return
+    setIsAdjusting(true)
+    try {
+      await adjustOrderItem(order.id, adjustingItem.productId, adjustment)
+      setAdjustingItem(null)
+    } catch (err) {
+      console.error('[pedido] adjustOrderItem failed', err)
+    } finally {
+      setIsAdjusting(false)
+    }
+  }
+
+  const handleBulkConfirm = async () => {
+    setIsBulkConfirming(true)
+    try {
+      await bulkConfirmItems(order.id)
+    } catch (err) {
+      console.error('[pedido] bulkConfirmItems failed', err)
+    } finally {
+      setIsBulkConfirming(false)
     }
   }
 
@@ -216,6 +420,16 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
           onConfirm={reason => handleStatusChange(cancellationModal, reason)}
           onCancel={() => setCancellationModal(null)}
           loading={isUpdating}
+        />
+      )}
+
+      {/* Item adjustment sheet */}
+      {adjustingItem && (
+        <ItemAdjustmentSheet
+          item={adjustingItem}
+          onSave={handleAdjustItem}
+          onClose={() => setAdjustingItem(null)}
+          loading={isAdjusting}
         />
       )}
 
@@ -301,19 +515,22 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
         )}
 
         {/* Commission badge when delivered */}
-        {currentFSStatus === 'delivered' && !order.commissionError && (
-          <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
-            <BadgePercent className="h-5 w-5 text-emerald-600 shrink-0" />
+        {(currentFSStatus === 'delivered' || currentFSStatus === 'delivered_with_adjustments') && !order.commissionError && (
+          <div className={`flex items-center gap-3 p-4 border rounded-2xl ${currentFSStatus === 'delivered_with_adjustments' ? 'bg-teal-50 border-teal-100' : 'bg-emerald-50 border-emerald-100'}`}>
+            <BadgePercent className={`h-5 w-5 shrink-0 ${currentFSStatus === 'delivered_with_adjustments' ? 'text-teal-600' : 'text-emerald-600'}`} />
             <div className="flex-1">
-              <p className="font-semibold text-emerald-800 text-sm">Comisión generada</p>
-              <p className="text-xs text-emerald-700 mt-0.5">{(commissionRate * 100).toFixed(1)}% sobre {formatCurrency(order.total)}</p>
+              <p className={`font-semibold text-sm ${currentFSStatus === 'delivered_with_adjustments' ? 'text-teal-800' : 'text-emerald-800'}`}>Comisión generada</p>
+              <p className={`text-xs mt-0.5 ${currentFSStatus === 'delivered_with_adjustments' ? 'text-teal-700' : 'text-emerald-700'}`}>
+                {(commissionRate * 100).toFixed(1)}% sobre {formatCurrency(commissionBase)}
+                {currentFSStatus === 'delivered_with_adjustments' && ' (total entregado)'}
+              </p>
             </div>
-            <p className="font-heading font-bold text-emerald-700">{formatCurrency(commission)}</p>
+            <p className={`font-heading font-bold ${currentFSStatus === 'delivered_with_adjustments' ? 'text-teal-700' : 'text-emerald-700'}`}>{formatCurrency(commission)}</p>
           </div>
         )}
 
         {/* Commission error — pending reconciliation */}
-        {currentFSStatus === 'delivered' && order.commissionError && (
+        {(currentFSStatus === 'delivered' || currentFSStatus === 'delivered_with_adjustments') && order.commissionError && (
           <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
             <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
             <div>
@@ -404,36 +621,91 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
 
         {/* Products card */}
         <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-[#DFE1E8]/80 p-5 md:p-6">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C] mb-4">
-            Productos del pedido
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">
+              Productos del pedido
+            </h2>
+            {canAdjustItems && !order.hasItemAdjustments && (
+              <button
+                onClick={handleBulkConfirm}
+                disabled={isBulkConfirming}
+                className="text-xs font-bold text-[#0B1A45] border border-[#0B1A45]/30 px-3 py-1.5 rounded-lg hover:bg-[#0B1A45] hover:text-[#C8FF00] transition-all disabled:opacity-50"
+              >
+                {isBulkConfirming ? 'Confirmando...' : 'Confirmar todos'}
+              </button>
+            )}
+          </div>
+          {canAdjustItems && (
+            <p className="text-[11px] text-muted-foreground mb-3">Tocá un producto para ajustar cantidad, cancelar o marcar como no entregado.</p>
+          )}
           <div className="space-y-3">
-            {order.items.map((item, i) => (
-              <div key={i} className={`flex justify-between items-start gap-4 ${i !== 0 ? 'pt-3 border-t border-[#DFE1E8]/60' : ''}`}>
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm text-foreground leading-tight">{item.productName}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{formatCurrency(item.unitPrice)} x {item.quantity} un.</p>
+            {order.items.map((item, i) => {
+              const isCancelled = item.itemStatus === 'cancelled' || item.itemStatus === 'not_delivered' || item.itemStatus === 'rejected_by_commerce'
+              const displayQty = item.deliveredQuantity ?? item.confirmedQuantity ?? item.quantity
+              const displaySubtotal = item.finalSubtotal ?? (item.unitPrice * item.quantity)
+              return (
+                <div
+                  key={i}
+                  className={`${i !== 0 ? 'pt-3 border-t border-[#DFE1E8]/60' : ''} ${canAdjustItems ? 'cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-xl transition-colors' : ''}`}
+                  onClick={canAdjustItems ? () => setAdjustingItem(item) : undefined}
+                >
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${isCancelled ? 'bg-red-50' : 'bg-gray-50'}`}>
+                        <Package className={`h-4 w-4 ${isCancelled ? 'text-red-300' : 'text-muted-foreground'}`} />
+                      </div>
+                      <div>
+                        <p className={`font-bold text-sm leading-tight ${isCancelled ? 'text-gray-400 line-through' : 'text-foreground'}`}>{item.productName}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatCurrency(item.unitPrice)} x {displayQty} un.
+                          {item.requestedQuantity && item.requestedQuantity !== displayQty && !isCancelled && (
+                            <span className="text-blue-500 ml-1">(de {item.requestedQuantity})</span>
+                          )}
+                        </p>
+                        {item.itemStatus && <div className="mt-1"><ItemStatusPill status={item.itemStatus} /></div>}
+                      </div>
+                    </div>
+                    <p className={`font-heading font-bold text-base shrink-0 ${isCancelled ? 'text-gray-300 line-through' : 'text-foreground'}`}>
+                      {formatCurrency(displaySubtotal)}
+                    </p>
                   </div>
                 </div>
-                <p className="font-heading font-bold text-foreground text-base shrink-0">{formatCurrency(item.unitPrice * item.quantity)}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
           <div className="border-t border-[#DFE1E8]/60 mt-4 pt-4 space-y-2 text-sm">
-            <div className="flex justify-between text-muted-foreground">
-              <span>Subtotal</span><span>{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between font-medium text-muted-foreground">
-              <span>Envío</span><span className="text-green-600 font-bold">Gratis</span>
-            </div>
-            <div className="flex justify-between items-center pt-3 border-t border-[#DFE1E8]/60">
-              <span className="font-bold text-foreground text-base">Total</span>
-              <span className="font-heading font-bold text-2xl text-primary">{formatCurrency(order.total)}</span>
-            </div>
+            {order.hasItemAdjustments ? (
+              <>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal solicitado</span><span>{formatCurrency(order.originalTotal ?? subtotal)}</span>
+                </div>
+                {order.cancelledTotal != null && order.cancelledTotal > 0 && (
+                  <div className="flex justify-between text-red-500">
+                    <span>Productos cancelados</span><span>-{formatCurrency(order.cancelledTotal)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-medium text-muted-foreground">
+                  <span>Envío</span><span className="text-green-600 font-bold">Gratis</span>
+                </div>
+                <div className="flex justify-between items-center pt-3 border-t border-[#DFE1E8]/60">
+                  <span className="font-bold text-foreground text-base">Total a cobrar</span>
+                  <span className="font-heading font-bold text-2xl text-primary">{formatCurrency(order.deliveredTotal ?? order.confirmedTotal ?? order.total)}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal</span><span>{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between font-medium text-muted-foreground">
+                  <span>Envío</span><span className="text-green-600 font-bold">Gratis</span>
+                </div>
+                <div className="flex justify-between items-center pt-3 border-t border-[#DFE1E8]/60">
+                  <span className="font-bold text-foreground text-base">Total</span>
+                  <span className="font-heading font-bold text-2xl text-primary">{formatCurrency(order.total)}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

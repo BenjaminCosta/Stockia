@@ -49,6 +49,7 @@ export default function NuevoProductoPage() {
         name,
         description,
         categoryId: category,
+        systemCategory: category,
         price: parseFloat(price) || 0,
         stock: parseInt(stock, 10) || 0,
         status: 'active',

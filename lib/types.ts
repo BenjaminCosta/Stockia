@@ -101,7 +101,13 @@ export interface Product {
   id: string
   distribuidoraId: string
   name: string
+  /** Raw category string from the distributor (free text, CSV import, etc.) */
   category: string
+  /**
+   * Mapped Stockia system category name (one of the 12 standard categories).
+   * Used for cross-distributor filtering. Falls back to `category` if absent.
+   */
+  systemCategory?: string
   price: number
   stock: number
   description: string
@@ -151,13 +157,47 @@ export interface Cart {
 }
 
 // Order types
-export type OrderStatus = 'pendiente' | 'pagado' | 'en_preparacion' | 'entregado' | 'cancelado' | 'no_entregado'
+export type OrderStatus = 'pendiente' | 'pagado' | 'en_preparacion' | 'entregado' | 'entregado_con_ajustes' | 'cancelado' | 'no_entregado'
+
+export type OrderItemStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'modified'
+  | 'cancelled'
+  | 'delivered'
+  | 'partially_delivered'
+  | 'not_delivered'
+  | 'rejected_by_commerce'
+
+export const ADJUSTMENT_REASONS = {
+  no_stock: 'Sin stock',
+  insufficient_stock: 'Stock insuficiente',
+  incorrect_price: 'Precio incorrecto',
+  damaged: 'Producto dañado',
+  expired: 'Producto vencido',
+  rejected_by_commerce: 'Rechazado por el comercio',
+  load_error: 'Error de carga',
+  not_delivered: 'No entregado',
+  other: 'Otro',
+} as const
+
+export type AdjustmentReason = keyof typeof ADJUSTMENT_REASONS
 
 export interface OrderItem {
   productId: string
   productName: string
   quantity: number
   unitPrice: number
+  // Adjustment fields (optional — absent on legacy items)
+  requestedQuantity?: number
+  confirmedQuantity?: number
+  deliveredQuantity?: number
+  cancelledQuantity?: number
+  originalSubtotal?: number
+  finalSubtotal?: number
+  itemStatus?: OrderItemStatus
+  adjustmentReason?: AdjustmentReason
+  adjustmentComment?: string
 }
 
 export interface Order {
@@ -186,6 +226,12 @@ export interface Order {
   stockReleasedAt?: string
   stockReleaseReason?: string
   deliveredAt?: string
+  // Adjustment total tracking (optional — absent on legacy orders)
+  originalTotal?: number
+  confirmedTotal?: number
+  deliveredTotal?: number
+  cancelledTotal?: number
+  hasItemAdjustments?: boolean
 }
 
 // Review types

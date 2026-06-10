@@ -18,6 +18,7 @@ import { InventoryTableSkeleton } from '@/components/ui/SkeletonCard'
 import ImportProductsModal from '@/components/products/ImportProductsModal'
 import { exportProductsToXlsx, downloadTemplate } from '@/lib/export/productsExport'
 import type { ParsedProductRow } from '@/lib/import/productsImport'
+import { mapToSystemCategory } from '@/lib/import/productsImport'
 import type { ImportResult } from '@/components/products/ImportProductsModal'
 import { createProduct, updateProduct, deleteProduct, getProductsByDistributorAll } from '@/lib/data/products.service'
 import { updateDocument } from '@/lib/firebase/firestore'
@@ -112,6 +113,7 @@ export default function ProductosPage() {
           name: row.nombre,
           description: row.descripcion,
           categoryId: row.categoria,
+          systemCategory: mapToSystemCategory(row.categoria),
           ...(row.marca  ? { brand: row.marca }  : {}),
           ...(row.sku    ? { sku: row.sku }      : {}),
           ...(row.unidad ? { unit: row.unidad }  : {}),

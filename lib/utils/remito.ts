@@ -3,13 +3,14 @@ import type { FirestoreCommerce } from '@/lib/data/users.service'
 import type { Distribuidora } from '@/lib/types'
 
 const STATUS_LABELS: Record<string, string> = {
-  pending_confirmation: 'Pendiente de confirmación',
-  confirmed: 'Confirmado',
-  preparing: 'En preparación',
-  ready_or_on_the_way: 'En camino',
-  delivered: 'Entregado',
-  cancelled: 'Cancelado',
-  not_delivered: 'No entregado',
+  pending_confirmation:       'Pendiente de confirmación',
+  confirmed:                  'Confirmado',
+  preparing:                  'En preparación',
+  ready_or_on_the_way:        'En camino',
+  delivered:                  'Entregado',
+  delivered_with_adjustments: 'Entregado con ajustes',
+  cancelled:                  'Cancelado',
+  not_delivered:              'No entregado',
 }
 
 function formatARS(n: number): string {
@@ -44,15 +45,21 @@ export function printRemito(
   const productRows = order.items
     .map((item, i) => {
       const rowBg = i % 2 === 0 ? '#ffffff' : '#f9fafb'
-      const subtotal = item.unitPrice * item.quantity
+      const isCancelled = item.itemStatus === 'cancelled' || item.itemStatus === 'not_delivered' || item.itemStatus === 'rejected_by_commerce'
+      const displayQty = item.deliveredQuantity ?? item.confirmedQuantity ?? item.quantity
+      const displaySubtotal = item.finalSubtotal ?? (item.unitPrice * item.quantity)
+      const nameStyle = isCancelled ? 'color:#9ca3af;text-decoration:line-through' : 'color:#111827'
+      const qtyStyle = isCancelled ? 'color:#9ca3af' : 'color:#111827'
+      const subtotalStyle = isCancelled ? 'color:#9ca3af;text-decoration:line-through' : 'color:#111827'
+      const cancelledBadge = isCancelled ? `<br><span style="font-size:10px;color:#ef4444;font-weight:700;text-transform:uppercase">Cancelado</span>` : ''
       return `
         <tr style="background:${rowBg}">
           <td style="padding:9px 10px;font-size:11px;color:#6b7280;border-bottom:1px solid #e5e7eb;">${item.productId.slice(0, 8).toUpperCase()}</td>
-          <td style="padding:9px 10px;font-size:12px;color:#111827;border-bottom:1px solid #e5e7eb;">${item.productName}</td>
-          <td style="padding:9px 10px;font-size:12px;text-align:center;color:#111827;border-bottom:1px solid #e5e7eb;">${item.quantity}</td>
+          <td style="padding:9px 10px;font-size:12px;border-bottom:1px solid #e5e7eb;${nameStyle}">${item.productName}${cancelledBadge}</td>
+          <td style="padding:9px 10px;font-size:12px;text-align:center;border-bottom:1px solid #e5e7eb;${qtyStyle}">${displayQty}</td>
           <td style="padding:9px 10px;font-size:11px;text-align:center;color:#6b7280;border-bottom:1px solid #e5e7eb;">—</td>
-          <td style="padding:9px 10px;font-size:12px;text-align:right;color:#111827;border-bottom:1px solid #e5e7eb;">${formatARS(item.unitPrice)}</td>
-          <td style="padding:9px 10px;font-size:12px;font-weight:600;text-align:right;color:#111827;border-bottom:1px solid #e5e7eb;">${formatARS(subtotal)}</td>
+          <td style="padding:9px 10px;font-size:12px;text-align:right;border-bottom:1px solid #e5e7eb;${qtyStyle}">${formatARS(item.unitPrice)}</td>
+          <td style="padding:9px 10px;font-size:12px;font-weight:600;text-align:right;border-bottom:1px solid #e5e7eb;${subtotalStyle}">${formatARS(displaySubtotal)}</td>
         </tr>`
     })
     .join('')
@@ -81,7 +88,9 @@ export function printRemito(
   ].filter(Boolean)
   const distMeta = distMetaParts.join(' · ')
 
-  const subtotal = order.items.reduce((s, i) => s + i.unitPrice * i.quantity, 0)
+  const finalTotal = order.deliveredTotal ?? order.items.reduce((s, i) => s + i.unitPrice * i.quantity, 0)
+  const originalTotal = order.originalTotal
+  const hasAdjustments = order.hasItemAdjustments && originalTotal != null && originalTotal !== finalTotal
   const observations = val(order.cancellationReason, '')
   const logoUrl = `${window.location.origin}/iso-stockia.png`
 
@@ -502,17 +511,28 @@ export function printRemito(
 
   <!-- Totales -->
   <div class="totals">
+    ${hasAdjustments ? `
+    <div class="totals-row">
+      <span class="totals-label">Subtotal solicitado</span>
+      <span>${formatARS(originalTotal!)}</span>
+    </div>
+    <div class="totals-row">
+      <span class="totals-label">Ajuste</span>
+      <span style="color:#ef4444">-${formatARS(originalTotal! - finalTotal)}</span>
+    </div>
+    ` : `
     <div class="totals-row">
       <span class="totals-label">Subtotal</span>
-      <span>${formatARS(subtotal)}</span>
+      <span>${formatARS(finalTotal)}</span>
     </div>
+    `}
     <div class="totals-row">
       <span class="totals-label">Envío</span>
       <span style="color:#059669;font-weight:600">Gratis</span>
     </div>
     <div class="totals-row total-final">
-      <span class="totals-label">Total</span>
-      <span>${formatARS(order.total)}</span>
+      <span class="totals-label">${hasAdjustments ? 'Total entregado' : 'Total'}</span>
+      <span>${formatARS(finalTotal)}</span>
     </div>
   </div>
 

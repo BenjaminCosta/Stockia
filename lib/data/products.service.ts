@@ -16,7 +16,10 @@ export interface FirestoreProduct {
   distributorId: string
   name: string
   description: string
+  /** Raw category from distributor (free text / CSV). Used in distributor-facing views. */
   categoryId: string
+  /** Mapped Stockia system category (one of the 12 standard names). Used for commerce filtering. */
+  systemCategory?: string
   brand?: string
   sku?: string
   price: number
@@ -44,6 +47,7 @@ function toProduct(doc: FirestoreProduct & { id: string }): Product {
     distribuidoraId: doc.distributorId,
     name: doc.name,
     category: doc.categoryId,
+    systemCategory: doc.systemCategory,
     price: doc.price,
     stock: doc.stock,
     description: doc.description,

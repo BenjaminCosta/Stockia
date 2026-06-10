@@ -30,7 +30,7 @@ export default function DistribuidoraCatalogPage({
   const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set())
 
   const { data: distribuidora, loading: isLoading } = useDistributor(id)
-  const { data: products } = useProducts(id)
+  const { data: products, loading: productsLoading } = useProducts(id)
   const [reviews, setReviews] = useState<Review[]>([])
   const [ratingSummary, setRatingSummary] = useState<DistributorRatingSummary | null>(null)
 
@@ -84,7 +84,7 @@ export default function DistribuidoraCatalogPage({
   return (
     <div className="min-h-screen bg-background pb-44 md:pb-12">
       <div className="md:flex max-w-7xl mx-auto items-start md:p-6 gap-8">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <PageHero
             title={distribuidora.companyName}
             backHref="/comercio"
@@ -135,7 +135,7 @@ export default function DistribuidoraCatalogPage({
 
             {/* Products */}
             <div className="px-2.5 mt-5 md:mt-6 md:px-0">
-              {isLoading ? (
+              {isLoading || productsLoading ? (
                 <ProductCardSkeleton count={6} className="md:grid-cols-2 lg:grid-cols-3" />
               ) : filteredProducts.length === 0 ? (
                 <EmptyState

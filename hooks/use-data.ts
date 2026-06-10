@@ -13,6 +13,7 @@ import type { DistributorCard, Product, Order, Distribuidora, OrderStatus, Categ
 
 // ─── Status map: Firestore orderStatus → local OrderStatus ────────────────────
 function toLocalStatus(s: string): OrderStatus {
+  if (s === 'delivered_with_adjustments') return 'entregado_con_ajustes'
   if (s === 'delivered') return 'entregado'
   if (s === 'preparing' || s === 'ready_or_on_the_way') return 'en_preparacion'
   if (s === 'confirmed') return 'pagado'
@@ -185,6 +186,11 @@ function useOrdersRealtime(field: 'commerceId' | 'distributorId', userId: string
               stockReleasedAt: raw.stockReleasedAt ? tsToISO(raw.stockReleasedAt) : undefined,
               stockReleaseReason: raw.stockReleaseReason,
               deliveredAt: raw.deliveredAt ? tsToISO(raw.deliveredAt) : undefined,
+              originalTotal: raw.originalTotal,
+              confirmedTotal: raw.confirmedTotal,
+              deliveredTotal: raw.deliveredTotal,
+              cancelledTotal: raw.cancelledTotal,
+              hasItemAdjustments: raw.hasItemAdjustments ?? false,
             }
           })
           setData(orders)
@@ -265,6 +271,11 @@ export function useOrder(id: string) {
             stockReleasedAt: raw.stockReleasedAt ? tsToISO(raw.stockReleasedAt) : undefined,
             stockReleaseReason: raw.stockReleaseReason,
             deliveredAt: raw.deliveredAt ? tsToISO(raw.deliveredAt) : undefined,
+            originalTotal: raw.originalTotal,
+            confirmedTotal: raw.confirmedTotal,
+            deliveredTotal: raw.deliveredTotal,
+            cancelledTotal: raw.cancelledTotal,
+            hasItemAdjustments: raw.hasItemAdjustments ?? false,
           })
           setLoading(false)
         },

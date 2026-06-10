@@ -75,6 +75,7 @@ function EditProductoForm({ product }: { product: Product }) {
       await updateProduct(product.id, {
         name,
         categoryId: category,
+        systemCategory: category,
         price: parseFloat(price) || 0,
         stock: parseInt(stock, 10) || 0,
         description,
