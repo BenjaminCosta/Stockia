@@ -401,7 +401,7 @@ export default function ComercioHomePage() {
       .filter((product: Product) => {
         if (activeProductFilter === 'Todos') return true
         if (activeProductFilter === 'Ofertas') return product.isOffer === true
-        return (product.systemCategory ?? product.category) === activeProductFilter
+        return product.category === activeProductFilter
       })
       .sort((a: Product, b: Product) =>
         Number(b.isOffer === true) - Number(a.isOffer === true) ||

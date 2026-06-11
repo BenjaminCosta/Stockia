@@ -8,10 +8,10 @@ import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useApp } from '@/lib/app-context'
 import { formatCurrency } from '@/lib/mock-data'
-import { OrderStatus } from '@/lib/types'
+import type { Order, OrderStatus } from '@/lib/types'
 import { OrderCardSkeleton } from '@/components/ui/SkeletonCard'
 import { StatusBadge } from '@/components/status-badge'
-import { updateOrderStatus, type OrderStatus as FSOrderStatus } from '@/lib/data/orders.service'
+import { confirmOrderAfterItemReview, finalizeOrderWithAdjustments, updateOrderStatus, type OrderStatus as FSOrderStatus } from '@/lib/data/orders.service'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -23,6 +23,7 @@ const statusFilters: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'pagado',        label: 'Pagados'        },
   { value: 'en_preparacion',label: 'En preparación' },
   { value: 'entregado',     label: 'Entregados'     },
+  { value: 'entregado_con_ajustes', label: 'C/ ajustes' },
   { value: 'cancelado',     label: 'Cancelados'     },
   { value: 'no_entregado',  label: 'No entregados'  },
 ]
@@ -40,11 +41,17 @@ export default function PedidosDistribuidoraPage() {
   // Reset to first page on filter/search change
   useEffect(() => { setPage(1) }, [searchQuery, statusFilter])
 
-  const handleQuickAction = async (orderId: string, action: FSOrderStatus) => {
-    setUpdatingId(orderId)
+  const handleQuickAction = async (order: Order, action: FSOrderStatus) => {
+    setUpdatingId(order.id)
     setErrorMsg(null)
     try {
-      await updateOrderStatus(orderId, action)
+      if (action === 'confirmed') {
+        await confirmOrderAfterItemReview(order.id)
+      } else if (action === 'delivered' && order.hasItemAdjustments) {
+        await finalizeOrderWithAdjustments(order.id)
+      } else {
+        await updateOrderStatus(order.id, action)
+      }
     } catch {
       setErrorMsg('No se pudo actualizar el pedido. Intentá de nuevo.')
       setTimeout(() => setErrorMsg(null), 4000)
@@ -74,7 +81,7 @@ export default function PedidosDistribuidoraPage() {
     ).length
 
     const deliveredThisMonth = orders.filter(o =>
-      (o.firestoreStatus === 'delivered' || o.status === 'entregado') &&
+      (o.firestoreStatus === 'delivered' || o.firestoreStatus === 'delivered_with_adjustments' || o.status === 'entregado' || o.status === 'entregado_con_ajustes') &&
       new Date(o.createdAt) >= thisMonthStart
     ).length
 
@@ -101,6 +108,23 @@ export default function PedidosDistribuidoraPage() {
   const paginatedOrders = filteredOrders.slice((page - 1) * ORDERS_PER_PAGE, page * ORDERS_PER_PAGE)
 
   const showActionSection = statusFilter === 'all' && actionOrders.length > 0
+  const renderOrderAmount = (order: Order, align: 'left' | 'right' = 'right', size: 'base' | 'lg' | 'xl' = 'lg') => {
+    const effectiveTotal = order.deliveredTotal ?? order.confirmedTotal ?? order.total
+    const hasAdjustedAmount = order.hasItemAdjustments && (order.originalTotal ?? order.total) !== effectiveTotal
+    const sizeClass = size === 'xl' ? 'text-xl' : size === 'lg' ? 'text-lg' : 'text-base'
+    return (
+      <div className={align === 'right' ? 'text-right' : 'text-left'}>
+        <p className={`font-heading font-bold ${sizeClass} ${hasAdjustedAmount ? 'text-teal-700' : 'text-[#0B1A45]'}`}>
+          {formatCurrency(effectiveTotal)}
+        </p>
+        {hasAdjustedAmount && (
+          <p className="text-[11px] font-semibold text-gray-400 line-through">
+            {formatCurrency(order.originalTotal ?? order.total)}
+          </p>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F7F8FA] pb-20 overflow-x-hidden md:pb-10">
@@ -227,6 +251,9 @@ export default function PedidosDistribuidoraPage() {
                             <div className="flex flex-wrap items-center gap-1.5">
                               <h3 className="font-semibold text-[#0B1A45] text-sm">{order.comercioName}</h3>
                               <StatusBadge status={order.firestoreStatus ?? order.status} className="text-[10px]" />
+                              {order.hasItemAdjustments && (
+                                <span className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700">Ajustado</span>
+                              )}
                               <PaymentMethodBadge
                                 method={order.paymentMethod}
                                 labelOverride={order.paymentMethod === 'external' ? 'Pedido externo' : undefined}
@@ -252,7 +279,7 @@ export default function PedidosDistribuidoraPage() {
 
                         {/* Amount + Actions */}
                         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 sm:justify-end sm:shrink-0">
-                          <p className="font-heading font-bold text-xl text-[#0B1A45] shrink-0">{formatCurrency(order.total)}</p>
+                          <div className="shrink-0">{renderOrderAmount(order, 'right', 'xl')}</div>
                           <div className="flex flex-wrap items-center gap-2 shrink-0">
                             <Link
                               href={`/distribuidora/pedidos/${order.id}`}
@@ -263,25 +290,25 @@ export default function PedidosDistribuidoraPage() {
                             {(order.status === 'pendiente' || order.firestoreStatus === 'pending_confirmation') && (
                               <>
                                 <button
-                                  onClick={() => handleQuickAction(order.id, 'cancelled')}
+                                  onClick={() => handleQuickAction(order, 'cancelled')}
                                   disabled={updatingId === order.id}
                                   className="h-9 px-3.5 rounded-xl border border-red-200 bg-white text-xs font-semibold text-red-500 inline-flex items-center gap-1.5 hover:bg-red-50 transition disabled:opacity-50"
                                 >
                                   <X className="h-3.5 w-3.5" /> Rechazar
                                 </button>
                                 <button
-                                  onClick={() => handleQuickAction(order.id, 'confirmed')}
+                                  onClick={() => handleQuickAction(order, 'confirmed')}
                                   disabled={updatingId === order.id}
                                   className="h-9 px-3.5 rounded-xl bg-[#C8FF00] text-xs font-bold text-[#0B1A45] inline-flex items-center gap-1.5 hover:bg-[#C8FF00]/90 shadow-sm transition disabled:opacity-50"
                                 >
                                   <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                                  {updatingId === order.id ? '...' : 'Aceptar'}
+                                  {updatingId === order.id ? '...' : order.hasItemAdjustments ? 'Confirmar ajustes' : 'Confirmar todo'}
                                 </button>
                               </>
                             )}
                             {order.firestoreStatus === 'confirmed' && (
                               <button
-                                onClick={() => handleQuickAction(order.id, 'preparing')}
+                                onClick={() => handleQuickAction(order, 'preparing')}
                                 disabled={updatingId === order.id}
                                 className="h-9 px-3.5 rounded-xl bg-[#0B1A45] text-[#C8FF00] text-xs font-bold inline-flex items-center gap-1.5 hover:bg-[#14265f] shadow-sm transition disabled:opacity-50"
                               >
@@ -291,7 +318,7 @@ export default function PedidosDistribuidoraPage() {
                             )}
                             {order.firestoreStatus === 'preparing' && (
                               <button
-                                onClick={() => handleQuickAction(order.id, 'ready_or_on_the_way')}
+                                onClick={() => handleQuickAction(order, 'ready_or_on_the_way')}
                                 disabled={updatingId === order.id}
                                 className="h-9 px-3.5 rounded-xl bg-[#0B1A45] text-[#C8FF00] text-xs font-bold inline-flex items-center gap-1.5 hover:bg-[#14265f] shadow-sm transition disabled:opacity-50"
                               >
@@ -301,7 +328,7 @@ export default function PedidosDistribuidoraPage() {
                             )}
                             {order.firestoreStatus === 'ready_or_on_the_way' && (
                               <button
-                                onClick={() => handleQuickAction(order.id, 'delivered')}
+                                onClick={() => handleQuickAction(order, 'delivered')}
                                 disabled={updatingId === order.id}
                                 className="h-9 px-3.5 rounded-xl bg-[#0B1A45] text-[#C8FF00] text-xs font-bold inline-flex items-center gap-1.5 hover:bg-[#14265f] shadow-sm transition disabled:opacity-50"
                               >
@@ -377,6 +404,9 @@ export default function PedidosDistribuidoraPage() {
                         {/* Estado */}
                         <div className="flex flex-col gap-1.5">
                           <StatusBadge status={order.firestoreStatus ?? order.status} className="text-[10px] self-start" />
+                          {order.hasItemAdjustments && (
+                            <span className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700 self-start">Ajustado</span>
+                          )}
                           <PaymentMethodBadge
                             method={order.paymentMethod}
                             labelOverride={order.paymentMethod === 'external' ? 'Pedido externo' : undefined}
@@ -385,9 +415,7 @@ export default function PedidosDistribuidoraPage() {
                         </div>
 
                         {/* Monto */}
-                        <div className="text-right">
-                          <p className="font-heading font-bold text-lg text-[#0B1A45]">{formatCurrency(order.total)}</p>
-                        </div>
+                        {renderOrderAmount(order, 'right', 'lg')}
 
                         {/* Acciones */}
                         <div className="flex items-center justify-end gap-2">
@@ -399,7 +427,7 @@ export default function PedidosDistribuidoraPage() {
                           </Link>
                           {order.firestoreStatus === 'confirmed' && (
                             <button
-                              onClick={() => handleQuickAction(order.id, 'preparing')}
+                              onClick={() => handleQuickAction(order, 'preparing')}
                               disabled={updatingId === order.id}
                               className="h-8 px-3 rounded-xl bg-[#0B1A45] text-[#C8FF00] text-xs font-bold inline-flex items-center hover:bg-[#14265f] transition disabled:opacity-50 whitespace-nowrap"
                             >
@@ -408,7 +436,7 @@ export default function PedidosDistribuidoraPage() {
                           )}
                           {order.firestoreStatus === 'preparing' && (
                             <button
-                              onClick={() => handleQuickAction(order.id, 'ready_or_on_the_way')}
+                              onClick={() => handleQuickAction(order, 'ready_or_on_the_way')}
                               disabled={updatingId === order.id}
                               className="h-8 px-3 rounded-xl bg-[#0B1A45] text-[#C8FF00] text-xs font-bold inline-flex items-center gap-1 hover:bg-[#14265f] transition disabled:opacity-50 whitespace-nowrap"
                             >
@@ -418,7 +446,7 @@ export default function PedidosDistribuidoraPage() {
                           )}
                           {order.firestoreStatus === 'ready_or_on_the_way' && (
                             <button
-                              onClick={() => handleQuickAction(order.id, 'delivered')}
+                              onClick={() => handleQuickAction(order, 'delivered')}
                               disabled={updatingId === order.id}
                               className="h-8 px-3 rounded-xl bg-[#0B1A45] text-[#C8FF00] text-xs font-bold inline-flex items-center gap-1 hover:bg-[#14265f] transition disabled:opacity-50 whitespace-nowrap"
                             >
@@ -443,6 +471,9 @@ export default function PedidosDistribuidoraPage() {
                               <p className="font-semibold text-sm text-[#0B1A45] truncate">{order.comercioName}</p>
                               <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                 <StatusBadge status={order.firestoreStatus ?? order.status} className="text-[10px]" />
+                                {order.hasItemAdjustments && (
+                                  <span className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700">Ajustado</span>
+                                )}
                                 <PaymentMethodBadge
                                   method={order.paymentMethod}
                                   labelOverride={order.paymentMethod === 'external' ? 'Pedido externo' : undefined}
@@ -454,7 +485,7 @@ export default function PedidosDistribuidoraPage() {
                               </p>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="font-heading font-bold text-base text-[#0B1A45]">{formatCurrency(order.total)}</p>
+                              {renderOrderAmount(order, 'right', 'base')}
                               <Link
                                 href={`/distribuidora/pedidos/${order.id}`}
                                 className="mt-1.5 inline-flex h-7 items-center px-2.5 rounded-lg border border-[#DFE1E8] bg-[#F7F8FA] text-[11px] font-semibold text-[#5F6880]"

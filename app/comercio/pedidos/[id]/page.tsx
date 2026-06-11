@@ -84,11 +84,13 @@ function PedidoDetail({ id }: { id: string }) {
         cancelled:                  'El pedido fue cancelado',
         not_delivered:              'El pedido no pudo ser entregado',
       }
-      const msg = STATUS_CHANGE_LABELS[current]
+      const msg = current === 'confirmed' && order?.hasItemAdjustments
+        ? 'La distribuidora confirmó tu pedido con ajustes'
+        : STATUS_CHANGE_LABELS[current]
       if (msg) setActionMessage(msg)
     }
     prevFSStatus.current = current
-  }, [order?.firestoreStatus])
+  }, [order?.firestoreStatus, order?.hasItemAdjustments])
 
   useEffect(() => {
     if (!actionMessage) return
@@ -123,6 +125,8 @@ function PedidoDetail({ id }: { id: string }) {
   const isCancelled   = firestoreStatus === 'cancelled' || firestoreStatus === 'not_delivered'
   const isConfirmed   = ['confirmed', 'preparing', 'ready_or_on_the_way', 'delivered', 'delivered_with_adjustments'].includes(firestoreStatus)
   const canCancel     = ['pending_confirmation', 'confirmed'].includes(firestoreStatus)
+  const effectiveTotal = order.deliveredTotal ?? order.confirmedTotal ?? order.total
+  const adjustmentTotal = Math.max(0, (order.originalTotal ?? order.total) - effectiveTotal)
 
   const distInitials = order.distribuidoraName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const paymentMeta = getPaymentMethodConfig(order.paymentMethod)
@@ -204,7 +208,10 @@ function PedidoDetail({ id }: { id: string }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-3 md:flex-col md:items-end md:gap-2">
-                  <span className="font-heading text-2xl font-bold text-[#0B1A45]">{formatCurrency(order.total)}</span>
+                  <span className={`font-heading text-2xl font-bold ${order.hasItemAdjustments ? 'text-teal-700' : 'text-[#0B1A45]'}`}>{formatCurrency(effectiveTotal)}</span>
+                  {order.hasItemAdjustments && order.originalTotal && order.originalTotal !== effectiveTotal && (
+                    <span className="text-xs font-semibold text-gray-400 line-through">{formatCurrency(order.originalTotal)}</span>
+                  )}
                   <div className="flex flex-wrap gap-2 md:justify-end">
                     <StatusBadge status={firestoreStatus} />
                     <PaymentMethodBadge method={order.paymentMethod} />
@@ -277,16 +284,21 @@ function PedidoDetail({ id }: { id: string }) {
                 const s = getStepStatus(firestoreStatus, step.key)
                 const isLast = index === statusSteps.length - 1
                 // For the last "Entregado" step, show adjusted label/desc if status is delivered_with_adjustments
-                const isAdjusted = isLast && firestoreStatus === 'delivered_with_adjustments'
-                const label = isAdjusted ? 'Entregado (con ajustes)' : step.label
-                const description = isAdjusted ? 'Algunos productos fueron ajustados. Revisá el detalle abajo.' : step.description
+                const isAdjustedDelivery = isLast && firestoreStatus === 'delivered_with_adjustments'
+                const isAdjustedConfirmation = step.key === 'confirmed' && order.hasItemAdjustments && !isAdjustedDelivery
+                const label = isAdjustedDelivery ? 'Entregado (con ajustes)' : isAdjustedConfirmation ? 'Confirmado con ajustes' : step.label
+                const description = isAdjustedDelivery
+                  ? 'Algunos productos fueron ajustados. Revisá el detalle abajo.'
+                  : isAdjustedConfirmation
+                  ? 'La distribuidora aprobó el pedido con cambios en productos o cantidades.'
+                  : step.description
                 return (
                   <div key={step.key} className="flex gap-4 pb-5 last:pb-0">
                     <div className="flex flex-col items-center">
                       <div className={cn(
                         'w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors',
                         s === 'completed' ? 'bg-[#89B317]' :
-                        s === 'current' && isAdjusted ? 'bg-teal-600 ring-4 ring-teal-600/15' :
+                        s === 'current' && (isAdjustedDelivery || isAdjustedConfirmation) ? 'bg-teal-600 ring-4 ring-teal-600/15' :
                         s === 'current'   ? 'bg-primary ring-4 ring-primary/15' :
                         'bg-[#F7F8FA] border border-[#DFE1E8]'
                       )}>
@@ -313,7 +325,7 @@ function PedidoDetail({ id }: { id: string }) {
                         {label}
                       </p>
                       {s === 'current' && (
-                        <p className={cn('text-xs font-medium mt-0.5', isAdjusted ? 'text-teal-700' : 'text-primary')}>
+                        <p className={cn('text-xs font-medium mt-0.5', (isAdjustedDelivery || isAdjustedConfirmation) ? 'text-teal-700' : 'text-primary')}>
                           {description}
                         </p>
                       )}
@@ -392,8 +404,12 @@ function PedidoDetail({ id }: { id: string }) {
           <div className="flex items-start gap-3 p-4 bg-teal-50 border border-teal-200 rounded-2xl">
             <Info className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-teal-800">Pedido entregado con ajustes</p>
-              <p className="text-xs text-teal-700 mt-0.5">Algunos productos fueron modificados, cancelados o no entregados. El total refleja lo que realmente fue entregado.</p>
+              <p className="text-sm font-semibold text-teal-800">{isDelivered ? 'Pedido entregado con ajustes' : 'Pedido confirmado con ajustes'}</p>
+              <p className="text-xs text-teal-700 mt-0.5">
+                {isDelivered
+                  ? 'Algunos productos fueron modificados, cancelados o no entregados. El total refleja lo que realmente fue entregado.'
+                  : 'La distribuidora aprobó el pedido con cambios. El total refleja los productos y cantidades confirmadas.'}
+              </p>
             </div>
           </div>
         )}
@@ -457,10 +473,10 @@ function PedidoDetail({ id }: { id: string }) {
                   <span className="text-muted-foreground font-medium">Subtotal solicitado</span>
                   <span className="font-medium">{formatCurrency(order.originalTotal ?? order.subtotal)}</span>
                 </div>
-                {order.cancelledTotal != null && order.cancelledTotal > 0 && (
+                {adjustmentTotal > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground font-medium">Ajuste aplicado</span>
-                    <span className="font-medium text-red-500">-{formatCurrency(order.cancelledTotal)}</span>
+                    <span className="font-medium text-red-500">-{formatCurrency(adjustmentTotal)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
@@ -469,7 +485,7 @@ function PedidoDetail({ id }: { id: string }) {
                 </div>
                 <div className="flex justify-between items-center pt-1">
                   <span className="font-bold text-foreground">Total entregado</span>
-                  <span className="font-heading font-bold text-xl text-teal-700">{formatCurrency(order.deliveredTotal ?? order.total)}</span>
+                  <span className="font-heading font-bold text-xl text-teal-700">{formatCurrency(effectiveTotal)}</span>
                 </div>
               </>
             ) : (

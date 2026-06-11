@@ -1395,7 +1395,7 @@ export const mockOrders: Order[] = [
     originalTotal: 100680,
     confirmedTotal: 68580,
     deliveredTotal: 68580,
-    cancelledTotal: 21000,
+    cancelledTotal: 32100,
     hasItemAdjustments: true,
     status: 'entregado_con_ajustes',
     createdAt: '2024-03-15T10:00:00',

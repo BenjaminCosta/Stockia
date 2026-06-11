@@ -106,12 +106,18 @@ export interface Product {
   id: string
   distribuidoraId: string
   name: string
-  /** Raw category string from the distributor (free text, CSV import, etc.) */
+  /**
+   * Official Stockia category (one of the 12 standard names, e.g. "Bebidas").
+   * Always resolved at read time — used for all global filtering.
+   */
   category: string
   /**
-   * Mapped Stockia system category name (one of the 12 standard categories).
-   * Used for cross-distributor filtering. Falls back to `category` if absent.
+   * Raw category from the distributor (free text / CSV import, e.g. "GASEOSAS", "CACHI").
+   * Used for distributor-specific catalog views (pills in distributor detail page).
+   * Falls back to `category` if absent.
    */
+  distributorCategory?: string
+  /** @deprecated use category — kept for backward compat */
   systemCategory?: string
   price: number
   stock: number
@@ -198,6 +204,7 @@ export interface OrderItem {
   confirmedQuantity?: number
   deliveredQuantity?: number
   cancelledQuantity?: number
+  stockReleasedQuantity?: number
   originalSubtotal?: number
   finalSubtotal?: number
   itemStatus?: OrderItemStatus

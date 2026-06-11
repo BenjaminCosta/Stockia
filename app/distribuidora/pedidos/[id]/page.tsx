@@ -6,7 +6,7 @@ import { ArrowLeft, MapPin, Phone, Package, Clock, CheckCircle, Truck, X, AlertT
 import { formatCurrency, getEstimatedDeliveryDate } from '@/lib/mock-data'
 import { useOrder, useDistributor } from '@/hooks/use-data'
 import { getCommerceById, type FirestoreCommerce } from '@/lib/data/users.service'
-import { updateOrderStatus, releasePendingStock, adjustOrderItem, bulkConfirmItems, finalizeOrderWithAdjustments } from '@/lib/data/orders.service'
+import { updateOrderStatus, releasePendingStock, adjustOrderItem, bulkConfirmItems, finalizeOrderWithAdjustments, confirmOrderAfterItemReview } from '@/lib/data/orders.service'
 import type { OrderStatus as FSOrderStatus } from '@/lib/data/orders.service'
 import { ADJUSTMENT_REASONS } from '@/lib/types'
 import type { OrderItem, AdjustmentReason, OrderItemStatus } from '@/lib/types'
@@ -125,23 +125,27 @@ type AdjustAction = 'confirm' | 'modify' | 'cancel' | 'not_delivered'
 
 function ItemAdjustmentSheet({
   item,
+  stage,
   onSave,
   onClose,
   loading,
 }: {
   item: OrderItem
+  stage: 'review' | 'operational'
   onSave: (adjustment: { itemStatus: OrderItemStatus; confirmedQuantity?: number; cancelledQuantity?: number; reason?: AdjustmentReason; comment?: string }) => Promise<void>
   onClose: () => void
   loading: boolean
 }) {
-  const maxQty = item.requestedQuantity ?? item.quantity
+  const requestedQty = item.requestedQuantity ?? item.quantity
+  const maxQty = stage === 'review' ? requestedQty : (item.confirmedQuantity ?? requestedQty)
   const [action, setAction] = useState<AdjustAction | null>(null)
   const [qty, setQty] = useState(maxQty)
   const [reason, setReason] = useState<AdjustmentReason | ''>('')
   const [comment, setComment] = useState('')
 
   const needsReason = action && action !== 'confirm'
-  const canSave = action !== null && (!needsReason || reason !== '')
+  const hasValidQuantity = action !== 'modify' || qty < maxQty
+  const canSave = action !== null && hasValidQuantity && (!needsReason || reason !== '')
 
   const handleSave = async () => {
     if (!action || !canSave) return
@@ -156,12 +160,19 @@ function ItemAdjustmentSheet({
     }
   }
 
-  const actionBtns: { id: AdjustAction; label: string; desc: string; color: string }[] = [
-    { id: 'confirm',       label: 'Confirmar',         desc: 'Todo como está',          color: 'border-[#89B317] bg-[#F1FFD1] text-[#4A662E]' },
-    { id: 'modify',        label: 'Modificar cantidad', desc: 'Menos unidades',          color: 'border-blue-300 bg-blue-50 text-blue-700' },
-    { id: 'cancel',        label: 'Cancelar producto',  desc: 'No se va a entregar',     color: 'border-red-300 bg-red-50 text-red-700' },
-    { id: 'not_delivered', label: 'No entregado',       desc: 'Se intentó pero no pudo', color: 'border-orange-300 bg-orange-50 text-orange-700' },
-  ]
+  const actionBtns: { id: AdjustAction; label: string; desc: string; color: string }[] = stage === 'review'
+    ? [
+      { id: 'confirm',       label: 'Aceptar producto',  desc: 'Cantidad solicitada',       color: 'border-[#89B317] bg-[#F1FFD1] text-[#4A662E]' },
+      { id: 'modify',        label: 'Reducir cantidad',  desc: 'Aceptar menos unidades',    color: 'border-blue-300 bg-blue-50 text-blue-700' },
+      { id: 'cancel',        label: 'No aceptar',        desc: 'Excluir de la confirmación', color: 'border-red-300 bg-red-50 text-red-700' },
+      { id: 'not_delivered', label: 'Sin entrega',       desc: 'No podrá entregarse',       color: 'border-orange-300 bg-orange-50 text-orange-700' },
+    ]
+    : [
+      { id: 'confirm',       label: 'Mantener',          desc: 'Sin cambio adicional',      color: 'border-[#89B317] bg-[#F1FFD1] text-[#4A662E]' },
+      { id: 'modify',        label: 'Ajustar cantidad',  desc: 'Faltante operativo',        color: 'border-blue-300 bg-blue-50 text-blue-700' },
+      { id: 'cancel',        label: 'Cancelar producto', desc: 'No se va a entregar',       color: 'border-red-300 bg-red-50 text-red-700' },
+      { id: 'not_delivered', label: 'No entregado',      desc: 'Se intentó pero no pudo',   color: 'border-orange-300 bg-orange-50 text-orange-700' },
+    ]
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
@@ -170,7 +181,7 @@ function ItemAdjustmentSheet({
           <div>
             <h3 className="font-heading font-bold text-lg text-gray-900 leading-tight">{item.productName}</h3>
             <p className="text-sm text-gray-400 mt-0.5">
-              {maxQty} un. · {formatCurrency((item.requestedQuantity ?? item.quantity) * item.unitPrice)}
+              {maxQty} un. disponibles para {stage === 'review' ? 'confirmar' : 'mantener'} · {formatCurrency(requestedQty * item.unitPrice)}
             </p>
           </div>
           <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 transition-colors shrink-0">
@@ -207,7 +218,9 @@ function ItemAdjustmentSheet({
                 className="h-10 w-10 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-700 font-bold text-lg hover:bg-gray-100 transition-colors"
               >+</button>
             </div>
-            <p className="text-xs text-gray-400 text-center mt-1">máximo {maxQty} unidades</p>
+            <p className={`text-xs text-center mt-1 ${qty >= maxQty ? 'text-amber-600' : 'text-gray-400'}`}>
+              {qty >= maxQty ? 'Bajá al menos una unidad para registrar un ajuste.' : `máximo ${maxQty} unidades`}
+            </p>
           </div>
         )}
 
@@ -298,6 +311,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
   const [isAdjusting, setIsAdjusting] = useState(false)
   const [isBulkConfirming, setIsBulkConfirming] = useState(false)
   const [showSuccessMsg, setShowSuccessMsg] = useState<string | null>(null)
+  const [showErrorMsg, setShowErrorMsg] = useState<string | null>(null)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [showFeedbackAfterReview, setShowFeedbackAfterReview] = useState(false)
   const [alreadyReviewed, setAlreadyReviewed] = useState<boolean | null>(null)
@@ -353,24 +367,55 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
   const commissionRate = distribuidoraUser?.commissionRate ?? 0.015
   const commissionBase = order.deliveredTotal ?? order.total
   const commission = commissionBase * commissionRate
-  const canAdjustItems = !isTerminal && ['preparing', 'ready_or_on_the_way'].includes(currentFSStatus)
+  const canAdjustItems = !isTerminal && ['pending_confirmation', 'confirmed', 'preparing', 'ready_or_on_the_way'].includes(currentFSStatus)
+  const adjustmentStage: 'review' | 'operational' = currentFSStatus === 'pending_confirmation' ? 'review' : 'operational'
+  const hasPendingItems = order.items.some(item => !item.itemStatus || item.itemStatus === 'pending')
+  const effectiveOrderTotal = order.deliveredTotal ?? order.confirmedTotal ?? order.total
+  const projectedAdjustmentTotal = Math.max(0, (order.originalTotal ?? order.total) - effectiveOrderTotal)
+  const hasAcceptedItems = effectiveOrderTotal > 0
+  const canOpenItemAdjustment = (item: OrderItem) => {
+    if (!canAdjustItems) return false
+    if (adjustmentStage === 'review') return true
+    return (item.confirmedQuantity ?? item.quantity) > 0
+  }
+
+  const pushSuccess = (message: string) => {
+    setShowErrorMsg(null)
+    setShowSuccessMsg(message)
+    setTimeout(() => setShowSuccessMsg(null), 4000)
+  }
+
+  const pushError = (message: string) => {
+    setShowSuccessMsg(null)
+    setShowErrorMsg(message)
+    setTimeout(() => setShowErrorMsg(null), 5000)
+  }
 
   const handleStatusChange = async (nextStatus: DistribStatus, cancellationReason?: string) => {
     setIsUpdating(true)
     try {
-      if (nextStatus === 'delivered' && order.hasItemAdjustments) {
+      if (nextStatus === 'confirmed') {
+        const finalStatus = await confirmOrderAfterItemReview(order.id)
+        setCurrentFSStatus(finalStatus === 'cancelled' ? 'cancelled' : 'confirmed')
+        pushSuccess(finalStatus === 'cancelled'
+          ? 'Pedido cerrado: no quedó ningún producto aceptado.'
+          : order.hasItemAdjustments
+          ? 'Pedido confirmado con ajustes. El comercio verá el nuevo total.'
+          : 'Pedido confirmado. Podés coordinar pago y entrega con el comercio.'
+        )
+      } else if (nextStatus === 'delivered' && order.hasItemAdjustments) {
         await finalizeOrderWithAdjustments(order.id)
         setCurrentFSStatus('delivered_with_adjustments')
-        setShowSuccessMsg('Pedido entregado con ajustes. Se generó la comisión sobre el total entregado.')
+        pushSuccess('Pedido entregado con ajustes. Se generó la comisión sobre el total entregado.')
       } else {
         await updateOrderStatus(order.id, nextStatus, cancellationReason)
-        setCurrentFSStatus(nextStatus)
-        if (nextStatus === 'delivered') setShowSuccessMsg('¡Pedido marcado como entregado! Se generó la comisión.')
-        else if (nextStatus === 'confirmed') setShowSuccessMsg('Pedido confirmado. Podés coordinar pago y entrega con el comercio.')
+        const finalStatus = nextStatus === 'delivered' && order.hasItemAdjustments ? 'delivered_with_adjustments' : nextStatus
+        setCurrentFSStatus(finalStatus)
+        if (nextStatus === 'delivered') pushSuccess(order.hasItemAdjustments ? 'Pedido entregado con ajustes. Se generó la comisión sobre el total entregado.' : 'Pedido marcado como entregado. Se generó la comisión.')
       }
-      setTimeout(() => setShowSuccessMsg(null), 4000)
     } catch (err) {
       console.error('[pedido] updateOrderStatus failed', err)
+      pushError('No pudimos actualizar el pedido. Revisá tu conexión e intentá de nuevo.')
     } finally {
       setIsUpdating(false)
       setCancellationModal(null)
@@ -383,8 +428,10 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
     try {
       await adjustOrderItem(order.id, adjustingItem.productId, adjustment)
       setAdjustingItem(null)
+      pushSuccess('Ajuste guardado. El total se actualizó automáticamente.')
     } catch (err) {
       console.error('[pedido] adjustOrderItem failed', err)
+      pushError('No pudimos guardar el ajuste. Intentá de nuevo.')
     } finally {
       setIsAdjusting(false)
     }
@@ -394,8 +441,10 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
     setIsBulkConfirming(true)
     try {
       await bulkConfirmItems(order.id)
+      pushSuccess(order.hasItemAdjustments ? 'Productos restantes confirmados.' : 'Todos los productos fueron confirmados.')
     } catch (err) {
       console.error('[pedido] bulkConfirmItems failed', err)
+      pushError('No pudimos confirmar los productos. Intentá de nuevo.')
     } finally {
       setIsBulkConfirming(false)
     }
@@ -413,6 +462,12 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
         </div>
       )}
 
+      {showErrorMsg && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold max-w-xs text-center animate-fade-in">
+          {showErrorMsg}
+        </div>
+      )}
+
       {/* Cancellation modal */}
       {cancellationModal && (
         <CancellationModal
@@ -427,6 +482,7 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
       {adjustingItem && (
         <ItemAdjustmentSheet
           item={adjustingItem}
+          stage={adjustmentStage}
           onSave={handleAdjustItem}
           onClose={() => setAdjustingItem(null)}
           loading={isAdjusting}
@@ -540,6 +596,34 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
           </div>
         )}
 
+        {!isTerminal && currentFSStatus === 'pending_confirmation' && (
+          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+            <Package className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-800 text-sm">Revisá los productos antes de aceptar</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Tocá cada producto para aceptar la cantidad completa, reducir unidades o excluirlo. Al confirmar, el comercio verá el total aprobado.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!isTerminal && ['confirmed', 'preparing', 'ready_or_on_the_way'].includes(currentFSStatus) && (
+          <div className={`flex items-start gap-3 p-4 rounded-2xl border ${order.hasItemAdjustments ? 'bg-teal-50 border-teal-200' : 'bg-blue-50 border-blue-100'}`}>
+            <AlertTriangle className={`h-5 w-5 shrink-0 mt-0.5 ${order.hasItemAdjustments ? 'text-teal-600' : 'text-blue-500'}`} />
+            <div className="flex-1">
+              <p className={`font-semibold text-sm ${order.hasItemAdjustments ? 'text-teal-800' : 'text-blue-800'}`}>
+                {order.hasItemAdjustments ? 'Pedido confirmado con ajustes' : 'Pedido confirmado'}
+              </p>
+              <p className={`text-xs mt-0.5 ${order.hasItemAdjustments ? 'text-teal-700' : 'text-blue-700'}`}>
+                {order.hasItemAdjustments
+                  ? `Total aprobado: ${formatCurrency(order.confirmedTotal ?? order.total)}${projectedAdjustmentTotal > 0 ? `, ajuste de ${formatCurrency(projectedAdjustmentTotal)} sobre lo solicitado.` : '.'}`
+                  : 'Los cambios posteriores deberían usarse solo ante faltantes operativos o problemas de entrega.'}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Comercio + Entrega grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
 
@@ -625,29 +709,35 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
             <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7A839C]">
               Productos del pedido
             </h2>
-            {canAdjustItems && !order.hasItemAdjustments && (
+            {canAdjustItems && hasPendingItems && (
               <button
                 onClick={handleBulkConfirm}
                 disabled={isBulkConfirming}
                 className="text-xs font-bold text-[#0B1A45] border border-[#0B1A45]/30 px-3 py-1.5 rounded-lg hover:bg-[#0B1A45] hover:text-[#C8FF00] transition-all disabled:opacity-50"
               >
-                {isBulkConfirming ? 'Confirmando...' : 'Confirmar todos'}
+                {isBulkConfirming ? 'Confirmando...' : adjustmentStage === 'review' ? 'Aceptar restantes' : order.hasItemAdjustments ? 'Confirmar restantes' : 'Confirmar todos'}
               </button>
             )}
           </div>
           {canAdjustItems && (
-            <p className="text-[11px] text-muted-foreground mb-3">Tocá un producto para ajustar cantidad, cancelar o marcar como no entregado.</p>
+            <p className="text-[11px] text-muted-foreground mb-3">
+              {adjustmentStage === 'review'
+                ? 'Tocá un producto para aceptar, reducir o excluirlo antes de confirmar el pedido.'
+                : 'Tocá un producto solo si apareció un faltante o problema operativo.'}
+            </p>
           )}
           <div className="space-y-3">
             {order.items.map((item, i) => {
               const isCancelled = item.itemStatus === 'cancelled' || item.itemStatus === 'not_delivered' || item.itemStatus === 'rejected_by_commerce'
               const displayQty = item.deliveredQuantity ?? item.confirmedQuantity ?? item.quantity
               const displaySubtotal = item.finalSubtotal ?? (item.unitPrice * item.quantity)
+              const reasonLabel = item.adjustmentReason ? ADJUSTMENT_REASONS[item.adjustmentReason] : null
+              const canEditThisItem = canOpenItemAdjustment(item)
               return (
                 <div
                   key={i}
-                  className={`${i !== 0 ? 'pt-3 border-t border-[#DFE1E8]/60' : ''} ${canAdjustItems ? 'cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-xl transition-colors' : ''}`}
-                  onClick={canAdjustItems ? () => setAdjustingItem(item) : undefined}
+                  className={`${i !== 0 ? 'pt-3 border-t border-[#DFE1E8]/60' : ''} ${canEditThisItem ? 'cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-xl transition-colors' : ''}`}
+                  onClick={canEditThisItem ? () => setAdjustingItem(item) : undefined}
                 >
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex items-center gap-3">
@@ -663,6 +753,11 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
                           )}
                         </p>
                         {item.itemStatus && <div className="mt-1"><ItemStatusPill status={item.itemStatus} /></div>}
+                        {reasonLabel && (
+                          <p className="text-[11px] text-gray-400 mt-1">
+                            Motivo: {reasonLabel}{item.adjustmentComment ? ` · ${item.adjustmentComment}` : ''}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <p className={`font-heading font-bold text-base shrink-0 ${isCancelled ? 'text-gray-300 line-through' : 'text-foreground'}`}>
@@ -679,16 +774,16 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal solicitado</span><span>{formatCurrency(order.originalTotal ?? subtotal)}</span>
                 </div>
-                {order.cancelledTotal != null && order.cancelledTotal > 0 && (
+                {projectedAdjustmentTotal > 0 && (
                   <div className="flex justify-between text-red-500">
-                    <span>Productos cancelados</span><span>-{formatCurrency(order.cancelledTotal)}</span>
+                    <span>Ajuste aplicado</span><span>-{formatCurrency(projectedAdjustmentTotal)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-medium text-muted-foreground">
                   <span>Envío</span><span className="text-green-600 font-bold">Gratis</span>
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t border-[#DFE1E8]/60">
-                  <span className="font-bold text-foreground text-base">Total a cobrar</span>
+                  <span className="font-bold text-foreground text-base">{currentFSStatus === 'pending_confirmation' ? 'Total a aprobar' : 'Total a cobrar'}</span>
                   <span className="font-heading font-bold text-2xl text-primary">{formatCurrency(order.deliveredTotal ?? order.confirmedTotal ?? order.total)}</span>
                 </div>
               </>
@@ -753,15 +848,15 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
                   className="w-full h-14 rounded-xl text-base font-bold gap-2 bg-[#0B1A45] text-[#C8FF00] hover:bg-[#0B1A45]/90 shadow-md"
                   onClick={() => handleStatusChange('confirmed')}
                   loading={isUpdating}
-                  loadingLabel="Confirmando..."
+                  loadingLabel="Confirmando revisión..."
                 >
-                  <CheckCircle className="h-5 w-5" /> Aceptar pedido
+                  <CheckCircle className="h-5 w-5" /> {!hasAcceptedItems ? 'Cerrar sin productos' : order.hasItemAdjustments ? 'Confirmar con ajustes' : 'Confirmar pedido'}
                 </LoadingButton>
                 <button
                   onClick={() => setCancellationModal('cancelled')}
                   className="w-full h-12 rounded-xl text-sm font-bold flex items-center justify-center gap-2 text-red-600 border-2 border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors"
                 >
-                  <X className="h-4 w-4" /> Rechazar pedido
+                  <X className="h-4 w-4" /> Rechazar pedido completo
                 </button>
               </>
             )}
@@ -793,18 +888,22 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
             {/* Ready / on the way */}
             {currentFSStatus === 'ready_or_on_the_way' && (
               <LoadingButton
-                className="w-full h-14 rounded-xl text-base font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-md"
+                className={`w-full h-14 rounded-xl text-base font-bold gap-2 shadow-md ${order.hasItemAdjustments ? 'bg-teal-600 hover:bg-teal-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
                 onClick={() => handleStatusChange('delivered')}
                 loading={isUpdating}
                 loadingLabel="Confirmando entrega..."
               >
-                <CheckCircle className="h-5 w-5" /> Confirmar entrega
+                <CheckCircle className="h-5 w-5" /> {order.hasItemAdjustments ? 'Confirmar entrega con ajustes' : 'Confirmar entrega'}
               </LoadingButton>
             )}
 
-            {/* Cancel / not delivered — available from confirmed onwards */}
+            {/* Cancel / not delivered — operational exceptions after confirmation */}
             {['confirmed', 'preparing', 'ready_or_on_the_way'].includes(currentFSStatus) && (
-              <div className="flex gap-2">
+              <div className="space-y-2">
+                <p className="text-[11px] text-muted-foreground text-center">
+                  Usá estas acciones solo si el pedido ya no puede cumplirse.
+                </p>
+                <div className="flex gap-2">
                 <button
                   onClick={() => setCancellationModal('not_delivered')}
                   className="flex-1 h-11 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-orange-600 border border-orange-200 hover:bg-orange-50 transition-colors"
@@ -815,8 +914,9 @@ function PedidoDistribuidoraDetail({ id }: { id: string }) {
                   onClick={() => setCancellationModal('cancelled')}
                   className="flex-1 h-11 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
                 >
-                  <X className="h-3.5 w-3.5" /> Cancelar pedido
+                  <X className="h-3.5 w-3.5" /> Cancelar completo
                 </button>
+                </div>
               </div>
             )}
           </div>

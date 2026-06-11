@@ -18,7 +18,7 @@ import { ProductDetailSkeleton, SkeletonBlock } from '@/components/ui/SkeletonCa
 import { InternalHeaderBackground } from '@/components/internal-header-background'
 
 function ProductoDetail({ id }: { id: string }) {
-  const { addToCart, cart } = useApp()
+  const { addToCart, cart, currentUser } = useApp()
   const [qty, setQty] = useState(1)
   const [isAdded, setIsAdded] = useState(false)
   const [qtyInput, setQtyInput] = useState('1')
@@ -27,7 +27,7 @@ function ProductoDetail({ id }: { id: string }) {
   const [reviewsLoading, setReviewsLoading] = useState(true)
   useEffect(() => { setQtyInput(String(qty)) }, [qty])
 
-  const { data: products, loading } = useProducts()
+  const { data: products, loading } = useProducts(undefined, undefined, { includeInternalTest: currentUser?.isInternalTest === true })
   const product = products.find(p => p.id === id)
   const { data: distribuidora, loading: distributorLoading } = useDistributor(product?.distribuidoraId || '')
 

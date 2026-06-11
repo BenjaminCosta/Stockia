@@ -8,6 +8,7 @@ import {
 } from '../firebase/firestore'
 import { COLLECTIONS } from '../firebase/collections'
 import { mockProducts, getProductsByDistribuidora } from '../mock-data'
+import { mapToSystemCategory } from '../import/productsImport'
 import type { Product } from '../types'
 
 // ─── Firestore shape ──────────────────────────────────────────────────────────
@@ -16,9 +17,17 @@ export interface FirestoreProduct {
   distributorId: string
   name: string
   description: string
-  /** Raw category from distributor (free text / CSV). Used in distributor-facing views. */
+  /**
+   * Official Stockia category (one of the 12 standard names).
+   * New products: always official. Legacy products: may be raw — resolved in toProduct().
+   */
   categoryId: string
-  /** Mapped Stockia system category (one of the 12 standard names). Used for commerce filtering. */
+  /**
+   * Raw category from distributor CSV (e.g. "GASEOSAS", "CACHI").
+   * Used for distributor-facing views (pills, internal catalog).
+   */
+  distributorCategory?: string
+  /** @deprecated — kept for legacy docs. Resolved in toProduct(). */
   systemCategory?: string
   brand?: string
   sku?: string
@@ -42,12 +51,19 @@ export interface FirestoreProduct {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toProduct(doc: FirestoreProduct & { id: string }): Product {
+  // Official category: prefer systemCategory (legacy), then try mapping categoryId.
+  // mapToSystemCategory handles both raw values ("GASEOSAS") and official values ("Bebidas").
+  const officialCategory = doc.systemCategory ?? mapToSystemCategory(doc.categoryId)
+  // Raw/distributor category: prefer explicit distributorCategory, fallback to categoryId.
+  const rawCategory = doc.distributorCategory ?? doc.categoryId
+
   return {
     id: doc.id,
     distribuidoraId: doc.distributorId,
     name: doc.name,
-    category: doc.categoryId,
-    systemCategory: doc.systemCategory,
+    category: officialCategory,
+    distributorCategory: rawCategory !== officialCategory ? rawCategory : undefined,
+    systemCategory: officialCategory,
     price: doc.price,
     stock: doc.stock,
     description: doc.description,

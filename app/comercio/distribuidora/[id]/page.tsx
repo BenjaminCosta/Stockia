@@ -40,13 +40,17 @@ export default function DistribuidoraCatalogPage({
   }, [id])
 
   const categoryList = useMemo(() => {
-    const cats = [...new Set(products.map(p => p.category))]
-    return ['Todos', ...cats]
+    // Use distributorCategory (raw) when available so the distributor's own
+    // category names appear in pills (e.g. "GASEOSAS", "CACHI"). Fall back to
+    // the official category for manually-created products.
+    const cats = [...new Set(products.map(p => p.distributorCategory ?? p.category))]
+    return ['Todos', ...cats.filter(Boolean)]
   }, [products])
 
   const filteredProducts = useMemo(() => products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === 'Todos' || p.category === selectedCategory
+    const productCat = p.distributorCategory ?? p.category
+    const matchesCategory = selectedCategory === 'Todos' || productCat === selectedCategory
     return matchesSearch && matchesCategory && p.active
   }), [products, searchQuery, selectedCategory])
 
@@ -116,14 +120,16 @@ export default function DistribuidoraCatalogPage({
             </div>
           </PageHero>
 
-          <div className="md:px-8 md:mt-8">
-            {/* Category pills */}
-            <PillFilter
-              items={categoryList.map(cat => ({ value: cat, label: cat }))}
-              selected={selectedCategory}
-              onChange={setSelectedCategory}
-              className="mt-6 px-4 md:px-0"
-            />
+          <div className="md:px-8 md:mt-8 min-w-0">
+            {/* Category pills — overflow-x-auto so many pills scroll instead of breaking layout */}
+            <div className="w-full overflow-x-hidden">
+              <PillFilter
+                items={categoryList.map(cat => ({ value: cat, label: cat }))}
+                selected={selectedCategory}
+                onChange={setSelectedCategory}
+                className="mt-6 px-4 md:px-0 flex-nowrap"
+              />
+            </div>
 
             {/* Search */}
             <SearchInput

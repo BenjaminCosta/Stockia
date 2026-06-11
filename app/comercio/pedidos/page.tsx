@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 
 function getOrderStatus(order: Pick<Order, 'status' | 'firestoreStatus'>) {
   return order.firestoreStatus ?? (
+    order.status === 'entregado_con_ajustes' ? 'delivered_with_adjustments' :
     order.status === 'entregado' ? 'delivered' :
     order.status === 'en_preparacion' ? 'preparing' :
     order.status === 'pagado' ? 'confirmed' :
@@ -24,7 +25,7 @@ function getOrderStatus(order: Pick<Order, 'status' | 'firestoreStatus'>) {
 }
 
 function isHistoryStatus(status: string) {
-  return ['delivered', 'cancelled', 'not_delivered'].includes(status)
+  return ['delivered', 'delivered_with_adjustments', 'cancelled', 'not_delivered'].includes(status)
 }
 
 function formatOrderShortDate(date: string) {
@@ -41,7 +42,7 @@ function getInitials(name: string) {
 
 // Maps a firestoreStatus to a 0-based step index (0=created, 1=preparing, 2=on_the_way, 3=delivered)
 function getTimelineStep(status: string): number {
-  if (status === 'delivered') return 3
+  if (status === 'delivered' || status === 'delivered_with_adjustments') return 3
   if (status === 'ready_or_on_the_way') return 2
   if (status === 'preparing' || status === 'confirmed') return 1
   return 0
@@ -58,6 +59,7 @@ function OrderTimeline({ status, createdAt, updatedAt }: { status: string; creat
         const isDone = i < currentStep
         const isActive = i === currentStep
         const isLast = i === timelineSteps.length - 1
+        const displayLabel = status === 'delivered_with_adjustments' && isLast ? 'Entregado c/ajustes' : label
 
         return (
           <div key={label} className="flex-1 flex flex-col items-center min-w-0">
@@ -94,7 +96,7 @@ function OrderTimeline({ status, createdAt, updatedAt }: { status: string; creat
               'mt-1.5 text-center text-[10px] font-semibold leading-tight px-0.5',
               isDone || isActive ? 'text-[#4A662E]' : 'text-[#B0B8CC]'
             )}>
-              {label}
+              {displayLabel}
             </p>
             {isActive && (
               <p className="mt-0.5 text-[9px] text-[#7A839C] text-center">
@@ -130,6 +132,23 @@ function PedidosContent() {
   // The most recent active order gets featured treatment
   const featuredOrder = activeTab === 'Activos' && filtered.length > 0 ? filtered[0] : null
   const restOrders = featuredOrder ? filtered.slice(1) : filtered
+  const renderAmount = (order: Order, size: 'base' | 'xl' = 'base') => {
+    const effectiveTotal = order.deliveredTotal ?? order.confirmedTotal ?? order.total
+    const hasAdjustedAmount = order.hasItemAdjustments && (order.originalTotal ?? order.total) !== effectiveTotal
+    const sizeClass = size === 'xl' ? 'text-xl md:text-2xl' : 'text-base'
+    return (
+      <div className="shrink-0 text-right">
+        <p className={`font-heading ${sizeClass} font-bold leading-none ${hasAdjustedAmount ? 'text-teal-700' : 'text-[#0B1A45]'}`}>
+          {formatCurrency(effectiveTotal)}
+        </p>
+        {hasAdjustedAmount && (
+          <p className="mt-1 text-[11px] font-semibold text-gray-400 line-through">
+            {formatCurrency(order.originalTotal ?? order.total)}
+          </p>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-[linear-gradient(180deg,#f7f7f8_0%,#ffffff_46%,#f3f4f6_100%)] pb-20 md:pb-8">
@@ -209,12 +228,15 @@ function PedidosContent() {
                         <h2 className="font-heading text-base md:text-lg font-bold text-[#0B1A45] leading-tight truncate">{featuredOrder.distribuidoraName}</h2>
                         <p className="mt-0.5 text-xs text-[#7A839C]">{featuredOrder.orderNumber} · {formatOrderShortDate(featuredOrder.createdAt)}</p>
                       </div>
-                      <p className="font-heading text-xl md:text-2xl font-bold text-[#0B1A45] leading-none shrink-0">{formatCurrency(featuredOrder.total)}</p>
+                      {renderAmount(featuredOrder, 'xl')}
                     </div>
 
                     {/* Row 2: badges + products + payment — always on its own line */}
                     <div className="mt-3 flex items-center flex-wrap gap-1.5">
                       <StatusBadge status={fStatus} />
+                      {featuredOrder.hasItemAdjustments && (
+                        <span className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">Ajustado</span>
+                      )}
                       <PaymentMethodBadge method={featuredOrder.paymentMethod} />
                       <span className="text-[#DFE1E8] mx-0.5">·</span>
                       <span className="text-xs font-semibold text-[#0B1A45]">{featuredOrder.items.length} productos</span>
@@ -267,9 +289,12 @@ function PedidosContent() {
 
                       {/* Amount + badges + products + arrow */}
                       <div className="flex items-center gap-2.5 shrink-0">
-                        <span className="font-heading text-base font-bold text-[#0B1A45]">{formatCurrency(order.total)}</span>
+                        {renderAmount(order)}
                         <div className="hidden sm:flex items-center gap-1.5">
                           <StatusBadge status={getOrderStatus(order)} />
+                          {order.hasItemAdjustments && (
+                            <span className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">Ajustado</span>
+                          )}
                           <PaymentMethodBadge method={order.paymentMethod} />
                         </div>
                         <span className="hidden md:block text-xs text-[#7A839C]">{order.items.length} productos</span>
@@ -279,6 +304,9 @@ function PedidosContent() {
                     {/* Mobile-only badges row */}
                     <div className="flex sm:hidden items-center flex-wrap gap-1.5 px-4 pb-3.5 -mt-1">
                       <StatusBadge status={getOrderStatus(order)} />
+                      {order.hasItemAdjustments && (
+                        <span className="rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">Ajustado</span>
+                      )}
                       <PaymentMethodBadge method={order.paymentMethod} />
                       <span className="text-xs text-[#7A839C] ml-0.5">{order.items.length} productos</span>
                     </div>

@@ -334,7 +334,7 @@ export default function BuscarPage() {
           (p.brand?.toLowerCase().includes(q) ?? false) ||
           (p.sku?.toLowerCase().includes(q) ?? false) ||
           (distributor?.companyName.toLowerCase().includes(q) ?? false)
-        const matchesCategory = !selectedCategory || (p.systemCategory ?? p.category) === selectedCategory
+        const matchesCategory = !selectedCategory || p.category === selectedCategory
         const matchesOffer = !ofertaFilter || p.isOffer === true
         const matchesStock = !stockOnlyParam || (p.status === 'active' && p.stock > 0)
         const matchesPriceMin = minPrice === null || p.price >= minPrice

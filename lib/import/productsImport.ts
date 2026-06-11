@@ -38,17 +38,165 @@ export function mapToSystemCategory(raw: string): string {
   const n = norm(raw)
 
   const rules: [string, string[]][] = [
-    ['Bebidas',            ['bebida', 'bebidas', 'gaseosa', 'gaseosas', 'jugo', 'jugos', 'agua', 'aguas', 'cerveza', 'cervezas', 'vino', 'vinos', 'energizante', 'energizantes', 'isotonica', 'isotonicas', 'soda', 'sodas', 'refresco', 'refrescos', 'drink', 'drinks']],
-    ['Almacén',            ['almacen', 'despensa', 'seco', 'secos', 'abarrotes', 'enlatado', 'enlatados', 'conserva', 'conservas', 'pasta', 'pastas', 'arroz', 'harina', 'harinas', 'salsa', 'salsas', 'aceite', 'aceites', 'grano', 'granos', 'legumbre', 'legumbres', 'cereal', 'cereales', 'abarrote']],
-    ['Lácteos',            ['lacteo', 'lacteos', 'leche', 'yogur', 'yogurt', 'yogures', 'queso', 'quesos', 'manteca', 'crema', 'ricota', 'mantequilla', 'dairy']],
-    ['Panadería',          ['panaderia', 'pan', 'factura', 'facturas', 'medialuna', 'medialunas', 'bolleria', 'confiteria', 'bizcochuelo', 'tostada', 'tostadas', 'bakery']],
-    ['Snacks',             ['snack', 'snacks', 'papasfritas', 'chizito', 'chizitos', 'palito', 'palitos', 'copetines', 'copetine', 'nachos', 'chips']],
-    ['Fiambres',           ['fiambre', 'fiambres', 'embutido', 'embutidos', 'salame', 'salames', 'salchicha', 'salchichas', 'jamon', 'mortadela', 'chorizo', 'chorizos', 'deli']],
-    ['Congelados',         ['congelado', 'congelados', 'freezer', 'ultracongelado', 'ultracongelados', 'frozen']],
-    ['Golosinas y Kiosco', ['golosina', 'golosinas', 'kiosco', 'kiosco', 'caramelo', 'caramelos', 'chocolate', 'chocolates', 'chicle', 'chicles', 'alfajor', 'alfajores', 'pochoclo', 'caramelito', 'dulce', 'dulces', 'candy']],
-    ['Limpieza',           ['limpieza', 'detergente', 'detergentes', 'desinfectante', 'desinfectantes', 'lavandina', 'lustramueble', 'lustramuebles', 'trapo', 'trapos', 'escoba', 'escobas', 'cleaning', 'higienizante']],
-    ['Perfumería',         ['perfumeria', 'cosmetica', 'cosmeticos', 'higiene', 'shampoo', 'champus', 'champu', 'jabon', 'jabones', 'desodorante', 'desodorantes', 'pastadental', 'crema', 'cremas', 'maquillaje', 'beauty', 'toiletry', 'toiletries', 'perfume', 'perfumes']],
-    ['Mascotas',           ['mascota', 'mascotas', 'petfood', 'pet', 'perro', 'perros', 'gato', 'gatos', 'balanceado', 'balanceados', 'acuario', 'pajaro', 'pajaros']],
+    ['Bebidas', [
+      // genérico
+      'bebida', 'bebidas', 'bebidasyaguas', 'bebidasygaseosas',
+      // gaseosas
+      'gaseosa', 'gaseosas', 'refresco', 'refrescos', 'soda', 'sodas',
+      // jugos y néctares
+      'jugo', 'jugos', 'juguito', 'juguitos', 'nectar', 'nectares', 'naranjada', 'limonada', 'pomelo',
+      // aguas
+      'agua', 'aguas', 'aguamineral', 'aguacongas', 'aguasingas',
+      // alcoholicas
+      'cerveza', 'cervezas', 'vino', 'vinos', 'espumante', 'espumantes', 'champan', 'champagne',
+      'sidra', 'sidras', 'fernet', 'whisky', 'whiskey', 'ron', 'vodka', 'ginebra', 'tequila',
+      'licor', 'licores', 'aperitivo', 'aperitivos', 'amaro',
+      // energizantes / isotónicas
+      'energizante', 'energizantes', 'bebidaenergetica', 'bebidasenergeticas',
+      'isotonica', 'isotonicas', 'isotonicoideportiva',
+      // infusiones / calientes
+      'cafe', 'te', 'infusion', 'infusiones', 'mate', 'yerba', 'yerbamate', 'cacao',
+    ]],
+    ['Almacén', [
+      // genérico
+      'almacen', 'almacenes', 'despensa', 'abarrote', 'abarrotes', 'bazar',
+      // secos
+      'seco', 'secos', 'productossecos', 'alimentossecos',
+      // pastas / arroces
+      'pasta', 'pastas', 'fideo', 'fideos', 'arroz', 'arroces', 'polenta', 'cuscus',
+      // harinas / repostería base
+      'harina', 'harinas', 'leudante', 'almidón', 'almidon', 'maicena', 'fecula', 'semola',
+      // conservas / enlatados
+      'conserva', 'conservas', 'enlatado', 'enlatados', 'lata', 'latas', 'puré', 'pure',
+      'tomate', 'extracto', 'salsadetomaté', 'salsadetomate',
+      // caldos / sopas
+      'sopa', 'sopas', 'caldo', 'caldos', 'sobresopa',
+      // salsas / aderezos / aceites
+      'salsa', 'salsas', 'aderezo', 'aderezos', 'mayonesa', 'ketchup', 'mostaza',
+      'chimichurri', 'aceite', 'aceites', 'oliva', 'vinagre',
+      // azúcar / endulzantes
+      'azucar', 'azucares', 'endulzante', 'endulzantes', 'edulcorante', 'edulcorantes',
+      'miel', 'mermelada', 'mermeladas', 'dulcedeleche', 'jalea',
+      // especias / condimentos
+      'sal', 'pimienta', 'condimento', 'condimentos', 'especia', 'especias',
+      'oregano', 'aji', 'comino',
+      // legumbres / granos
+      'legumbre', 'legumbres', 'grano', 'granos', 'lenteja', 'lentejas',
+      'garbanzo', 'garbanzos', 'poroto', 'porotos', 'arveja', 'arvejas',
+      // cereales
+      'cereal', 'cereales', 'granola', 'avena', 'maiz',
+    ]],
+    ['Lácteos', [
+      'lacteo', 'lacteos', 'lacteos', 'productolácteo', 'productolacteo', 'productoslácteos', 'productoslag',
+      'leche', 'lecheenpolvo', 'lechedescremada', 'lecheentera',
+      'yogur', 'yogurt', 'yogures', 'yoghurt',
+      'queso', 'quesos', 'quesofresco', 'quesomozzarella', 'quesocuartirolo',
+      'quesocrema', 'quesouncable', 'quesoroquefort',
+      'manteca', 'mantequilla', 'margarina',
+      'ricota', 'requesón', 'requesón',
+      'postre', 'postres', 'flan', 'mousse',
+      'dairy',
+    ]],
+    ['Panadería', [
+      'panaderia', 'panificado', 'panificados', 'panificacion',
+      'bolleria', 'confiteria', 'pasteleria', 'pasteles', 'pastel',
+      'bizcochuelo', 'bizcocho', 'bizcochos', 'budin', 'budines',
+      'factura', 'facturas', 'medialuna', 'medialunas',
+      'tostada', 'tostadas', 'tostadita', 'tostaditas',
+      'torta', 'tortas', 'tortita',
+      'faina', 'chipa', 'chipas',
+      'masa', 'masas', 'hojaldre',
+      'bakery',
+      // "pan" deliberadamente al final para que no matchee "pantalla" etc.
+      'pan',
+    ]],
+    ['Snacks', [
+      'snack', 'snacks', 'copetines', 'copetine',
+      'galletita', 'galletitas', 'galletasalada', 'galletadulce',
+      'cracker', 'crackers',
+      'papasfritas', 'papafrita', 'papasfritasdebolsa',
+      'chizito', 'chizitos', 'palito', 'palitos', 'nachos', 'chips',
+      'pochoclo', 'pochoclos', 'palomita', 'palomitas',
+      'mani', 'manicazado', 'garrapiñada', 'garrapiñadas',
+      'frutoséco', 'frutoseco', 'frutossec', 'semilla', 'semillas',
+      'nuez', 'nueces', 'almendra', 'almendras', 'pasa', 'pasas',
+      'mix', 'mixfrutos',
+    ]],
+    ['Fiambres', [
+      'fiambre', 'fiambres', 'fiambreyembutido', 'fiambresyembutidos',
+      'embutido', 'embutidos', 'chacinado', 'chacinados',
+      'salame', 'salames', 'salamines', 'salamin',
+      'salchicha', 'salchichas', 'salchichon',
+      'jamon', 'jamones', 'jamoncrudo', 'jamóncocido', 'jamoncocido',
+      'mortadela', 'chorizo', 'chorizos', 'morcilla', 'longaniza', 'butifarra',
+      'pate', 'patee', 'leberwurst',
+      'deli', 'delicatesen',
+    ]],
+    ['Congelados', [
+      'congelado', 'congelados', 'productoscongelados', 'alimentoscongelados',
+      'ultracongelado', 'ultracongelados',
+      'helado', 'helados', 'icecream',
+      'precocido', 'precocidos', 'rebozado', 'rebozados',
+      'nugget', 'nuggets',
+      'freezer', 'frozen',
+    ]],
+    ['Golosinas y Kiosco', [
+      'golosina', 'golosinas', 'golosinasykiosco', 'kiosco', 'kiosko',
+      'caramelo', 'caramelos', 'caramelito', 'caramelitos',
+      'chocolate', 'chocolates', 'tableta', 'tabletas',
+      'alfajor', 'alfajores', 'alfajorcito',
+      'turron', 'turrones', 'nougat', 'mazapan',
+      'chicle', 'chicles', 'gomademascarar', 'goma',
+      'gomita', 'gomitas', 'oblea', 'obleas', 'barquillo', 'barquillos',
+      'chupete', 'chupetes', 'piruleta', 'piruletas',
+      'confite', 'confites', 'pastilla', 'pastillas',
+      'bombon', 'bombones',
+      'dulce', 'dulces',
+      'candy',
+    ]],
+    ['Limpieza', [
+      'limpieza', 'limpiezadelhogar', 'productosdelimpieza', 'productodelimpieza',
+      'hogar', 'hogaryjardin',
+      'detergente', 'detergentes', 'lavaplatos', 'lavarropa',
+      'desinfectante', 'desinfectantes', 'higienizante', 'higienizantes',
+      'lavandina', 'blanqueador', 'blanqueadores',
+      'suavizante', 'suavizantes', 'jabondepolvo', 'detergenteenpolvo',
+      'lustramueble', 'lustramuebles', 'lustrapisos', 'lustrametales',
+      'quitamanchas', 'eliminadorderolor',
+      'trapo', 'trapos', 'escoba', 'escobas', 'lampaso', 'fregona', 'cepillo',
+      'esponja', 'esponjas', 'guante', 'guantes',
+      'bolsadebasura', 'bolsas', 'bolsasresiduo', 'bolsaresiduos',
+      'papeldecociña', 'papel', 'servilleta', 'servilletas',
+      'incienso', 'vela', 'velas', 'ambientador',
+      'cleaning',
+    ]],
+    ['Perfumería', [
+      'perfumeria', 'higienepersonal', 'cuidadopersonal', 'cosmetica', 'cosmeticos',
+      'higiene', 'belleza',
+      'shampoo', 'champu', 'champus', 'acondicionador', 'acondicionadores', 'cremadeenjuague',
+      'tratamientocapilar', 'cuidadodelcabello', 'gel', 'laca', 'fijador',
+      'jabon', 'jabones', 'jabonliquido', 'jabondetocar',
+      'desodorante', 'desodorantes', 'antitranspirante',
+      'pastadental', 'dentifrico', 'enjuaguebucal', 'hilo dental', 'hilodental',
+      'crema', 'cremas', 'cremacorporal', 'creamano', 'cremafacial',
+      'maquillaje', 'cosmetico', 'labial', 'rimmel', 'base', 'polvo',
+      'colonia', 'perfume', 'perfumes', 'fragancia',
+      'afeitado', 'espumadeafeitar', 'rasuradora', 'maquinita',
+      'panial', 'panales', 'panales', 'toallita', 'toallitas', 'higienefemenina',
+      'protector solar', 'protectorsolar', 'bronceador',
+      'beauty', 'toiletry', 'toiletries',
+    ]],
+    ['Mascotas', [
+      'mascota', 'mascotas', 'animales',
+      'petfood', 'petshop', 'pet',
+      'perro', 'perros', 'canino', 'caninos',
+      'gato', 'gatos', 'felino', 'felinos',
+      'balanceado', 'balanceados', 'alimentoparamascotas', 'alimentomascota',
+      'acuario', 'peces',
+      'pajaro', 'pajaros', 'ave', 'aves',
+      'hamster', 'conejo', 'conejos', 'roedor', 'roedores',
+      'arena para gatos', 'arenagato', 'arenasanitaria',
+    ]],
   ]
 
   for (const [category, aliases] of rules) {
