@@ -41,12 +41,9 @@ export function AuthGuard({ children, requiredRole }: AuthGuardProps) {
     }
   }, [authLoading, isAuthenticated, userRole, requiredRole, router])
 
-  if (authLoading) {
+  if (authLoading || !isAuthenticated || (requiredRole && !userRole)) {
     return <FullPageLoadingState label="Validando tu sesión" />
   }
-
-  if (!isAuthenticated) return null
-  if (requiredRole && !userRole) return null
 
   return <>{children}</>
 }

@@ -253,6 +253,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUserRole(null)
         setCurrentUser(null)
         setFirebaseUser(null)
+        clearSessionCookie()
         setAuthLoading(false)
         return
       }
