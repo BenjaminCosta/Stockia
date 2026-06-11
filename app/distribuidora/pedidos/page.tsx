@@ -28,6 +28,11 @@ const statusFilters: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'no_entregado',  label: 'No entregados'  },
 ]
 
+function orderTime(order: Order) {
+  const t = new Date(order.createdAt).getTime()
+  return Number.isFinite(t) ? t : 0
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PedidosDistribuidoraPage() {
@@ -66,7 +71,9 @@ export default function PedidosDistribuidoraPage() {
   const { filteredOrders, kpis, actionOrders } = useMemo(() => {
     const q = searchQuery.toLowerCase()
 
-    const filtered = orders.filter(o => {
+    const ordered = [...orders].sort((a, b) => orderTime(b) - orderTime(a))
+
+    const filtered = ordered.filter(o => {
       const matchesSearch = o.comercioName.toLowerCase().includes(q) || o.orderNumber.toLowerCase().includes(q)
       const matchesStatus = statusFilter === 'all' || o.status === statusFilter
       return matchesSearch && matchesStatus
@@ -85,7 +92,7 @@ export default function PedidosDistribuidoraPage() {
       new Date(o.createdAt) >= thisMonthStart
     ).length
 
-    const actions = orders.filter(o => {
+    const actions = ordered.filter(o => {
       const needsAction =
         o.status === 'pendiente' ||
         o.firestoreStatus === 'pending_confirmation' ||

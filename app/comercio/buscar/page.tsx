@@ -221,7 +221,6 @@ export default function BuscarPage() {
     : undefined
   const { data: products, loading: productsLoading } = useProducts(undefined, undefined, { includeInternalTest: comercio?.isInternalTest === true })
   const { data: distributors, loading: distributorsLoading } = useDistributors(commerceContext)
-  const { data: allDistributors } = useDistributors()
   const isLoading = productsLoading || (!!commerceContext && distributorsLoading)
   const { data: allCategories } = useCategories()
 
@@ -257,20 +256,19 @@ export default function BuscarPage() {
   }
 
   const distributorMap = useMemo(() => new Map(distributors.map(d => [d.id, d])), [distributors])
-  const allDistributorMap = useMemo(() => new Map(allDistributors.map(d => [d.id, d])), [allDistributors])
 
-  // Resolved names for distributors not found in either map (e.g. inactive or unsynced)
+  // Resolved names for distributors not in the zone map (e.g. inactive or different zone)
   const [resolvedDistributorNames, setResolvedDistributorNames] = useState<Record<string, string>>({})
   const fetchingIdsRef = useRef(new Set<string>())
   useEffect(() => {
     const missing = Array.from(new Set(products.map(p => p.distribuidoraId))).filter(
-      id => !distributorMap.has(id) && !allDistributorMap.has(id) && !fetchingIdsRef.current.has(id)
+      id => !distributorMap.has(id) && !fetchingIdsRef.current.has(id)
     )
     if (missing.length === 0) return
     missing.forEach(id => fetchingIdsRef.current.add(id))
     Promise.all(missing.map(id => getDistributorById(id).then(d => [id, d?.companyName ?? ''] as const).catch(() => [id, ''] as const)))
       .then(entries => setResolvedDistributorNames(prev => Object.assign({ ...prev }, Object.fromEntries(entries))))
-  }, [products, distributorMap, allDistributorMap])
+  }, [products, distributorMap])
 
   const catalogProducts = useMemo(() => {
     const base = products.filter((p: Product) => p.status !== 'paused')
@@ -281,6 +279,17 @@ export default function BuscarPage() {
     }
     return base
   }, [products, distributorMap, distributorsLoading, commerceContext])
+
+  // Products grouped by distributor — avoids O(D×P) scan in matchingDistributors
+  const productsByDistributor = useMemo(() => {
+    const map = new Map<string, Product[]>()
+    for (const p of catalogProducts) {
+      const arr = map.get(p.distribuidoraId)
+      if (arr) arr.push(p)
+      else map.set(p.distribuidoraId, [p])
+    }
+    return map
+  }, [catalogProducts])
 
   const normalizedQuery = debouncedQuery.trim()
   const normalizedSearch = normalizedQuery.toLowerCase()
@@ -309,19 +318,19 @@ export default function BuscarPage() {
   const matchingDistributors = useMemo(() => {
     if (!normalizedSearch) return []
     return distributors.filter(distributor => {
-      const distributorProducts = catalogProducts.filter(product => product.distribuidoraId === distributor.id)
-      return (
+      if (
         distributor.companyName.toLowerCase().includes(normalizedSearch) ||
-        distributor.categories.some(category => category.toLowerCase().includes(normalizedSearch)) ||
-        distributorProducts.some(product =>
-          product.name.toLowerCase().includes(normalizedSearch) ||
-          product.category.toLowerCase().includes(normalizedSearch) ||
-          (product.brand?.toLowerCase().includes(normalizedSearch) ?? false) ||
-          (product.sku?.toLowerCase().includes(normalizedSearch) ?? false)
-        )
+        distributor.categories.some(category => category.toLowerCase().includes(normalizedSearch))
+      ) return true
+      const distProducts = productsByDistributor.get(distributor.id) ?? []
+      return distProducts.some(product =>
+        product.name.toLowerCase().includes(normalizedSearch) ||
+        product.category.toLowerCase().includes(normalizedSearch) ||
+        (product.brand?.toLowerCase().includes(normalizedSearch) ?? false) ||
+        (product.sku?.toLowerCase().includes(normalizedSearch) ?? false)
       )
     })
-  }, [distributors, catalogProducts, normalizedSearch])
+  }, [distributors, productsByDistributor, normalizedSearch])
 
   const filteredProducts = useMemo(() => {
     const scored = catalogProducts
@@ -457,16 +466,17 @@ export default function BuscarPage() {
   ])
 
   const handleAdd = useCallback((product: Product) => {
-    const dist = distributorMap.get(product.distribuidoraId) ?? allDistributorMap.get(product.distribuidoraId)
+    const dist = distributorMap.get(product.distribuidoraId)
     const distribuidoraName = dist?.companyName ?? resolvedDistributorNames[product.distribuidoraId] ?? ''
     const qty = Math.min(quantities[product.id] ?? 1, Math.max(1, product.stock))
     const added = addToCart(product, distribuidoraName, qty)
     if (!added) return
     setJustAdded(prev => ({ ...prev, [product.id]: true }))
     setTimeout(() => setJustAdded(prev => ({ ...prev, [product.id]: false })), 2000)
-  }, [addToCart, quantities, distributorMap, allDistributorMap, resolvedDistributorNames])
+  }, [addToCart, quantities, distributorMap, resolvedDistributorNames])
 
   const hasCartItems = !!(cart && cart.items.length > 0)
+  const isSearching = searchQuery !== debouncedQuery
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F7F8FA]">
@@ -526,9 +536,16 @@ export default function BuscarPage() {
                 {pageTitle}
               </h1>
               <div className="mt-2 hidden items-center gap-2 lg:flex">
-                <span className="text-sm font-medium text-[#7A839C]">
-                  {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
-                </span>
+                {isSearching ? (
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#7A839C]">
+                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#DFE1E8] border-t-[#0B1A45]" />
+                    Buscando...
+                  </span>
+                ) : (
+                  <span className="text-sm font-medium text-[#7A839C]">
+                    {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+                  </span>
+                )}
                 {activeFilterChips.slice(0, 3).map(chip => (
                   <button
                     key={chip.key}
@@ -723,8 +740,8 @@ export default function BuscarPage() {
         <section className="flex-1 min-w-0">
             {isLoading ? (
               <>
-                <ProductCardSkeleton count={4} className="px-0 lg:hidden" />
-                <ProductCardSkeleton count={8} className="hidden lg:grid" />
+                <ProductCardSkeleton count={6} className="px-0 lg:hidden" />
+                <ProductCardSkeleton count={12} className="hidden lg:grid" />
               </>
             ) : filteredProducts.length === 0 && matchingDistributors.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-16 text-center md:py-20">
@@ -745,9 +762,16 @@ export default function BuscarPage() {
               </div>
             ) : (
               <>
-                {filteredProducts.length > 0 && (
-                  <p className="mb-3 text-xs font-medium text-[#7A839C] lg:hidden">
-                    {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+                {(filteredProducts.length > 0 || isSearching) && (
+                  <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-[#7A839C] lg:hidden">
+                    {isSearching ? (
+                      <>
+                        <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#DFE1E8] border-t-[#0B1A45]" />
+                        Buscando...
+                      </>
+                    ) : (
+                      `${filteredProducts.length} producto${filteredProducts.length !== 1 ? 's' : ''} encontrado${filteredProducts.length !== 1 ? 's' : ''}`
+                    )}
                   </p>
                 )}
 

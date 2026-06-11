@@ -73,6 +73,7 @@ export default function AdminPedidosPage() {
   const pendingExternal = viewOrders.filter(o => o.orderStatus === 'pending_confirmation' && o.paymentMethod === 'external').length
   const cancelledCount = viewOrders.filter(o => o.orderStatus === 'cancelled' || o.orderStatus === 'not_delivered').length
   const testCount = orders.filter(o => o.isInternalTest).length
+  const getOrderTotal = (o: AdminOrder) => o.deliveredTotal ?? o.confirmedTotal ?? o.total
 
   if (loading) {
     return (
@@ -206,8 +207,8 @@ export default function AdminPedidosPage() {
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-gray-50">
               <div>
-                <p className="text-base font-bold text-gray-900">{formatCurrency(o.deliveredTotal ?? o.total)}</p>
-                {o.hasItemAdjustments && o.originalTotal && o.originalTotal !== (o.deliveredTotal ?? o.total) && (
+                <p className="text-base font-bold text-gray-900">{formatCurrency(getOrderTotal(o))}</p>
+                {o.hasItemAdjustments && o.originalTotal && o.originalTotal !== getOrderTotal(o) && (
                   <p className="text-xs text-gray-400 line-through">{formatCurrency(o.originalTotal)}</p>
                 )}
               </div>
@@ -261,8 +262,8 @@ export default function AdminPedidosPage() {
                     )}
                   </td>
                   <td className="px-4 py-4">
-                    <span className="font-semibold text-gray-900">{formatCurrency(o.deliveredTotal ?? o.total)}</span>
-                    {o.hasItemAdjustments && o.originalTotal && o.originalTotal !== (o.deliveredTotal ?? o.total) && (
+                    <span className="font-semibold text-gray-900">{formatCurrency(getOrderTotal(o))}</span>
+                    {o.hasItemAdjustments && o.originalTotal && o.originalTotal !== getOrderTotal(o) && (
                       <span className="block text-xs text-gray-400 line-through">{formatCurrency(o.originalTotal)}</span>
                     )}
                   </td>

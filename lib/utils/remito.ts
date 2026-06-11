@@ -47,7 +47,7 @@ export function printRemito(
       const rowBg = i % 2 === 0 ? '#ffffff' : '#f9fafb'
       const isCancelled = item.itemStatus === 'cancelled' || item.itemStatus === 'not_delivered' || item.itemStatus === 'rejected_by_commerce'
       const displayQty = item.deliveredQuantity ?? item.confirmedQuantity ?? item.quantity
-      const displaySubtotal = item.finalSubtotal ?? (item.unitPrice * item.quantity)
+      const displaySubtotal = item.finalSubtotal ?? (item.unitPrice * displayQty)
       const nameStyle = isCancelled ? 'color:#9ca3af;text-decoration:line-through' : 'color:#111827'
       const qtyStyle = isCancelled ? 'color:#9ca3af' : 'color:#111827'
       const subtotalStyle = isCancelled ? 'color:#9ca3af;text-decoration:line-through' : 'color:#111827'
@@ -88,9 +88,17 @@ export function printRemito(
   ].filter(Boolean)
   const distMeta = distMetaParts.join(' · ')
 
-  const finalTotal = order.deliveredTotal ?? order.items.reduce((s, i) => s + i.unitPrice * i.quantity, 0)
-  const originalTotal = order.originalTotal
+  const itemFinalTotal = order.items.reduce((sum, item) => {
+    const qty = item.deliveredQuantity ?? item.confirmedQuantity ?? item.quantity
+    return sum + (item.finalSubtotal ?? item.unitPrice * qty)
+  }, 0)
+  const finalTotal = order.deliveredTotal ?? order.confirmedTotal ?? itemFinalTotal
+  const originalTotal = order.originalTotal ?? order.total
   const hasAdjustments = order.hasItemAdjustments && originalTotal != null && originalTotal !== finalTotal
+  const isDelivered = order.firestoreStatus === 'delivered' || order.firestoreStatus === 'delivered_with_adjustments' || order.status === 'entregado' || order.status === 'entregado_con_ajustes'
+  const finalTotalLabel = hasAdjustments
+    ? isDelivered ? 'Total entregado' : 'Total aprobado'
+    : 'Total'
   const observations = val(order.cancellationReason, '')
   const logoUrl = `${window.location.origin}/iso-stockia.png`
 
@@ -531,7 +539,7 @@ export function printRemito(
       <span style="color:#059669;font-weight:600">Gratis</span>
     </div>
     <div class="totals-row total-final">
-      <span class="totals-label">${hasAdjustments ? 'Total entregado' : 'Total'}</span>
+      <span class="totals-label">${finalTotalLabel}</span>
       <span>${formatARS(finalTotal)}</span>
     </div>
   </div>

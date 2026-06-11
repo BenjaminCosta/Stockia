@@ -60,6 +60,7 @@ export type AdminOrder = {
   createdAt: string
   itemCount: number
   originalTotal?: number
+  confirmedTotal?: number
   deliveredTotal?: number
   hasItemAdjustments?: boolean
   /** True when the order involves an internal test commerce or distributor. */
@@ -230,6 +231,7 @@ function fsToOrder(doc: Record<string, unknown> & { id: string }): AdminOrder {
     createdAt,
     itemCount: items.length,
     originalTotal: doc.originalTotal ? Number(doc.originalTotal) : undefined,
+    confirmedTotal: doc.confirmedTotal ? Number(doc.confirmedTotal) : undefined,
     deliveredTotal: doc.deliveredTotal ? Number(doc.deliveredTotal) : undefined,
     hasItemAdjustments: doc.hasItemAdjustments === true,
   }

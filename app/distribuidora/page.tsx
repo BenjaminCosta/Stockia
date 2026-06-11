@@ -398,40 +398,49 @@ export default function DistribuidoraDashboardPage() {
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    {recentOrders.map((order: any) => (
-                      <div
-                        key={order.id}
-                        className="py-3 px-3 rounded-xl hover:bg-[#F7F8FA] transition-colors group"
-                      >
-                        {/* Fila superior: ícono + info + monto */}
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-[#F1F3F8] flex items-center justify-center shrink-0">
-                            <ShoppingCart className="h-4.5 w-4.5 text-[#5F6880]" />
+                    {recentOrders.map((order: any) => {
+                      const effectiveTotal = order.deliveredTotal ?? order.confirmedTotal ?? order.total
+                      const hasAdjustedAmount = order.hasItemAdjustments && (order.originalTotal ?? order.total) !== effectiveTotal
+                      return (
+                        <div
+                          key={order.id}
+                          className="py-3 px-3 rounded-xl hover:bg-[#F7F8FA] transition-colors group"
+                        >
+                          {/* Fila superior: ícono + info + monto */}
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-[#F1F3F8] flex items-center justify-center shrink-0">
+                              <ShoppingCart className="h-4.5 w-4.5 text-[#5F6880]" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                                {order.comercioName}
+                              </p>
+                              <p className="text-xs text-[#7A839C]">
+                                {order.orderNumber || `#${order.id}`} · {order.items.length} {order.items.length === 1 ? 'producto' : 'productos'}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className={`font-heading font-bold text-sm ${hasAdjustedAmount ? 'text-teal-700' : 'text-foreground'}`}>
+                                {formatCurrency(effectiveTotal)}
+                              </p>
+                              {hasAdjustedAmount && (
+                                <p className="text-[10px] font-semibold text-gray-400 line-through">{formatCurrency(order.originalTotal ?? order.total)}</p>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                              {order.comercioName}
-                            </p>
-                            <p className="text-xs text-[#7A839C]">
-                              {order.orderNumber || `#${order.id}`} · {order.items.length} {order.items.length === 1 ? 'producto' : 'productos'}
-                            </p>
+                          {/* Fila inferior: badge + botón */}
+                          <div className="flex items-center justify-between mt-2 pl-12">
+                            <StatusBadge status={order.firestoreStatus ?? order.status} />
+                            <Link
+                              href={`/distribuidora/pedidos/${order.id}`}
+                              className="shrink-0 text-xs font-semibold text-primary bg-primary/8 hover:bg-primary hover:text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+                            >
+                              Ver pedido
+                            </Link>
                           </div>
-                          <p className="font-heading font-bold text-sm text-foreground shrink-0">
-                            {formatCurrency(order.total)}
-                          </p>
                         </div>
-                        {/* Fila inferior: badge + botón */}
-                        <div className="flex items-center justify-between mt-2 pl-12">
-                          <StatusBadge status={order.firestoreStatus ?? order.status} />
-                          <Link
-                            href={`/distribuidora/pedidos/${order.id}`}
-                            className="shrink-0 text-xs font-semibold text-primary bg-primary/8 hover:bg-primary hover:text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-                          >
-                            Ver pedido
-                          </Link>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
