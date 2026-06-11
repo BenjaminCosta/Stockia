@@ -20,7 +20,7 @@ export default function DistribuidorasPage() {
   const loc = comercio?.location
   const hasLocation = !!(loc?.city)
   const commerceContext = hasLocation
-    ? { lat: loc!.lat ?? undefined, lng: loc!.lng ?? undefined, locationKey: loc!.locationKey, citySlug: loc!.citySlug, provinceSlug: loc!.provinceSlug }
+    ? { lat: loc!.lat ?? undefined, lng: loc!.lng ?? undefined, locationKey: loc!.locationKey, citySlug: loc!.citySlug, provinceSlug: loc!.provinceSlug, isInternalTest: comercio?.isInternalTest === true }
     : undefined
 
   const { data: distributors, loading: isLoading } = useDistributors(commerceContext)

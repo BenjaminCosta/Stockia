@@ -131,6 +131,8 @@ async function buildCurrentUser(
       id: uid,
       email,
       role: 'comercio',
+      isInternalTest: profile?.isInternalTest === true,
+      visibleInMarketplace: profile?.visibleInMarketplace,
       storeName: profile?.businessName || name,
       razonSocial: '',
       cuit: profile?.cuit || '',
@@ -160,6 +162,8 @@ async function buildCurrentUser(
     id: uid,
     email,
     role: 'distribuidora',
+    isInternalTest: (profile as any)?.isInternalTest === true,
+    visibleInMarketplace: (profile as any)?.visibleInMarketplace,
     companyName: (profile as any)?.companyName || name,
     razonSocial: (profile as any)?.razonSocial || '',
     cuit: (profile as any)?.cuit || '',
@@ -173,6 +177,7 @@ async function buildCurrentUser(
     deliveryLocationKeys: (profile as any)?.deliveryLocationKeys ?? (profile as any)?.deliveryZoneKeys ?? [],
     deliveryZoneKeys: (profile as any)?.deliveryZoneKeys ?? [],
     deliveryHours: (profile as any)?.deliveryHours || '',
+    coverage: (profile as any)?.coverage,
     location: {
       // Treat 0 as "no real coords"
       ...normalizedDistLocation,

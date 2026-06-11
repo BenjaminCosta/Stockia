@@ -159,6 +159,11 @@ function getDistributorDeliveryLocationKeys(d: FirestoreDistributor & { id: stri
   })
 }
 
+function isVisibleForCommerceContext(d: FirestoreDistributor & { id: string }, context?: CommerceContext): boolean {
+  if (d.isInternalTest === true) return context?.isInternalTest === true
+  return d.visibleInMarketplace !== false
+}
+
 function matchesContextFn(context: CommerceContext | undefined) {
   const commerceCoordsOk = hasRealCoordinates(context?.lat, context?.lng)
   const commerceLocationKey = context?.locationKey || context?.zoneKey
@@ -240,7 +245,7 @@ export async function getDistributors(): Promise<Distribuidora[]> {
       '==',
       'active'
     )
-    if (docs.length > 0) return docs.filter(d => !d.isInternalTest).map(toDistribuidora)
+    if (docs.length > 0) return docs.filter(d => !d.isInternalTest && d.visibleInMarketplace !== false).map(toDistribuidora)
   } catch {
     // fall through
   }
@@ -289,7 +294,7 @@ export async function getDistributorCards(
     ])
 
     if (docs.length > 0) {
-      const matchedDocs = docs.filter(d => !d.isInternalTest).filter(matchesCtx)
+      const matchedDocs = docs.filter(d => isVisibleForCommerceContext(d, context)).filter(matchesCtx)
       const cards: DistributorCard[] = matchedDocs
         .map(d => {
           const r = ratings[d.id]

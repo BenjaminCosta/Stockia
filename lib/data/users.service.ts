@@ -8,6 +8,8 @@ export interface FirestoreUser {
   name: string
   email: string
   role: UserRole | 'admin'
+  isInternalTest?: boolean
+  visibleInMarketplace?: boolean
   createdAt: unknown
   updatedAt: unknown
 }

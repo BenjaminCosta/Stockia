@@ -152,7 +152,7 @@ function ItemAdjustmentSheet({
     } else if (action === 'cancel') {
       await onSave({ itemStatus: 'cancelled', confirmedQuantity: 0, cancelledQuantity: maxQty, reason: reason as AdjustmentReason, comment: comment || undefined })
     } else if (action === 'not_delivered') {
-      await onSave({ itemStatus: 'not_delivered', confirmedQuantity: maxQty, reason: reason as AdjustmentReason, comment: comment || undefined })
+      await onSave({ itemStatus: 'not_delivered', confirmedQuantity: 0, cancelledQuantity: maxQty, reason: reason as AdjustmentReason, comment: comment || undefined })
     }
   }
 

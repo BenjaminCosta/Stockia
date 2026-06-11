@@ -519,18 +519,32 @@ export async function adjustOrderItem(
       }
     })
 
+    const hasRealAdjustments = updatedItems.some(item => {
+      const requestedQty = (item as any).requestedQuantity ?? item.quantity
+      const confirmedQty = (item as any).confirmedQuantity ?? requestedQty
+      const status = (item as any).itemStatus as OrderItemStatus | undefined
+      return (
+        confirmedQty !== requestedQty ||
+        status === 'modified' ||
+        status === 'cancelled' ||
+        status === 'not_delivered' ||
+        status === 'rejected_by_commerce'
+      )
+    })
+
     // Recompute confirmedTotal from all non-cancelled items
     const confirmedTotal = updatedItems.reduce((sum, item) => {
-      if ((item as any).itemStatus === 'cancelled') return sum
+      const status = (item as any).itemStatus as OrderItemStatus | undefined
+      if (status === 'cancelled' || status === 'not_delivered' || status === 'rejected_by_commerce') return sum
       const qty = (item as any).confirmedQuantity ?? (item as any).requestedQuantity ?? item.quantity
       return sum + qty * item.unitPrice
     }, 0)
 
     transaction.update(orderRef, {
       items: updatedItems,
-      hasItemAdjustments: true,
+      hasItemAdjustments: hasRealAdjustments,
       confirmedTotal,
-      originalTotal: order.total,
+      originalTotal: order.originalTotal ?? order.total,
       updatedAt: serverTimestamp(),
     })
   })
@@ -578,6 +592,8 @@ export async function bulkConfirmItems(orderId: string): Promise<void> {
  * then triggers commission generation on the delivered amount.
  */
 export async function finalizeOrderWithAdjustments(orderId: string): Promise<void> {
+  let shouldGenerateCommission = false
+
   await runTransaction(db, async transaction => {
     const orderRef = doc(db, COLLECTIONS.orders, orderId)
     const orderSnap = await transaction.get(orderRef)
@@ -673,6 +689,7 @@ export async function finalizeOrderWithAdjustments(orderId: string): Promise<voi
       : anyAdjusted
       ? 'delivered_with_adjustments'
       : 'delivered'
+    shouldGenerateCommission = finalOrderStatus !== 'cancelled' && deliveredTotal > 0
 
     transaction.update(orderRef, {
       items: finalItems,
@@ -680,6 +697,7 @@ export async function finalizeOrderWithAdjustments(orderId: string): Promise<voi
       deliveredTotal,
       cancelledTotal,
       originalTotal: order.originalTotal ?? order.total,
+      hasItemAdjustments: finalOrderStatus === 'delivered_with_adjustments',
       stockReservationStatus: 'released',
       stockReleasedAt: serverTimestamp(),
       stockReleaseReason: 'finalized_with_adjustments',
@@ -689,7 +707,9 @@ export async function finalizeOrderWithAdjustments(orderId: string): Promise<voi
   })
 
   // Generate commission on delivered amount
-  await generateCommissionForOrder(orderId)
+  if (shouldGenerateCommission) {
+    await generateCommissionForOrder(orderId)
+  }
 }
 
 /**

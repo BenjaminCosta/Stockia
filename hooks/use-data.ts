@@ -71,11 +71,11 @@ function useAsyncData<T>(
 }
 
 export function useDistributors(context?: CommerceContext) {
-  const cacheKey = `dist-cards:v2:${context?.lat ?? 0}:${context?.lng ?? 0}:${context?.locationKey ?? context?.zoneKey ?? ''}:${context?.citySlug ?? ''}`
+  const cacheKey = `dist-cards:v3:${context?.lat ?? 0}:${context?.lng ?? 0}:${context?.locationKey ?? context?.zoneKey ?? ''}:${context?.citySlug ?? ''}:${context?.provinceSlug ?? ''}:${context?.isInternalTest ? 'test' : 'real'}`
   const { data, loading } = useAsyncData<DistributorCard[]>(
     () => getDistributorCards(context),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [context?.lat, context?.lng, context?.locationKey, context?.zoneKey, context?.citySlug],
+    [context?.lat, context?.lng, context?.locationKey, context?.zoneKey, context?.citySlug, context?.provinceSlug, context?.isInternalTest],
     cacheKey
   )
   return { data: data ?? [], loading }
@@ -99,11 +99,16 @@ export function invalidateProductCache(productId: string) {
   dataCache.delete(`prod:${productId}`)
 }
 
-export function useProducts(distributorId?: string, refreshKey?: number) {
+export function useProducts(
+  distributorId?: string,
+  refreshKey?: number,
+  options?: { includeInternalTest?: boolean }
+) {
+  const includeInternalTest = options?.includeInternalTest === true
   const { data, loading } = useAsyncData<Product[]>(
-    () => (distributorId ? getProductsByDistributor(distributorId) : getAllProducts()) as Promise<Product[]>,
-    [distributorId, refreshKey],
-    `prods:${distributorId ?? 'all'}`
+    () => (distributorId ? getProductsByDistributor(distributorId) : getAllProducts({ includeInternalTest })) as Promise<Product[]>,
+    [distributorId, refreshKey, includeInternalTest],
+    `prods:${distributorId ?? 'all'}:${includeInternalTest ? 'test' : 'real'}`
   )
   return { data: data ?? [], loading }
 }

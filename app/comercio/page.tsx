@@ -363,10 +363,10 @@ export default function ComercioHomePage() {
   const currentLocation = comercio?.location
 
   const commerceContext = currentLocation
-    ? { lat: currentLocation.lat ?? undefined, lng: currentLocation.lng ?? undefined, locationKey: currentLocation.locationKey, citySlug: currentLocation.citySlug, provinceSlug: currentLocation.provinceSlug }
+    ? { lat: currentLocation.lat ?? undefined, lng: currentLocation.lng ?? undefined, locationKey: currentLocation.locationKey, citySlug: currentLocation.citySlug, provinceSlug: currentLocation.provinceSlug, isInternalTest: comercio?.isInternalTest === true }
     : undefined
   const { data: distributors, loading: isLoading } = useDistributors(commerceContext)
-  const { data: products } = useProducts()
+  const { data: products } = useProducts(undefined, undefined, { includeInternalTest: comercio?.isInternalTest === true })
   const { data: allCategories } = useCategories()
   const { commerceOrders, ordersLoading: isOrdersLoading } = useApp()
   const distributorMap = useMemo(() => new Map(distributors.map(distributor => [distributor.id, distributor])), [distributors])

@@ -6,6 +6,9 @@ export interface User {
   id: string
   email: string
   role: UserRole
+  /** Internal demo/test account. Used to keep production metrics and marketplace clean. */
+  isInternalTest?: boolean
+  visibleInMarketplace?: boolean
   createdAt: string
 }
 
@@ -94,6 +97,8 @@ export interface CommerceContext {
   zoneKey?: string
   citySlug?: string
   provinceSlug?: string
+  /** Allows internal test commerces to see internal test distributors. */
+  isInternalTest?: boolean
 }
 
 // Product types

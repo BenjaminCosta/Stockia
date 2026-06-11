@@ -99,14 +99,16 @@ export async function getProductsByDistributorAll(distributorId: string): Promis
   return getProductsByDistribuidora(distributorId)
 }
 
-/** Returns all products (admin / global search). Excludes products from internal test distributors. */
-export async function getAllProducts(): Promise<Product[]> {
+/** Returns all products (admin / global search). Excludes internal test products unless explicitly requested. */
+export async function getAllProducts(options?: { includeInternalTest?: boolean }): Promise<Product[]> {
   try {
     const [docs, internalDists] = await Promise.all([
       getCollection<FirestoreProduct>(COLLECTIONS.products),
       getDocumentsByField<{ isInternalTest?: boolean }>(COLLECTIONS.distributors, 'isInternalTest', '==', true),
     ])
     if (docs.length > 0) {
+      if (options?.includeInternalTest === true) return docs.map(toProduct)
+
       const internalDistIds = new Set(internalDists.map(d => d.id))
       return docs
         .filter(d => !d.isInternalTest && !internalDistIds.has(d.distributorId))

@@ -144,7 +144,7 @@ export default function CheckoutPage() {
   const comercio = currentUser?.role === 'comercio' ? currentUser as Comercio : null
   const loc = (comercio as any)?.location
   const commerceContext = loc
-    ? { lat: loc.lat ?? undefined, lng: loc.lng ?? undefined, locationKey: loc.locationKey, citySlug: loc.citySlug }
+    ? { lat: loc.lat ?? undefined, lng: loc.lng ?? undefined, locationKey: loc.locationKey, citySlug: loc.citySlug, provinceSlug: loc.provinceSlug, isInternalTest: comercio?.isInternalTest === true }
     : undefined
   const { data: zoneDistributors, loading: zoneLoading } = useDistributors(commerceContext)
   const isOutOfZone = !!commerceContext && !zoneLoading && !!cart && !zoneDistributors.some(d => d.id === cart.distribuidoraId)
